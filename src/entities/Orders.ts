@@ -1,10 +1,4 @@
-export interface IOrder {
-  id?: number;
-  expiration: string;
-  takerAmount: string;
-  makerAmount: string;
-}
-
+import { IOrder } from './types';
 export class User implements IOrder {
   public id?: number;
   public expiration: string;

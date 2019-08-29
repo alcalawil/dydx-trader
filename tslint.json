@@ -5,7 +5,8 @@
     "object-literal-sort-keys": false,
     "ordered-imports": false,
     "quotemark": [true, "single"],
-    "trailing-comma":false
+    "trailing-comma":false,
+    "interface-name":true
   },
   "linterOptions": {
     "exclude": [
