@@ -1,8 +1,10 @@
-export interface IOrder {
+export interface ISimpleOrder {
   id?: number;
-  expiration: string;
+  expiration?: string;
   takerAmount: string;
   makerAmount: string;
+  takerMarket: number;
+  makerMarket: number;
 }
 
 export interface IError {
