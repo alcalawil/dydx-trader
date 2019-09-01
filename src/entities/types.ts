@@ -13,3 +13,8 @@ export interface IError {
   status?: number;
   message?: string;
 }
+
+export interface IBalances {
+  eth: string;
+  dai: string;
+}
