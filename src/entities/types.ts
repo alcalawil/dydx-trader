@@ -1,10 +1,12 @@
+import BigNumber from 'bignumber.js';
+
 export interface ISimpleOrder {
   id?: number;
-  expiration?: string;
+  expiration?: number;
   takerAmount: string;
   makerAmount: string;
-  takerMarket: number;
-  makerMarket: number;
+  takerMarket: BigNumber;
+  makerMarket: BigNumber;
 }
 
 export interface IError {

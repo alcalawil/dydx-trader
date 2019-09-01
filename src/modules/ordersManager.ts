@@ -1,8 +1,16 @@
-import { BigNumber, SigningMethod, MarketId, Solo, SignedLimitOrder, LimitOrder,  } from '@dydxprotocol/solo';
+import {
+  BigNumber,
+  SigningMethod,
+  MarketId,
+  Solo,
+  SignedLimitOrder,
+  LimitOrder,
+  ApiOrder
+} from '@dydxprotocol/solo';
 import { ISimpleOrder } from 'src/entities/types';
 
 const DEFAULT_ADDRESS = process.env.DEFAULT_ACCOUNT_ADDRESS || '';
-
+const DEFAULT_EXPIRATION = process.env.DEFAULT_EXPIRATION || 0;
 class OrdersManager {
   public solo: Solo;
   constructor(solo: Solo) {
@@ -14,112 +22,132 @@ class OrdersManager {
     takerAmount,
     expiration,
     makerMarket,
-    takerMarket,
+    takerMarket
   }: ISimpleOrder): LimitOrder {
     const order: LimitOrder = {
-      makerAccountOwner: DEFAULT_ADDRESS,
       makerMarket: new BigNumber(makerMarket),
       takerMarket: new BigNumber(takerMarket),
       makerAmount: new BigNumber(makerAmount),
       takerAmount: new BigNumber(takerAmount),
-      expiration: new BigNumber(expiration || 0),
-      salt: new BigNumber(Date.now()),
-      fillOrKill: false,
-      takerAccountNumber: new BigNumber(0),
+      makerAccountOwner: DEFAULT_ADDRESS,
       makerAccountNumber: new BigNumber(0),
-      takerAccountOwner: '0xf809e07870dca762B9536d61A4fBEF1a17178092' // TODO: Is this related to the taker market?
+      takerAccountOwner: '0xf809e07870dca762B9536d61A4fBEF1a17178092', // TODO: Is this related to the taker market?
+      takerAccountNumber: new BigNumber(0),
+      expiration: new BigNumber(expiration || DEFAULT_EXPIRATION),
+      salt: new BigNumber(Date.now())
     };
 
     return order;
   }
 
-  private async _signOrder(order): Promise<SignedLimitOrder> {
+  private async _signOrder(order: LimitOrder): Promise<SignedLimitOrder> {
     const typedSignature = await this.solo.limitOrders.signOrder(
       order,
       SigningMethod.Hash
     );
 
-    const signedOrder = {
+    const signedOrder: SignedLimitOrder = {
       ...order,
       typedSignature
     };
 
     if (!this.solo.limitOrders.orderHasValidSignature(signedOrder)) {
-      throw new Error('Invalid signature!');
+      throw new Error('Invalid signature!'); // TODO: Export errors from a module
     }
 
     return signedOrder;
   }
 
-  public async placeSignedOrder(params) {
-    const order = this._createOrder(params);
-    const signedOrder = await this._signOrder(order);
-    const resultOrder = await this.solo.api.placeOrder(signedOrder);
+  public async placeSignedOrder(orderParams: ISimpleOrder) {
+    const limitOrder = this._createOrder(orderParams);
+    const signedOrder = await this._signOrder(limitOrder);
+    const order = {
+      ...signedOrder,
+      fillOrKill: false
+    };
+
+    const { order: resultOrder } = await this.solo.api.placeOrder(order);
+
     return resultOrder;
   }
 
-  public async placeBidOrder({ethAmount, daiAmount, expiration}) {
-    const order = this._createOrder({ 
-      makerAmount: this.solo.web3.utils.toWei(ethAmount, 'ether'), 
-      takerAmount: this.solo.web3.utils.toWei(daiAmount,'ether'),
-      expiration: expiration, 
-      makerMarket: MarketId.WETH, 
-      takerMarket: MarketId.DAI,
+  public async placeBidOrder(ethAmount: string, daiAmount: string) {
+    const limitOrder = this._createOrder({
+      makerAmount: ethAmount,
+      takerAmount: daiAmount,
+      makerMarket: MarketId.WETH,
+      takerMarket: MarketId.DAI
     });
-    const signedOrder = await this._signOrder(order);
-    const resultOrder = await this.solo.api.placeOrder(signedOrder);
-    return resultOrder;
+
+    const signedOrder = await this._signOrder(limitOrder);
+    const order = {
+      ...signedOrder,
+      fillOrKill: false
+    };
+
+    const { order: orderResponse } = await this.solo.api.placeOrder(order);
+
+    return orderResponse;
   }
 
-  public async placeAskOrder({ethAmount, daiAmount, expiration}) {
-    const order = this._createOrder({ 
-      makerAmount: this.solo.web3.utils.toWei(daiAmount, 'ether'),
-      takerAmount: this.solo.web3.utils.toWei(ethAmount, 'ether'),
-      expiration: expiration, 
-      makerMarket: MarketId.DAI, 
-      takerMarket: MarketId.WETH,
+  public async placeAskOrder(ethAmount: string, daiAmount: string) {
+    const limitOrder = this._createOrder({
+      makerAmount: daiAmount,
+      takerAmount: ethAmount,
+      makerMarket: MarketId.DAI,
+      takerMarket: MarketId.WETH
     });
-    const signedOrder = await this._signOrder(order);
-    const resultOrder = await this.solo.api.placeOrder(signedOrder);
-    return resultOrder;
+
+    const signedOrder = await this._signOrder(limitOrder);
+    const order = {
+      ...signedOrder,
+      fillOrKill: false
+    };
+
+    const { order: orderResponse } = await this.solo.api.placeOrder(order);
+
+    return orderResponse;
+  }
+
+  public async cancelOrder(orderId: string) {
+    const { order } = await this.solo.api.cancelOrder({
+      orderId,
+      makerAccountOwner: DEFAULT_ADDRESS
+    });
+
+    return order;
   }
 
   public async getOrders({
-    account = null, 
-    limit = 10, 
+    account,
+    limit = 10,
     startingBefore = new Date()
+  }: {
+    account?: string;
+    limit?: number;
+    startingBefore?: Date;
   }) {
     const { orders } = await this.solo.api.getOrders({
       startingBefore,
       limit,
       makerAccountOwner: account
     });
+
     return orders;
   }
 
-  public async getOwnOrders() {
-    return this.getOrders(config.defaultAddress);
+  public async getOwnOrders(account = DEFAULT_ADDRESS) {
+    return this.getOrders({ account });
   }
 
-  public async cancelOrder(id) {
-    const { order } = await this.solo.api.cancelOrder({
-      orderId: id,
-      makerAccountOwner: config.defaultAddress,
-    });
-    return order;
-  }
-
-  public async getFills(account = null) {
+  public async getFills(account = DEFAULT_ADDRESS) {
     const { fills } = await this.solo.api.getFills({
       makerAccountOwner: account,
       startingBefore: new Date(),
-      limit: 50,
+      limit: 50
     });
-    return fills;
-  }
 
-  public async getOwnFills() {
-    return this.getFills(config.defaultAddress);
+    return fills;
   }
 }
 
