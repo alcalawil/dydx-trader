@@ -59,7 +59,7 @@ class OrdersManager {
     return signedOrder;
   }
 
-  public async placeSignedOrder(orderParams: ISimpleOrder) {
+  public async placeOrder(orderParams: ISimpleOrder) {
     const limitOrder = this._createOrder(orderParams);
     const signedOrder = await this._signOrder(limitOrder);
     const order = {
