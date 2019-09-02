@@ -1,7 +1,11 @@
 import { logger } from '@shared';
 import { Request, Response, Router } from 'express';
 import { BAD_REQUEST, CREATED, OK } from 'http-status-codes';
-const getSoloInstance  = require('../modules/solo');
+import { solo } from '../modules/solo';
+
+// tslint:disable-next-line: no-var-requires
+import fundsManagerFactory from '../modules/fundsManager';
+const fundsManager  = fundsManagerFactory(solo); // FIXME: fundsManager class should be instanced once
 
 const router = Router();
 
@@ -9,9 +13,13 @@ const router = Router();
  *                      Get active orders - "GET /api/funds/balance"
  ******************************************************************************/
 
-router.get('/balance', async (req: Request, res: Response) => {
+router.get('/balances', async (req: Request, res: Response) => {
   try {
-    return res.status(OK).json({});
+    const balances = await fundsManager.getBalances();
+    return res.status(OK).json({
+      message: 'Account balances converted',
+      balances
+    });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
     return res.status(BAD_REQUEST).json({

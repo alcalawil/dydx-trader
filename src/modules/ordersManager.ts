@@ -9,8 +9,9 @@ import {
 } from '@dydxprotocol/solo';
 import { ISimpleOrder } from 'src/entities/types';
 
-const DEFAULT_ADDRESS = process.env.DEFAULT_ACCOUNT_ADDRESS || '';
+const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
 const DEFAULT_EXPIRATION = process.env.DEFAULT_EXPIRATION || 0;
+
 class OrdersManager {
   public solo: Solo;
   constructor(solo: Solo) {
@@ -151,4 +152,4 @@ class OrdersManager {
   }
 }
 
-module.exports = (solo: Solo) => new OrdersManager(solo);
+export default (solo: Solo) => new OrdersManager(solo);

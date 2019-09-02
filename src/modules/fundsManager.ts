@@ -30,4 +30,4 @@ class FundsManager {
   }
 }
 
-module.exports = (solo: Solo) => new FundsManager(solo);
+export default (solo: Solo) => new FundsManager(solo);

@@ -4,3 +4,6 @@ node_modules
 production.env
 development.env
 test.env
+
+# compiled
+dist

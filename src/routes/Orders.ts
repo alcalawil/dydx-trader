@@ -1,6 +1,11 @@
 import { logger } from '@shared';
 import { Request, Response, Router } from 'express';
 import { BAD_REQUEST, CREATED, OK } from 'http-status-codes';
+import { solo } from '../modules/solo';
+
+// tslint:disable-next-line: no-var-requires
+import ordersManagerFactory from '../modules/ordersManager';
+const ordersManager  = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
 
 const router = Router();
 
@@ -10,7 +15,8 @@ const router = Router();
 
 router.get('/myorders', async (req: Request, res: Response) => {
   try {
-    return res.status(OK).json([]);
+    const myOrders = await ordersManager.getOwnOrders();
+    return res.status(OK).json(myOrders);
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
     return res.status(BAD_REQUEST).json({
