@@ -1,6 +1,7 @@
 import { logger } from '@shared';
 import { Request, Response, Router } from 'express';
 import { BAD_REQUEST, CREATED, OK } from 'http-status-codes';
+const getSoloInstance  = require('../modules/solo');
 
 const router = Router();
 
