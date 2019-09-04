@@ -6,17 +6,57 @@ import { ISimpleOrder } from 'src/entities/types';
 // tslint:disable-next-line: no-var-requires
 import ordersManagerFactory from '../modules/ordersManager';
 
-const ordersManager  = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
+const ordersManager = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
 const router = Router();
 
 /******************************************************************************
- *                      Get active orders - "GET /api/orders/active"
+ *                      Get order by id - "GET /api/orders/order"
+ ******************************************************************************/
+
+router.get('/order', async (req: Request, res: Response) => {
+  try {
+    const orderId: string = req.query.id;
+    const order = await ordersManager.getOrderById(orderId);
+    return res.status(OK).json(order);
+  } catch (err) {
+    logger.error(err.message, JSON.stringify(err));
+    return res.status(BAD_REQUEST).json({
+      error: err.message
+    });
+  }
+});
+
+/******************************************************************************
+ *                      Get my orders - "GET /api/orders/myorders"
  ******************************************************************************/
 
 router.get('/myorders', async (req: Request, res: Response) => {
   try {
     const myOrders = await ordersManager.getOwnOrders();
-    return res.status(OK).json(myOrders);
+    return res.status(OK).json({
+      count: myOrders.length,
+      orders: myOrders
+    });
+  } catch (err) {
+    logger.error(err.message, JSON.stringify(err));
+    return res.status(BAD_REQUEST).json({
+      error: err.message
+    });
+  }
+});
+
+/******************************************************************************
+ *                      Get orderbook - "GET /api/orders/orderbook"
+ ******************************************************************************/
+
+router.get('/orderbook', async (req: Request, res: Response) => {
+  const { limit = 10 } = req.query;
+  try {
+    const orders = await ordersManager.getOrderbook({ limit });
+    return res.status(OK).json({
+      count: orders.length,
+      orders
+    });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
     return res.status(BAD_REQUEST).json({

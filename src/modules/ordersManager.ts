@@ -141,6 +141,16 @@ class OrdersManager {
     return this.getOrders({ account });
   }
 
+  public async getOrderById(id: string) {
+    const { order } = await this.solo.api.getOrder({ id });
+    return order;
+  }
+
+  public async getOrderbook({ limit }: { limit: number }) {
+    // TODO: Return less information
+    return this.getOrders({ limit });
+  }
+
   public async getFills(account = DEFAULT_ADDRESS) {
     const { fills } = await this.solo.api.getFills({
       makerAccountOwner: account,
