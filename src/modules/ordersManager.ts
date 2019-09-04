@@ -72,12 +72,12 @@ class OrdersManager {
     return resultOrder;
   }
 
-  public async placeBidOrder(ethAmount: string, daiAmount: string) {
+  public async placeBidOrder(wethAmount: string, daiAmount: string) {
     const limitOrder = this._createOrder({
-      makerAmount: ethAmount,
-      takerAmount: daiAmount,
-      makerMarket: MarketId.WETH,
-      takerMarket: MarketId.DAI
+      makerAmount: daiAmount,
+      takerAmount: wethAmount,
+      makerMarket: MarketId.DAI,
+      takerMarket: MarketId.WETH
     });
 
     const signedOrder = await this._signOrder(limitOrder);
@@ -91,12 +91,12 @@ class OrdersManager {
     return orderResponse;
   }
 
-  public async placeAskOrder(ethAmount: string, daiAmount: string) {
+  public async placeAskOrder(wethAmount: string, daiAmount: string) {
     const limitOrder = this._createOrder({
-      makerAmount: daiAmount,
-      takerAmount: ethAmount,
-      makerMarket: MarketId.DAI,
-      takerMarket: MarketId.WETH
+      makerAmount: wethAmount,
+      takerAmount: daiAmount,
+      makerMarket: MarketId.WETH,
+      takerMarket: MarketId.DAI
     });
 
     const signedOrder = await this._signOrder(limitOrder);
