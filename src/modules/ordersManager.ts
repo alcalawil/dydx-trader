@@ -123,16 +123,19 @@ class OrdersManager {
   public async getOrders({
     account,
     limit = 10,
-    startingBefore = new Date()
+    startingBefore = new Date(),
+    pairs = ['WETH-DAI', 'DAI-WETH']
   }: {
     account?: string;
     limit?: number;
     startingBefore?: Date;
+    pairs?: Array<string>
   }) {
     const { orders } = await this.solo.api.getOrders({
       startingBefore,
       limit,
-      makerAccountOwner: account
+      makerAccountOwner: account,
+      pairs
     });
 
     return orders;
@@ -161,6 +164,27 @@ class OrdersManager {
 
     return fills;
   }
+
+  public async getBid() {
+    const orders = await this.getOrders({ limit: 2, pairs: ['DAI-WETH'] });
+    const bidPrice = orders.sort(this.sortOrderByDescPrice)[0].price;
+    return { bidPrice };
+  }
+
+  private sortOrderByDescPrice(a: ApiOrder, b: ApiOrder, ) {
+    return Number(b.price) - Number(a.price);
+  }
+
+  public async getAsk() {
+    const orders = await this.getOrders({ limit: 2, pairs: ['WETH-DAI'] });
+    const askPrice = orders.sort(this.sortOrderByAscPrice)[0].price;
+    return { askPrice };
+  }
+
+  private sortOrderByAscPrice(a: ApiOrder, b: ApiOrder) {
+    return Number(a.price) - Number(b.price);
+  }
+
 }
 
 export default (solo: Solo) => new OrdersManager(solo);

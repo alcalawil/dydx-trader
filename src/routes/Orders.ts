@@ -126,6 +126,9 @@ router.post('/buy', async (req: Request, res: Response) => {
     });
   }
 });
+/******************************************************************************
+ *                       Cancel Order - "POST /api/orders/cancel"
+ ******************************************************************************/
 
 router.post('/cancel', async (req: Request, res: Response) => {
   const orderId: string = req.body.orderId;
@@ -135,6 +138,39 @@ router.post('/cancel', async (req: Request, res: Response) => {
       message: 'Order canceled',
       result
     });
+  } catch (err) {
+    logger.error(err.message, err);
+    return res.status(BAD_REQUEST).json({
+      error: err.message
+    });
+  }
+});
+
+
+/******************************************************************************
+ *                       Get Bid - "GET /api/orders/bid"
+ ******************************************************************************/
+
+router.get('/bid', async (req: Request, res: Response) => {
+  try {
+    const orders = await ordersManager.getBid();
+    return res.status(OK).json(orders);
+  } catch (err) {
+    logger.error(err.message, err);
+    return res.status(BAD_REQUEST).json({
+      error: err.message
+    });
+  }
+});
+
+/******************************************************************************
+ *                       Get Ask - "GET /api/orders/ask"
+ ******************************************************************************/
+
+router.get('/ask', async (req: Request, res: Response) => {
+  try {
+    const orders = await ordersManager.getAsk();
+    return res.status(OK).json(orders);
   } catch (err) {
     logger.error(err.message, err);
     return res.status(BAD_REQUEST).json({
