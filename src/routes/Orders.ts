@@ -1,6 +1,7 @@
 import { logger } from '@shared';
 import { Request, Response, Router } from 'express';
 import { BAD_REQUEST, CREATED, OK } from 'http-status-codes';
+import BigNumber from 'bignumber.js';
 import { solo } from '../modules/solo';
 import { ISimpleOrder } from 'src/entities/types';
 // tslint:disable-next-line: no-var-requires
@@ -83,6 +84,35 @@ router.post('/place', async (req: Request, res: Response) => {
       takerMarket,
       makerAmount,
       takerAmount
+    });
+
+    return res.status(CREATED).json({
+      message: 'Order successfully created',
+      order
+    });
+  } catch (err) {
+    logger.error(err.message, err);
+    return res.status(BAD_REQUEST).json({
+      error: err.message
+    });
+  }
+});
+
+router.post('/buy', async (req: Request, res: Response) => {
+  try {
+    const {
+      price,
+      amount
+    }: any = req.body;
+
+    const makerAmount = amount;
+    const takerAmount = price * amount;
+
+    const order = await ordersManager.placeOrder({
+      makerMarket: new BigNumber(0),
+      takerMarket: new BigNumber(1),
+      makerAmount: `${makerAmount}e18`,
+      takerAmount: `${takerAmount}e18`
     });
 
     return res.status(CREATED).json({

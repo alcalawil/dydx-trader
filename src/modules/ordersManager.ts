@@ -9,8 +9,9 @@ import {
 } from '@dydxprotocol/solo';
 import { ISimpleOrder } from 'src/entities/types';
 
+// Config
 const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
-const DEFAULT_EXPIRATION = process.env.DEFAULT_EXPIRATION || 0;
+const DEFAULT_EXPIRATION = parseInt(process.env.DEFAULT_EXPIRATION_IN_SECONDS || '600');
 
 class OrdersManager {
   public solo: Solo;
@@ -34,7 +35,7 @@ class OrdersManager {
       makerAccountNumber: new BigNumber(0),
       takerAccountOwner: '0xf809e07870dca762B9536d61A4fBEF1a17178092', // TODO: Is this related to the taker market?
       takerAccountNumber: new BigNumber(0),
-      expiration: new BigNumber(expiration || DEFAULT_EXPIRATION),
+      expiration: new BigNumber(DEFAULT_EXPIRATION),
       salt: new BigNumber(Date.now())
     };
 
