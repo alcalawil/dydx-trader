@@ -232,15 +232,15 @@ router.post('/cancel-all', async (req: Request, res: Response) => {
 });
 
 router.post('/buy-many', async (req: Request, res: Response) => {
-  const { price, amount, amountFirst } = req.body;
+  const { amount, separation } = req.body;
   const type = 'buy';
   try {
-    if (!price || !amount) {
+    if (!amount) {
       return res.status(BAD_REQUEST).json({
-        message: 'Please remember to enter price and amount'
+        message: 'Please remember to enter amount'
       });
     }
-    const result = await ordersManager.generateOrders(price, amount, type, amountFirst || undefined);
+    const result = await ordersManager.generateOrders(amount, type, separation);
     return res.status(OK).json(result);
   } catch (err) {
     logger.error(err.message, err);
@@ -251,15 +251,15 @@ router.post('/buy-many', async (req: Request, res: Response) => {
 });
 
 router.post('/sell-many', async (req: Request, res: Response) => {
-  const { price, amount, amountFirst } = req.body;
+  const { amount, separation } = req.body;
   const type = 'sell';
   try {
-    if (!price || !amount) {
+    if (!amount) {
       return res.status(BAD_REQUEST).json({
-        message: 'Please remember to enter price and amount'
+        message: 'Please remember to enter amount'
       });
     }
-    const result = await ordersManager.generateOrders(price, amount, type, amountFirst || undefined);
+    const result = await ordersManager.generateOrders(amount, type, separation);
     return res.status(OK).json(result);
   } catch (err) {
     logger.error(err.message, err);

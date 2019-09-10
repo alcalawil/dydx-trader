@@ -75,10 +75,10 @@ class OrdersManager {
     return parsedOrder;
   }
 
-  public async buy(wethAmount: string, daiAmount: string) {
+  public async buy(makerAmount: string, takerAmount: string) {
     const limitOrder = this._createOrder({
-      makerAmount: daiAmount,
-      takerAmount: wethAmount,
+      makerAmount,
+      takerAmount,
       makerMarket: MarketId.DAI,
       takerMarket: MarketId.WETH
     });
@@ -95,10 +95,10 @@ class OrdersManager {
     return parsedOrder;
   }
 
-  public async sell(wethAmount: string, daiAmount: string) {
+  public async sell(makerAmount: string, takerAmount: string) {
     const limitOrder = this._createOrder({
-      makerAmount: wethAmount,
-      takerAmount: daiAmount,
+      makerAmount,
+      takerAmount,
       makerMarket: MarketId.WETH,
       takerMarket: MarketId.DAI
     });
@@ -212,29 +212,27 @@ class OrdersManager {
     return orders;
   }
 
-  public async generateOrders(price: number, amount: number, type: string, amountFirst: any = undefined) {
+  public async generateOrders(amount: number, type: string, separation: number = 1) {
     const percentages = [
-      { index: 0, value: 0 },
-      { index: 1, value: 2 },
-      { index: 2, value: 4 },
-      { index: 3, value: 8 },
-      { index: 4, value: 15 },
+      { index: 0, value: 2 },
+      { index: 1, value: 4 },
+      { index: 2, value: 8 },
+      { index: 3, value: 15 },
     ];
     const readyOrders = Array<IResponseOrder>();
 
-    for (const { index, value } of percentages) {
-      let takerAmount = `${this.calcTakerAmount(price, amount, value, type)}e18`;
-      let makerAmount = `${amount}e18`;
-
-      if (index === 0 && amountFirst) {
-        takerAmount = `${this.calcTakerAmount(price, amountFirst, value, type)}e18`;
-        makerAmount = `${amountFirst}e18`
-      }
-
+    for (const { value } of percentages) {
+      let newValue = value * separation;
       if (type.includes('buy')) {
+        let { bidPrice } = await this.getBid();
+        let makerAmount = `${this.calcAmount(Number(bidPrice), amount, newValue, type)}e18`;
+        let takerAmount = `${amount}e18`;
         const order = await this.buy(makerAmount, takerAmount);
         readyOrders.push(order);
       } else if (type.includes('sell')) {
+        let { askPrice } = await this.getAsk();
+        let takerAmount = `${this.calcAmount(Number(askPrice), amount, newValue, type)}e18`;
+        let makerAmount = `${amount}e18`;
         const order = await this.sell(makerAmount, takerAmount);
         readyOrders.push(order);
       }
@@ -243,18 +241,20 @@ class OrdersManager {
     return readyOrders;
   }
 
-  private calcTakerAmount(price: number, makerAmount: number, percentage: number, type: string) {
-    let takerAmount = 0;
+  private calcAmount(price: number, amount: number, percentage: number, type: string) {
+    let result = 0;
     let newPrice = 0;
 
     if (type.includes('buy')) {
       newPrice = price - (price * (percentage / 100));
+      result = amount / newPrice;
     } else if (type.includes('sell')) {
       newPrice = price + (price * (percentage / 100));
+      result = newPrice * amount;
     }
 
-    takerAmount = newPrice * makerAmount;
-    return takerAmount;
+
+    return result;
   }
 
   private parseApiOrder(orderApi: ApiOrder): IResponseOrder {
