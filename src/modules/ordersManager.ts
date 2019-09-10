@@ -212,19 +212,25 @@ class OrdersManager {
     return orders;
   }
 
-  public async generateOrders(price: number, amount: number, type: string) {
+  public async generateOrders(price: number, amount: number, type: string, amountFirst: any = undefined) {
     const percentages = [
-      { value: 0 },
-      { value: 2 },
-      { value: 4 },
-      { value: 8 },
-      { value: 15 }
+      { index: 0, value: 0 },
+      { index: 1, value: 2 },
+      { index: 2, value: 4 },
+      { index: 3, value: 8 },
+      { index: 4, value: 15 },
     ];
     const readyOrders = Array<IResponseOrder>();
 
-    for (const percentage of percentages) {
-      const takerAmount = `${this.calcTakerAmount(price, amount, percentage.value, type)}e18`;
-      const makerAmount = `${amount}e18`;
+    for (const { index, value } of percentages) {
+      let takerAmount = `${this.calcTakerAmount(price, amount, value, type)}e18`;
+      let makerAmount = `${amount}e18`;
+
+      if (index === 0 && amountFirst) {
+        takerAmount = `${this.calcTakerAmount(price, amountFirst, value, type)}e18`;
+        makerAmount = `${amountFirst}e18`
+      }
+
       if (type.includes('buy')) {
         const order = await this.buy(makerAmount, takerAmount);
         readyOrders.push(order);
