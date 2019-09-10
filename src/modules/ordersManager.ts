@@ -167,9 +167,9 @@ class OrdersManager {
     return parsedOrders;
   }
 
-  public async getFills(account = DEFAULT_ADDRESS) {
+  public async getMyFills(limit = 50) {
     const { fills } = await this.solo.api.getFills({
-      makerAccountOwner: account,
+      makerAccountOwner: DEFAULT_ADDRESS,
       startingBefore: new Date(),
       limit: 50
     });

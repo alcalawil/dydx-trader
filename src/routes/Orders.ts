@@ -231,7 +231,7 @@ router.post('/cancel-all', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/generateBuyOrders', async (req: Request, res: Response) => {
+router.post('/buy-many', async (req: Request, res: Response) => {
   const { price, amount, amountFirst } = req.body;
   const type = 'buy';
   try {
@@ -250,7 +250,7 @@ router.get('/generateBuyOrders', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/generateSellOrders', async (req: Request, res: Response) => {
+router.post('/sell-many', async (req: Request, res: Response) => {
   const { price, amount, amountFirst } = req.body;
   const type = 'sell';
   try {
