@@ -98,7 +98,44 @@ router.post('/place', async (req: Request, res: Response) => {
   }
 });
 
+/******************************************************************************
+ *                       Buy Order - "POST /api/orders/buy"
+ ******************************************************************************/
+
 router.post('/buy', async (req: Request, res: Response) => {
+  try {
+    const {
+      price,
+      amount
+    }: any = req.body;
+
+    const takerAmount = amount;
+    const makerAmount = price * amount;
+
+    const order = await ordersManager.placeOrder({
+      makerMarket: new BigNumber(1),
+      takerMarket: new BigNumber(0),
+      makerAmount: `${makerAmount}e18`,
+      takerAmount: `${takerAmount}e18`
+    });
+
+    return res.status(CREATED).json({
+      message: 'Order successfully created',
+      order
+    });
+  } catch (err) {
+    logger.error(err.message, err);
+    return res.status(BAD_REQUEST).json({
+      error: err.message
+    });
+  }
+});
+
+/******************************************************************************
+ *                       Sell Order - "POST /api/orders/sell"
+ ******************************************************************************/
+
+router.post('/sell', async (req: Request, res: Response) => {
   try {
     const {
       price,
@@ -126,6 +163,7 @@ router.post('/buy', async (req: Request, res: Response) => {
     });
   }
 });
+
 /******************************************************************************
  *                       Cancel Order - "POST /api/orders/cancel"
  ******************************************************************************/
