@@ -217,4 +217,19 @@ router.get('/ask', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/cancelmyorders', async (req: Request, res: Response) => {
+  try {
+    const ordersCanceled = await ordersManager.cancelAllOwnOrder();
+    return res.status(OK).json({
+      count: ordersCanceled.length,
+      orders: ordersCanceled
+    });
+  } catch (err) {
+    logger.error(err.message, err);
+    return res.status(BAD_REQUEST).json({
+      error: err.message
+    });
+  }
+});
+
 export default router;

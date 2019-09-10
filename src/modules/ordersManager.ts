@@ -73,7 +73,7 @@ class OrdersManager {
     return resultOrder;
   }
 
-  public async placeBidOrder(wethAmount: string, daiAmount: string) {
+  public async buy(wethAmount: string, daiAmount: string) {
     const limitOrder = this._createOrder({
       makerAmount: daiAmount,
       takerAmount: wethAmount,
@@ -88,11 +88,10 @@ class OrdersManager {
     };
 
     const { order: orderResponse } = await this.solo.api.placeOrder(order);
-
     return orderResponse;
   }
 
-  public async placeAskOrder(wethAmount: string, daiAmount: string) {
+  public async sell(wethAmount: string, daiAmount: string) {
     const limitOrder = this._createOrder({
       makerAmount: wethAmount,
       takerAmount: daiAmount,
@@ -183,6 +182,20 @@ class OrdersManager {
 
   private sortOrderByAscPrice(a: ApiOrder, b: ApiOrder) {
     return Number(a.price) - Number(b.price);
+  }
+
+  private async cancelAllOrder(account: string) {
+    const orders = await this.getOwnOrders(account);
+    const ordersCanceled = Array<ApiOrder>();
+    await orders.forEach(async (order) => {
+      ordersCanceled.push(await this.cancelOrder(order.id));
+    });
+    return orders;
+  }
+
+  public async cancelAllOwnOrder(account = DEFAULT_ADDRESS) {
+    const orders = await this.cancelAllOrder(account);
+    return orders;
   }
 
 }
