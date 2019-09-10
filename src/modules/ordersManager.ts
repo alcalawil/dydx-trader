@@ -70,8 +70,9 @@ class OrdersManager {
     };
 
     const { order: resultOrder } = await this.solo.api.placeOrder(order);
+    const parsedOrder = this.parseApiOrder(resultOrder);
 
-    return resultOrder;
+    return parsedOrder;
   }
 
   public async buy(wethAmount: string, daiAmount: string) {
@@ -88,8 +89,10 @@ class OrdersManager {
       fillOrKill: false
     };
 
-    const { order: orderResponse } = await this.solo.api.placeOrder(order);
-    return orderResponse;
+    const { order: responseOrder } = await this.solo.api.placeOrder(order);
+    const parsedOrder = this.parseApiOrder(responseOrder);
+
+    return parsedOrder;
   }
 
   public async sell(wethAmount: string, daiAmount: string) {
@@ -106,9 +109,10 @@ class OrdersManager {
       fillOrKill: false
     };
 
-    const { order: orderResponse } = await this.solo.api.placeOrder(order);
+    const { order: responseOrder } = await this.solo.api.placeOrder(order);
+    const parsedOrder = this.parseApiOrder(responseOrder);
 
-    return orderResponse;
+    return parsedOrder;
   }
 
   public async cancelOrder(orderId: string) {
@@ -117,7 +121,9 @@ class OrdersManager {
       makerAccountOwner: DEFAULT_ADDRESS
     });
 
-    return order;
+    const parsedOrder = this.parseApiOrder(order);
+
+    return parsedOrder;
   }
 
   public async getOrders({
@@ -129,7 +135,7 @@ class OrdersManager {
     account?: string;
     limit?: number;
     startingBefore?: Date;
-    pairs?: Array<string>
+    pairs?: string[]
   }) {
     const { orders } = await this.solo.api.getOrders({
       startingBefore,
@@ -142,49 +148,23 @@ class OrdersManager {
   }
 
   public async getOwnOrders(account = DEFAULT_ADDRESS) {
-    return this.getOrders({ account });
+    const apiOrders = await this.getOrders({ account });
+    const parsedOrders = apiOrders.map((apiOrder) => this.parseApiOrder(apiOrder));
+    return parsedOrders;
   }
 
   public async getOrderById(orderId: string): Promise<IResponseOrder> {
     const { order } = await this.solo.api.getOrder({ id: orderId });
-    const { id, pair, createdAt, expiresAt, makerAmount, takerAmount, status } = order;
+    const responseOrder = this.parseApiOrder(order);
 
-    const makerMarket = pair.makerCurrency.soloMarket;
-    const price = calculatePrice({
-      makerMarket: pair.makerCurrency.soloMarket,
-      takerMarket: pair.takerCurrency.soloMarket,
-      makerAmount,
-      takerAmount
-    });
-
-    let type: string;
-    let amount: string;
-
-    if (makerMarket === MarketId.WETH.toNumber()) {
-      type = 'SELL'; // Si estoy ofreciendo WETH, significa que estoy vendiendo
-      amount = this.solo.web3.utils.fromWei(makerAmount);
-    } else {
-      type = 'BUY';
-      amount = this.solo.web3.utils.fromWei(takerAmount);
-    }
-
-    const orderResponse: IResponseOrder = {
-      id,
-      pair: 'ETH-DAI',
-      type,
-      createdAt,
-      expiresAt,
-      price,
-      amount: parseInt(amount),
-      status
-    };
-
-    return orderResponse;
+    return responseOrder;
   }
 
   public async getOrderbook({ limit }: { limit: number }) {
-    // TODO: Return less information
-    return this.getOrders({ limit });
+    // TODO: Order as an Orderbook --> buy and sell separated
+    const apiOrders = await this.getOrders({ limit });
+    const parsedOrders = apiOrders.map((apiOrder) => this.parseApiOrder(apiOrder));
+    return parsedOrders;
   }
 
   public async getFills(account = DEFAULT_ADDRESS) {
@@ -219,10 +199,11 @@ class OrdersManager {
 
   private async cancelAllOrder(account: string) {
     const orders = await this.getOwnOrders(account);
-    const ordersCanceled = Array<ApiOrder>();
+    const ordersCanceled = Array<IResponseOrder>();
     await orders.forEach(async (order) => {
       ordersCanceled.push(await this.cancelOrder(order.id));
     });
+
     return orders;
   }
 
@@ -239,7 +220,7 @@ class OrdersManager {
       { value: 8 },
       { value: 15 }
     ];
-    let readyOrders = Array<ApiOrder>();
+    const readyOrders = Array<IResponseOrder>();
 
     for (const percentage of percentages) {
       const takerAmount = `${this.calcTakerAmount(price, amount, percentage.value, type)}e18`;
@@ -263,13 +244,48 @@ class OrdersManager {
     if (type.includes('buy')) {
       newPrice = price - (price * (percentage / 100));
     } else if (type.includes('sell')) {
-      newPrice = price + (price * (percentage / 100))
+      newPrice = price + (price * (percentage / 100));
     }
 
     takerAmount = newPrice * makerAmount;
     return takerAmount;
   }
 
+  private parseApiOrder(orderApi: ApiOrder): IResponseOrder {
+    const { id, pair, createdAt, expiresAt, makerAmount, takerAmount, status } = orderApi;
+
+    const makerMarket = pair.makerCurrency.soloMarket;
+    const price = calculatePrice({
+      makerMarket: pair.makerCurrency.soloMarket,
+      takerMarket: pair.takerCurrency.soloMarket,
+      makerAmount,
+      takerAmount
+    });
+
+    let type: string;
+    let amount: string;
+
+    if (makerMarket === MarketId.WETH.toNumber()) {
+      type = 'SELL'; // Si estoy ofreciendo WETH, significa que estoy vendiendo
+      amount = this.solo.web3.utils.fromWei(makerAmount, 'ether');
+    } else {
+      type = 'BUY';
+      amount = this.solo.web3.utils.fromWei(takerAmount, 'ether');
+    }
+
+    const responseOrder: IResponseOrder = {
+      id,
+      pair: 'ETH-DAI',
+      type,
+      createdAt,
+      expiresAt,
+      price,
+      amount: parseFloat(amount),
+      status
+    };
+
+    return responseOrder;
+  }
 }
 
 export default (solo: Solo) => new OrdersManager(solo);
