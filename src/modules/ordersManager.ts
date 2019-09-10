@@ -198,6 +198,45 @@ class OrdersManager {
     return orders;
   }
 
+  public async generateOrders(price: number, amount: number, type: string) {
+    const percentages = [
+      { value: 0 },
+      { value: 2 },
+      { value: 4 },
+      { value: 8 },
+      { value: 15 }
+    ];
+    let readyOrders = Array<ApiOrder>();
+
+    for (const percentage of percentages) {
+      const takerAmount = `${this.calcTakerAmount(price, amount, percentage.value, type)}e18`;
+      const makerAmount = `${amount}e18`;
+      if (type.includes('buy')) {
+        const order = await this.buy(makerAmount, takerAmount);
+        readyOrders.push(order);
+      } else if (type.includes('sell')) {
+        const order = await this.sell(makerAmount, takerAmount);
+        readyOrders.push(order);
+      }
+    }
+
+    return readyOrders;
+  }
+
+  private calcTakerAmount(price: number, makerAmount: number, percentage: number, type: string) {
+    let takerAmount = 0;
+    let newPrice = 0;
+
+    if (type.includes('buy')) {
+      newPrice = price - (price * (percentage / 100));
+    } else if (type.includes('sell')) {
+      newPrice = price + (price * (percentage / 100))
+    }
+
+    takerAmount = newPrice * makerAmount;
+    return takerAmount;
+  }
+
 }
 
 export default (solo: Solo) => new OrdersManager(solo);
