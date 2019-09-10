@@ -7,7 +7,8 @@ import {
   LimitOrder,
   ApiOrder
 } from '@dydxprotocol/solo';
-import { ISimpleOrder } from 'src/entities/types';
+import { ISimpleOrder, IResponseOrder } from 'src/entities/types';
+import { calculatePrice } from 'src/shared/utils';
 
 // Config
 const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
@@ -144,9 +145,41 @@ class OrdersManager {
     return this.getOrders({ account });
   }
 
-  public async getOrderById(id: string) {
-    const { order } = await this.solo.api.getOrder({ id });
-    return order;
+  public async getOrderById(orderId: string): Promise<IResponseOrder> {
+    const { order } = await this.solo.api.getOrder({ id: orderId });
+    const { id, pair, createdAt, expiresAt, makerAmount, takerAmount, status } = order;
+
+    const makerMarket = pair.makerCurrency.soloMarket;
+    const price = calculatePrice({
+      makerMarket: pair.makerCurrency.soloMarket,
+      takerMarket: pair.takerCurrency.soloMarket,
+      makerAmount,
+      takerAmount
+    });
+
+    let type: string;
+    let amount: string;
+
+    if (makerMarket === MarketId.WETH.toNumber()) {
+      type = 'SELL'; // Si estoy ofreciendo WETH, significa que estoy vendiendo
+      amount = this.solo.web3.utils.fromWei(makerAmount);
+    } else {
+      type = 'BUY';
+      amount = this.solo.web3.utils.fromWei(takerAmount);
+    }
+
+    const orderResponse: IResponseOrder = {
+      id,
+      pair: 'ETH-DAI',
+      type,
+      createdAt,
+      expiresAt,
+      price,
+      amount: parseInt(amount),
+      status
+    };
+
+    return orderResponse;
   }
 
   public async getOrderbook({ limit }: { limit: number }) {

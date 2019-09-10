@@ -5,8 +5,19 @@ export interface ISimpleOrder {
   expiration?: number;
   takerAmount: string;
   makerAmount: string;
-  takerMarket: BigNumber;
-  makerMarket: BigNumber;
+  takerMarket: BigNumber | number;
+  makerMarket: BigNumber | number;
+}
+
+export interface IResponseOrder {
+  id: string;
+  pair: string;
+  type: string;
+  createdAt: string;
+  expiresAt: string | undefined;
+  price: number;
+  amount: number;
+  status: string;
 }
 
 export interface IError {
