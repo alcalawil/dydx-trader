@@ -178,22 +178,24 @@ class OrdersManager {
   }
 
   public async getBid() {
-    const orders = await this.getOrders({ limit: 2, pairs: ['DAI-WETH'] });
-    const bidPrice = orders.sort(this.sortOrderByDescPrice)[0].price;
+    const apiOrders = await this.getOrders({ limit: 3, pairs: ['DAI-WETH'] });
+    const orders = apiOrders.map(this.parseApiOrder.bind(this));
+    const bidPrice = orders.sort((a: IResponseOrder, b: IResponseOrder) => {
+      return Number(b.price) - Number(a.price);
+    })[0].price;
+
     return { bidPrice };
   }
 
-  private sortOrderByDescPrice(a: ApiOrder, b: ApiOrder, ) {
-    return Number(b.price) - Number(a.price);
-  }
-
   public async getAsk() {
-    const orders = await this.getOrders({ limit: 2, pairs: ['WETH-DAI'] });
+    // TODO: ask to dydx if there is aa way to pass an orderBy param
+    const apiOrders = await this.getOrders({ limit: 10, pairs: ['WETH-DAI'] });
+    const orders = apiOrders.map(this.parseApiOrder.bind(this));
     const askPrice = orders.sort(this.sortOrderByAscPrice)[0].price;
     return { askPrice };
   }
 
-  private sortOrderByAscPrice(a: ApiOrder, b: ApiOrder) {
+  private sortOrderByAscPrice(a: IResponseOrder, b: IResponseOrder) {
     return Number(a.price) - Number(b.price);
   }
 
