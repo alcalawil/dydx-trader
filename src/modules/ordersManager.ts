@@ -222,17 +222,17 @@ class OrdersManager {
     const readyOrders = Array<IResponseOrder>();
 
     for (const { value } of percentages) {
-      let newValue = value * separation;
+      const newValue = value * separation;
       if (type.includes('buy')) {
-        let { bidPrice } = await this.getBid();
-        let makerAmount = `${this.calcAmount(Number(bidPrice), amount, newValue, type)}e18`;
-        let takerAmount = `${amount}e18`;
+        const { bidPrice } = await this.getBid();
+        const makerAmount = `${this.calcAmount(Number(bidPrice), amount, newValue, type)}e18`;
+        const takerAmount = `${amount}e18`;
         const order = await this.buy(makerAmount, takerAmount);
         readyOrders.push(order);
       } else if (type.includes('sell')) {
-        let { askPrice } = await this.getAsk();
-        let takerAmount = `${this.calcAmount(Number(askPrice), amount, newValue, type)}e18`;
-        let makerAmount = `${amount}e18`;
+        const { askPrice } = await this.getAsk();
+        const takerAmount = `${this.calcAmount(Number(askPrice), amount, newValue, type)}e18`;
+        const makerAmount = `${amount}e18`;
         const order = await this.sell(makerAmount, takerAmount);
         readyOrders.push(order);
       }
@@ -252,7 +252,6 @@ class OrdersManager {
       newPrice = price + (price * (percentage / 100));
       result = newPrice * amount;
     }
-
 
     return result;
   }
