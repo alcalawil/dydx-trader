@@ -2,6 +2,8 @@ import { IDexOrder, ICexOrder } from '../entities/types';
 import BigNumber from 'bignumber.js';
 import web3 from 'web3';
 import { logger } from './Logger';
+// tslint:disable-next-line: no-var-requires
+const aes256 = require('aes256'); // TODO: Convert to ES6 module
 
 // TODO: Use enum from types
 const MarketSide = {
@@ -101,4 +103,12 @@ export const createPriceRange = (price: number, adjust = 1, side = 'sell'): numb
 
 export const calculatePercentage = (inputVale: number, percentageNumber: number): number => {
   return (inputVale * (percentageNumber / 100));
+};
+
+export const decrypt = (key: string, dataEncrypted: string) => {
+  return aes256.decrypt(key, dataEncrypted);
+};
+
+export const encrypt = (key: string, data: string) => {
+  return aes256.decrypt(key, data);
 };

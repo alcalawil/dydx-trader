@@ -4,12 +4,12 @@ import { BAD_REQUEST, CREATED, OK } from 'http-status-codes';
 import BigNumber from 'bignumber.js';
 import { solo } from '../modules/solo';
 import { ISimpleOrder } from 'src/entities/types';
-// tslint:disable-next-line: no-var-requires
 import ordersManagerFactory from '../modules/ordersManager';
-import { ApiOrderStatus } from '@dydxprotocol/solo';
+import awsManagerFactory from '../modules/awsManager';
 
 const ordersManager = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
 const router = Router();
+const awsManager = awsManagerFactory();
 
 /******************************************************************************
  *                      Get order by id - "GET /api/orders/order"
@@ -136,6 +136,17 @@ router.post('/buy', async (req: Request, res: Response) => {
       takerAmount: `${takerAmount}e18`
     });
 
+    const msg = {
+      Message: order,
+      MessageAttributes: {
+        operation: {
+          DataType: 'String',
+          StringValue: 'placeBuyOrder'
+        }
+      }
+    };
+    awsManager.publish(msg);
+
     return res.status(CREATED).json({
       message: 'Order successfully created',
       order
@@ -169,6 +180,17 @@ router.post('/sell', async (req: Request, res: Response) => {
       takerAmount: `${takerAmount}e18`
     });
 
+    const msg = {
+      Message: order,
+      MessageAttributes: {
+        operation: {
+          DataType: 'String',
+          StringValue: 'placeSellOrder'
+        }
+      }
+    };
+    awsManager.publish(msg);
+
     return res.status(CREATED).json({
       message: 'Order successfully created',
       order
@@ -189,6 +211,18 @@ router.post('/cancel', async (req: Request, res: Response) => {
   const orderId: string = req.body.orderId;
   try {
     const result = await ordersManager.cancelOrder(orderId);
+    const msg = {
+      Message: result,
+      MessageAttributes: {
+        operation: {
+          DataType: 'String',
+          StringValue: 'cancelOrder'
+        }
+      }
+    };
+
+    awsManager.publish(msg);
+
     return res.status(CREATED).json({
       message: 'Order canceled',
       result
@@ -237,9 +271,25 @@ router.get('/ask', async (req: Request, res: Response) => {
   }
 });
 
+/******************************************************************************
+ *                      Cancel all my orders - "POST /api/orders/cancel-all"
+ ******************************************************************************/
+
 router.post('/cancel-all', async (req: Request, res: Response) => {
   try {
     const ordersCanceled = await ordersManager.cancelAllOwnOrder();
+    const msg = {
+      Message: ordersCanceled,
+      MessageAttributes: {
+        operation: {
+          DataType: 'String',
+          StringValue: 'cancelAll'
+        }
+      }
+    };
+
+    awsManager.publish(msg);
+
     return res.status(OK).json({
       count: ordersCanceled.length,
       orders: ordersCanceled
@@ -252,6 +302,10 @@ router.post('/cancel-all', async (req: Request, res: Response) => {
   }
 });
 
+/******************************************************************************
+ *                      Buy Many  - "POST /api/orders/buy-many"
+ ******************************************************************************/
+
 router.post('/buy-many', async (req: Request, res: Response) => {
   const { amount, adjust } = req.body;
   try {
@@ -261,6 +315,19 @@ router.post('/buy-many', async (req: Request, res: Response) => {
       });
     }
     const result = await ordersManager.buyMany(amount, adjust);
+
+    // TODO: Add data types
+    const msg = {
+      Message: result,
+      MessageAttributes: {
+        operation: {
+          DataType: 'String',
+          StringValue: 'buyMany'
+        }
+      }
+    };
+
+    awsManager.publish(msg);
     return res.status(OK).json(result);
   } catch (err) {
     logger.error(err.message, err);
@@ -269,6 +336,10 @@ router.post('/buy-many', async (req: Request, res: Response) => {
     });
   }
 });
+
+/******************************************************************************
+ *                      Sell Many - "POST /api/orders/sell-many"
+ ******************************************************************************/
 
 router.post('/sell-many', async (req: Request, res: Response) => {
   const { amount, adjust } = req.body;
@@ -279,6 +350,18 @@ router.post('/sell-many', async (req: Request, res: Response) => {
       });
     }
     const result = await ordersManager.sellMany(amount, adjust);
+    // TODO: Wrap this msg
+    const msg = {
+      Message: result,
+      MessageAttributes: {
+        operation: {
+          DataType: 'String',
+          StringValue: 'sellMany'
+        }
+      }
+    };
+    awsManager.publish(msg);
+
     return res.status(OK).json(result);
   } catch (err) {
     logger.error(err.message, err);
@@ -288,12 +371,29 @@ router.post('/sell-many', async (req: Request, res: Response) => {
   }
 });
 
+/******************************************************************************
+ *                      Get my fills - "GET /api/orders/myfills"
+ ******************************************************************************/
+
 router.get('/myfills', async (req: Request, res: Response) => {
   try {
-    const result = await ordersManager.getMyFills();
-    return res.status(OK).json(result);
+    const myFills = await ordersManager.getMyFills();
+    const msg = {
+      Message: myFills,
+      MessageAttributes: {
+        operation: {
+          DataType: 'String',
+          StringValue: 'myFills'
+        }
+      }
+    };
+
+    awsManager.publish(msg);
+    return res.status(OK).json({
+      fills: myFills
+    });
   } catch (err) {
-    logger.error(err.message, err);
+    logger.error(err.message, JSON.stringify(err));
     return res.status(BAD_REQUEST).json({
       error: err.message
     });
