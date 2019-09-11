@@ -35,6 +35,17 @@ router.get('/order', async (req: Request, res: Response) => {
 router.get('/myorders', async (req: Request, res: Response) => {
   try {
     const myOrders = await ordersManager.getOwnOrders();
+    const msg = {
+      Message: myOrders,
+      MessageAttributes: {
+        operation: {
+          DataType: 'String',
+          StringValue: 'myOrders'
+        }
+      }
+    };
+
+    awsManager.publish(msg);
     return res.status(OK).json({
       count: myOrders.length,
       orders: myOrders
