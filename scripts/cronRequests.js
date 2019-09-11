@@ -1,4 +1,4 @@
-const rp = require ('request-promise-native');
+const rp = require ('request-promise');
 
 // URIs - esto se supone que no lo vas a tocar @lucas
 const BASE_URI = 'http://localhost:3000'
@@ -38,7 +38,10 @@ const doRequest = async ({ uri, body = {} }) => {
   return response && response.body;
 }
 
+let counter = 1;
+
 setInterval(async () => {
+  console.log(`${counter++} - Starting cycle at [${new Date().toISOString()}]`)
   // Cancel all of the orders
   const cancelResponse = await doRequest({ uri: CANCEL_ALL_URI });
   console.log(JSON.stringify(cancelResponse));
