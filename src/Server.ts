@@ -5,15 +5,17 @@ import logger from 'morgan';
 import BaseRouter from './routes';
 import cors from 'cors';
 import { IError } from './entities/types';
+import { authKey } from './shared/authKey';
 
 const app = express();
 
 // Add middleware/settings/routes to express.
 app.use(logger('dev'));
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(cookieParser());
+app.use(authKey);
 app.use('/api', BaseRouter);
 
 // Errors handling
@@ -26,9 +28,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use((error: IError, req: Request, res: Response) => {
   res.status(error.status || 500);
   res.json({
-      error: {
-          message: error.message
-      }
+    error: {
+      message: error.message
+    }
   });
 });
 
