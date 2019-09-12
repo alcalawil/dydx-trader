@@ -1,12 +1,27 @@
 import BigNumber from 'bignumber.js';
 
-export interface ISimpleOrder {
+export interface ISimpleOrder extends IDexOrder {
   id?: number;
   expiration?: number;
+}
+
+// Standard order used by DEX protocols
+export interface IDexOrder {
   takerAmount: string;
   makerAmount: string;
   takerMarket: BigNumber | number;
   makerMarket: BigNumber | number;
+}
+
+export interface ICexOrder {
+  price: number;
+  amount: number;
+  side: number;
+}
+
+export declare enum MarketSide {
+  sell = 0,
+  buy = 1
 }
 
 export interface IResponseOrder {
