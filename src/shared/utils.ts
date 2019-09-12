@@ -87,3 +87,7 @@ export const createRange = (first: number, last: number): number[] => {
 export const createCustomRange = (): number[] => {
   return [ 2, 4, 8, 15 ];
 };
+
+export const calculatePercentage = (inputVale: number, percentageNumber: number): number => {
+  return (inputVale * (percentageNumber / 100));
+};

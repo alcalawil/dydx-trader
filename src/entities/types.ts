@@ -19,10 +19,10 @@ export interface ICexOrder {
   side: number;
 }
 
-export declare enum MarketSide {
-  sell = 0,
-  buy = 1
-}
+export const MarketSide = {
+  sell: 0,
+  buy: 1
+};
 
 export interface IResponseOrder {
   id: string;

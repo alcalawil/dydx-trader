@@ -7,8 +7,8 @@ import {
   LimitOrder,
   ApiOrder
 } from '@dydxprotocol/solo';
-import { ISimpleOrder, IResponseOrder } from 'src/entities/types';
-import { calculatePrice } from 'src/shared/utils';
+import { ISimpleOrder, IResponseOrder, MarketSide } from 'src/entities/types';
+import { calculatePrice, createCustomRange, convertToDexOrder, calculatePercentage } from 'src/shared/utils';
 
 // Config
 const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
@@ -23,7 +23,7 @@ class OrdersManager {
   private _createOrder({
     makerAmount,
     takerAmount,
-    expiration,
+    expiration, // TODO: Delete unused param expiration - Make sure test it
     makerMarket,
     takerMarket
   }: ISimpleOrder): LimitOrder {
@@ -184,7 +184,7 @@ class OrdersManager {
       return Number(b.price) - Number(a.price);
     })[0].price;
 
-    return { bidPrice };
+    return bidPrice;
   }
 
   public async getAsk() {
@@ -192,7 +192,7 @@ class OrdersManager {
     const apiOrders = await this.getOrders({ limit: 10, pairs: ['WETH-DAI'] });
     const orders = apiOrders.map(this.parseApiOrder.bind(this));
     const askPrice = orders.sort(this.sortOrderByAscPrice)[0].price;
-    return { askPrice };
+    return askPrice;
   }
 
   private sortOrderByAscPrice(a: IResponseOrder, b: IResponseOrder) {
@@ -214,33 +214,49 @@ class OrdersManager {
     return orders;
   }
 
-  public async generateOrders(amount: number, type: string, separation: number = 1) {
-    const percentages = [
-      { index: 0, value: 2 },
-      { index: 1, value: 4 },
-      { index: 2, value: 8 },
-      { index: 3, value: 15 },
-    ];
-    const readyOrders = Array<IResponseOrder>();
+  public async buyMany(amount: number, adjust: number = 1) {
+    const percentages = createCustomRange();
 
-    for (const { value } of percentages) {
-      const newValue = value * separation;
-      if (type.includes('buy')) {
-        const { bidPrice } = await this.getBid();
-        const makerAmount = `${this.calcAmount(Number(bidPrice), amount, newValue, type)}e18`;
-        const takerAmount = `${amount}e18`;
-        const order = await this.buy(makerAmount, takerAmount);
-        readyOrders.push(order);
-      } else if (type.includes('sell')) {
-        const { askPrice } = await this.getAsk();
-        const takerAmount = `${this.calcAmount(Number(askPrice), amount, newValue, type)}e18`;
-        const makerAmount = `${amount}e18`;
-        const order = await this.sell(makerAmount, takerAmount);
-        readyOrders.push(order);
-      }
-    }
+    const responseOrders = await Promise.all(percentages.map(async (percentage) => {
+      const adjustedPercentage = percentage * adjust;
 
-    return readyOrders;
+      const bidPrice = await this.getBid();
+      const price = bidPrice - calculatePercentage(bidPrice, adjustedPercentage);
+
+      const { makerAmount, takerAmount } = convertToDexOrder({
+        price,
+        amount,
+        side: MarketSide.buy
+      });
+
+      const order = await this.buy(makerAmount, takerAmount);
+
+      return order;
+    }));
+    // TODO: Return price reference
+    return responseOrders;
+  }
+
+  public async sellMany(amount: number, adjust: number = 1): Promise<IResponseOrder[]> {
+    const percentages = createCustomRange();
+
+    const responseOrders = await Promise.all(percentages.map(async (percentage) => {
+      const adjustedPercentage = percentage * adjust;
+      const askPrice = await this.getAsk();
+      const price = askPrice + calculatePercentage(askPrice, adjustedPercentage);
+
+      const { makerAmount, takerAmount } = convertToDexOrder({
+        price,
+        amount,
+        side: MarketSide.sell
+      });
+
+      const order = await this.sell(makerAmount, takerAmount);
+
+      return order;
+    }));
+
+    return responseOrders;
   }
 
   private calcAmount(price: number, amount: number, percentage: number, type: string) {

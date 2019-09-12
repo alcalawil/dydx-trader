@@ -190,8 +190,10 @@ router.post('/cancel', async (req: Request, res: Response) => {
 
 router.get('/bid', async (req: Request, res: Response) => {
   try {
-    const orders = await ordersManager.getBid();
-    return res.status(OK).json(orders);
+    const bid = await ordersManager.getBid();
+    return res.status(OK).json({
+      bid
+    });
   } catch (err) {
     logger.error(err.message, err);
     return res.status(BAD_REQUEST).json({
@@ -206,8 +208,10 @@ router.get('/bid', async (req: Request, res: Response) => {
 
 router.get('/ask', async (req: Request, res: Response) => {
   try {
-    const orders = await ordersManager.getAsk();
-    return res.status(OK).json(orders);
+    const ask = await ordersManager.getAsk();
+    return res.status(OK).json({
+      ask
+    });
   } catch (err) {
     logger.error(err.message, err);
     return res.status(BAD_REQUEST).json({
@@ -232,15 +236,14 @@ router.post('/cancel-all', async (req: Request, res: Response) => {
 });
 
 router.post('/buy-many', async (req: Request, res: Response) => {
-  const { amount, separation } = req.body;
-  const type = 'buy';
+  const { amount, adjust } = req.body;
   try {
     if (!amount) {
       return res.status(BAD_REQUEST).json({
         message: 'Please remember to enter amount'
       });
     }
-    const result = await ordersManager.generateOrders(amount, type, separation);
+    const result = await ordersManager.buyMany(amount, adjust);
     return res.status(OK).json(result);
   } catch (err) {
     logger.error(err.message, err);
@@ -251,15 +254,14 @@ router.post('/buy-many', async (req: Request, res: Response) => {
 });
 
 router.post('/sell-many', async (req: Request, res: Response) => {
-  const { amount, separation } = req.body;
-  const type = 'sell';
+  const { amount, adjust } = req.body;
   try {
     if (!amount) {
       return res.status(BAD_REQUEST).json({
         message: 'Please remember to enter amount'
       });
     }
-    const result = await ordersManager.generateOrders(amount, type, separation);
+    const result = await ordersManager.sellMany(amount, adjust);
     return res.status(OK).json(result);
   } catch (err) {
     logger.error(err.message, err);
