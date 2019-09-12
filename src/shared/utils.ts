@@ -1,3 +1,4 @@
+const aes256 = require('aes256');
 import { IDexOrder, ICexOrder } from '../entities/types';
 import BigNumber from 'bignumber.js';
 import web3 from 'web3';
@@ -85,9 +86,17 @@ export const createRange = (first: number, last: number): number[] => {
 };
 
 export const createCustomRange = (): number[] => {
-  return [ 2, 4, 8, 15 ];
+  return [2, 4, 8, 15];
 };
 
 export const calculatePercentage = (inputVale: number, percentageNumber: number): number => {
   return (inputVale * (percentageNumber / 100));
+};
+
+export const decrypt = (key: string, dataEncrypted: string) => {
+  return aes256.decrypt(key, dataEncrypted);
+};
+
+export const encrypt = (key: string, data: string) => {
+  return aes256.decrypt(key, data);
 };
