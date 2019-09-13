@@ -285,21 +285,21 @@ class OrdersManager {
       takerAmount
     });
 
-    let type: string;
+    let side: string;
     let amount: string;
 
     if (makerMarket === MarketId.WETH.toNumber()) {
-      type = 'SELL'; // Si estoy ofreciendo WETH, significa que estoy vendiendo
+      side = 'SELL'; // Si estoy ofreciendo WETH, significa que estoy vendiendo
       amount = this.solo.web3.utils.fromWei(makerAmount, 'ether');
     } else {
-      type = 'BUY';
+      side = 'BUY';
       amount = this.solo.web3.utils.fromWei(takerAmount, 'ether');
     }
 
     const responseOrder: IResponseOrder = {
       id,
       pair: 'ETH-DAI',
-      type,
+      side,
       createdAt,
       expiresAt,
       price,
@@ -308,6 +308,34 @@ class OrdersManager {
     };
 
     return responseOrder;
+  }
+
+  public async cancelBuyOrders() {
+    const myOrders = await this.getOwnOrders();
+    const buyOrders = myOrders.filter(this.filterByBuy);
+    const canceledOrders = await Promise.all(buyOrders.map(async (order) => {
+      const canceledOrder = await this.cancelOrder(order.id);
+      return canceledOrder;
+    }));
+    return canceledOrders;
+  }
+
+  private filterByBuy(orders: IResponseOrder) {
+    if (orders.side.includes('BUY')) { return true; }
+  }
+
+  public async cancelSellOrders() {
+    const myOrders = await this.getOwnOrders();
+    const sellOrders = myOrders.filter(this.filterBySell);
+    const canceledOrders = await Promise.all(sellOrders.map(async (order) => {
+      const canceledOrder = await this.cancelOrder(order.id);
+      return canceledOrder;
+    }));
+    return canceledOrders;
+  }
+
+  private filterBySell(orders: IResponseOrder) {
+    if (orders.side.includes('SELL')) { return true; }
   }
 }
 

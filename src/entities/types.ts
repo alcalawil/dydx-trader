@@ -27,7 +27,7 @@ export const MarketSide = {
 export interface IResponseOrder {
   id: string;
   pair: string;
-  type: string;
+  side: string;
   createdAt: string;
   expiresAt: string | undefined;
   price: number;

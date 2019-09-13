@@ -271,4 +271,34 @@ router.post('/sell-many', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/cancel-all-buy', async (req: Request, res: Response) => {
+  try {
+    const ordersCanceled = await ordersManager.cancelBuyOrders();
+    return res.status(OK).json({
+      count: ordersCanceled.length,
+      orders: ordersCanceled
+    });
+  } catch (err) {
+    logger.error(err.message, err);
+    return res.status(BAD_REQUEST).json({
+      error: err.message
+    });
+  }
+});
+
+router.post('/cancel-all-sell', async (req: Request, res: Response) => {
+  try {
+    const ordersCanceled = await ordersManager.cancelSellOrders();
+    return res.status(OK).json({
+      count: ordersCanceled.length,
+      orders: ordersCanceled
+    });
+  } catch (err) {
+    logger.error(err.message, err);
+    return res.status(BAD_REQUEST).json({
+      error: err.message
+    });
+  }
+});
+
 export default router;
