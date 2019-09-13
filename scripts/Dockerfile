@@ -4,6 +4,10 @@ WORKDIR /app
 
 RUN npm install request-promise request
 
-COPY cronRequests.js .
+COPY cronRequests.js /app/
 
-CMD [ "node", "cronRequests.js" ]
+COPY entrypoint.sh /app/
+
+RUN ["chmod","+x","/app/entrypoint.sh"]
+
+ENTRYPOINT ["/app/entrypoint.sh"]

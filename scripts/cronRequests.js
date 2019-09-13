@@ -1,4 +1,8 @@
-const rp = require ('request-promise');
+const rp = require('request-promise');
+const buyAmount = process.argv[2] || 0.1;
+const buySeparation = process.argv[3] || 2;
+const sellAmount = process.argv[4] || 0.1;
+const sellSeparation = process.argv[5] || 2;
 
 // URIs - esto se supone que no lo vas a tocar @lucas
 const BASE_URI = 'http://localhost:3000'
@@ -11,14 +15,14 @@ const SECONDS_INTERVAL = 10; // Cycle interval in seconds
 
 // Buy Many params
 const BUY_MANY_BODY = {
-  "amount": 0.1,
-	"separation": 2
+  "amount": buyAmount,
+  "separation": buySeparation
 };
 
 // Sell Many params
 const SELL_MANY_BODY = {
-  "amount": 0.1,
-	"separation": 2
+  "amount": sellAmount,
+  "separation": sellSeparation
 };
 
 /* ---------------------------------------------------------------------------------- */
