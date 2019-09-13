@@ -288,4 +288,16 @@ router.post('/sell-many', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/myfills', async (req: Request, res: Response) => {
+  try {
+    const result = await ordersManager.getMyFills();
+    return res.status(OK).json(result);
+  } catch (err) {
+    logger.error(err.message, err);
+    return res.status(BAD_REQUEST).json({
+      error: err.message
+    });
+  }
+});
+
 export default router;
