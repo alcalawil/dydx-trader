@@ -1,6 +1,6 @@
 {
   "name": "dydx-market-making-bot",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Market making bot for dydx exchange",
   "scripts": {
     "build": "node ./util/build.js",
