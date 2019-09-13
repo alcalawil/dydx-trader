@@ -27,7 +27,7 @@ export const MarketSide = {
 export interface IResponseOrder {
   id: string;
   pair: string;
-  type: string;
+  side: string;
   createdAt: string;
   expiresAt: string | undefined;
   price: number;
@@ -43,4 +43,9 @@ export interface IError {
 export interface IBalances {
   eth: string;
   dai: string;
+}
+
+export interface IOrderbook {
+  sellOrders: IResponseOrder[];
+  buyOrders: IResponseOrder[];
 }

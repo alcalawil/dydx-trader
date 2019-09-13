@@ -6,6 +6,7 @@ import { solo } from '../modules/solo';
 import { ISimpleOrder } from 'src/entities/types';
 // tslint:disable-next-line: no-var-requires
 import ordersManagerFactory from '../modules/ordersManager';
+import { ApiOrderStatus } from '@dydxprotocol/solo';
 
 const ordersManager = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
 const router = Router();
@@ -51,11 +52,27 @@ router.get('/myorders', async (req: Request, res: Response) => {
  ******************************************************************************/
 
 router.get('/orderbook', async (req: Request, res: Response) => {
-  const { limit = 10 } = req.query;
+  const { limit = 10, side = 'both' }: { limit: number; side: string; } = req.query;
+
   try {
     const orders = await ordersManager.getOrderbook({ limit });
+
+    if (side === 'sell') {
+      return res.status(OK).json({
+        count: orders.sellOrders.length,
+        orders: orders.sellOrders
+      });
+    }
+
+    if (side === 'buy') {
+      return res.status(OK).json({
+        count: orders.buyOrders.length,
+        orders: orders.buyOrders
+      });
+    }
+
     return res.status(OK).json({
-      count: orders.length,
+      count: orders.buyOrders.length + orders.sellOrders.length,
       orders
     });
   } catch (err) {

@@ -7,12 +7,14 @@ import {
   LimitOrder,
   ApiOrder
 } from '@dydxprotocol/solo';
-import { ISimpleOrder, IResponseOrder, MarketSide } from 'src/entities/types';
+import _ from 'lodash';
+
+import { ISimpleOrder, IResponseOrder, MarketSide, IOrderbook } from 'src/entities/types';
 import { calculatePrice, createCustomRange, convertToDexOrder, calculatePercentage } from 'src/shared/utils';
 
 // Config
 const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
-const DEFAULT_EXPIRATION = parseInt(process.env.DEFAULT_EXPIRATION_IN_SECONDS || '600');
+const DEFAULT_EXPIRATION = parseInt(process.env.DEFAULT_EXPIRATION_IN_SECONDS || '610');
 
 class OrdersManager {
   public solo: Solo;
@@ -128,17 +130,14 @@ class OrdersManager {
 
   public async getOrders({
     account,
-    limit = 10,
-    startingBefore = new Date(),
+    limit = 100,
     pairs = ['WETH-DAI', 'DAI-WETH']
   }: {
     account?: string;
     limit?: number;
-    startingBefore?: Date;
     pairs?: string[]
   }) {
     const { orders } = await this.solo.api.getOrders({
-      startingBefore,
       limit,
       makerAccountOwner: account,
       pairs
@@ -160,11 +159,19 @@ class OrdersManager {
     return responseOrder;
   }
 
-  public async getOrderbook({ limit }: { limit: number }) {
+  public async getOrderbook({ limit = 100}): Promise<IOrderbook> {
     // TODO: Order as an Orderbook --> buy and sell separated
     const apiOrders = await this.getOrders({ limit });
     const parsedOrders = apiOrders.map((apiOrder) => this.parseApiOrder(apiOrder));
-    return parsedOrders;
+    const sellOrders = _.orderBy(parsedOrders.filter((order) =>
+      order.side === 'SELL'), ['price'], ['asc']);
+    const buyOrders = _.orderBy(parsedOrders.filter((order) =>
+      order.side === 'BUY'), ['price'], ['desc']);
+
+    return {
+      sellOrders,
+      buyOrders
+    };
   }
 
   public async getMyFills(limit = 50) {
@@ -177,22 +184,16 @@ class OrdersManager {
     return fills;
   }
 
-  public async getBid() {
-    const apiOrders = await this.getOrders({ limit: 3, pairs: ['DAI-WETH'] });
-    const orders = apiOrders.map(this.parseApiOrder.bind(this));
-    const bidPrice = orders.sort((a: IResponseOrder, b: IResponseOrder) => {
-      return Number(b.price) - Number(a.price);
-    })[0].price;
-
-    return bidPrice;
+  public async getAsk() {
+    const orderbook = await this.getOrderbook({ limit: 100 });
+    const askPrice = orderbook.sellOrders[0].price;
+    return askPrice;
   }
 
-  public async getAsk() {
-    // TODO: ask to dydx if there is aa way to pass an orderBy param
-    const apiOrders = await this.getOrders({ limit: 10, pairs: ['WETH-DAI'] });
-    const orders = apiOrders.map(this.parseApiOrder.bind(this));
-    const askPrice = orders.sort(this.sortOrderByAscPrice)[0].price;
-    return askPrice;
+  public async getBid() {
+    const orderbook = await this.getOrderbook({ limit: 100 });
+    const buyPrice = orderbook.buyOrders[0].price;
+    return buyPrice;
   }
 
   private sortOrderByAscPrice(a: IResponseOrder, b: IResponseOrder) {
@@ -285,21 +286,21 @@ class OrdersManager {
       takerAmount
     });
 
-    let type: string;
+    let side: string;
     let amount: string;
 
     if (makerMarket === MarketId.WETH.toNumber()) {
-      type = 'SELL'; // Si estoy ofreciendo WETH, significa que estoy vendiendo
+      side = 'SELL'; // Si estoy ofreciendo WETH, significa que estoy vendiendo
       amount = this.solo.web3.utils.fromWei(makerAmount, 'ether');
     } else {
-      type = 'BUY';
+      side = 'BUY';
       amount = this.solo.web3.utils.fromWei(takerAmount, 'ether');
     }
 
     const responseOrder: IResponseOrder = {
       id,
       pair: 'ETH-DAI',
-      type,
+      side,
       createdAt,
       expiresAt,
       price,
