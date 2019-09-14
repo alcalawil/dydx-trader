@@ -85,6 +85,7 @@ const checkOrders = async () => {
             if (order.id === fill.orderId)
                 return true;
         });
+
         if (result.length > 0) {
             order.status = result[0].order.status;
             filledOrPartiallyFilledOrders.push(order);
@@ -93,6 +94,7 @@ const checkOrders = async () => {
             openOrders.push(order);
         }
     });
+
     return { openOrders, filledOrPartiallyFilledOrders };
 }
 
@@ -120,7 +122,22 @@ setInterval(async () => {
     checkFillOrPartiallyFillOrder(testOrders[2]).then(console.log);
     // Checking filled order 
     checkFillOrPartiallyFillOrder(testOrders[0]).then(console.log);
-}, SECONDS_INTERVAL * 1000);
+    const orderFilled = fills.find((fill) => order.id === fill.orderId);
+    
+    if (orderFilled) {
+        return true;
+    }
+    
+    return false;
+}
 
-
-
+// setInterval(async () => {
+//     // const bid = await doGetRequest({ uri: GET_BID_URI });
+//     // const ask = await doGetRequest({ uri: GET_ASK_URI });
+//     // Checking many orders
+//     // checkOrders().then(console.log);
+//     // Checking unfilled order 
+//     console.log(await checkFillOrPartiallyFillOrder(testOrders[0])) ;
+//     console.log(await checkFillOrPartiallyFillOrder(testOrders[1]));
+//     console.log(await checkFillOrPartiallyFillOrder(testOrders[2]));
+// }, SECONDS_INTERVAL * 1000);
