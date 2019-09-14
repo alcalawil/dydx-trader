@@ -147,6 +147,10 @@ const tradingCycle = async () => {
 
   // no tengo orden
   const order = await postOrder({ side: ORDER_SIDE, price });
+  if (!order) {
+    console.log('Error posting order...');
+    return;
+  }
   myOrders.push(order);
   console.log(`Posted ${ORDER_SIDE} order at ${price} dai. Id: `, order.id);
 };
