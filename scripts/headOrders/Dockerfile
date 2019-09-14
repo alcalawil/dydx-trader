@@ -4,6 +4,6 @@ WORKDIR /app
 
 RUN npm install request-promise request
 
-COPY cronRequests.js .
+COPY ordenesPunta.js .
 
 CMD [ "node", "ordenesPunta.js" ]
