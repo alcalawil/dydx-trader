@@ -1,7 +1,7 @@
-const rp = require ('request-promise');
+const rp = require('request-promise');
 
 // URIs - esto se supone que no lo vas a tocar @lucas
-const BASE_URI = 'http://localhost:3000'
+const BASE_URI = process.env.BASE_URI
 const CANCEL_ALL_URI = BASE_URI + '/api/orders/cancel-all';
 const BUY_MANY_URI = BASE_URI + '/api/orders/buy-many';
 const SELL_MANY_URI = BASE_URI + '/api/orders/sell-many';
@@ -11,14 +11,14 @@ const SECONDS_INTERVAL = 10; // Cycle interval in seconds
 
 // Buy Many params
 const BUY_MANY_BODY = {
-  "amount": 0.1,
-	"separation": 2
+  "amount": process.env.BUY_AMOUNT,
+  "separation": process.env.BUY_SEPARATION
 };
 
 // Sell Many params
 const SELL_MANY_BODY = {
-  "amount": 0.1,
-	"separation": 2
+  "amount": process.env.SELL_AMOUNT,
+  "separation": process.env.SELL_SEPARATION
 };
 
 /* ---------------------------------------------------------------------------------- */

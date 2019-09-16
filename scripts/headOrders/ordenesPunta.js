@@ -1,9 +1,8 @@
 const rp = require('request-promise');
 
 // Constants
-const SECONDS_INTERVAL = 20; // Cycle interval in seconds
-const risks = [0, 1, 2];
-const BASE_URI = 'http://localhost:3000';
+const SECONDS_INTERVAL = process.env.SECONDS_INTERVAL; // Cycle interval in seconds
+const BASE_URI = process.env.BASE_URI;
 const BUY_ORDER_URI = BASE_URI + '/api/orders/buy';
 const SELL_ORDER_URI = BASE_URI + '/api/orders/sell';
 const GET_BID_URI = BASE_URI + '/api/orders/bid';
@@ -11,9 +10,9 @@ const GET_ASK_URI = BASE_URI + '/api/orders/ask';
 const MY_FILLS_URI = BASE_URI + '/api/orders/myfills';
 const CANCEL_URI = BASE_URI + '/api/orders/cancel';
 
-const DEFAULT_AMOUNT = 0.1;
-const EXPOSURE = 'low';
-const DIFFERENCE_IN_PERCENTAGE = 0.1;
+const DEFAULT_AMOUNT = process.env.DEFAULT_AMOUNT;
+const EXPOSURE = process.env.EXPOSURE;
+const DIFFERENCE_IN_PERCENTAGE = process.env.DIFFERENCE_IN_PERCENTAGE;
 
 let cycle;
 let myOrders = [];
@@ -57,19 +56,19 @@ const postOrder = async ({ side = 'sell', price }) => {
   const response =
     side === 'buy'
       ? await doPostRequest({
-          uri: BUY_ORDER_URI,
-          body: {
-            price,
-            amount: DEFAULT_AMOUNT
-          }
-        })
+        uri: BUY_ORDER_URI,
+        body: {
+          price,
+          amount: DEFAULT_AMOUNT
+        }
+      })
       : await doPostRequest({
-          uri: SELL_ORDER_URI,
-          body: {
-            price,
-            amount: 0.1
-          }
-        });
+        uri: SELL_ORDER_URI,
+        body: {
+          price,
+          amount: 0.1
+        }
+      });
 
   if (!response) return null;
 
