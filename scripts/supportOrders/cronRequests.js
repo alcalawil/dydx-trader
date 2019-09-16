@@ -12,13 +12,13 @@ const SECONDS_INTERVAL = parseFloat(process.env.SUPPORT_SECONDS_INTERVAL); // Cy
 // Buy Many params
 const BUY_MANY_BODY = {
   "amount": parseFloat(process.env.BUY_AMOUNT),
-  "separation": parseFloat(process.env.BUY_SEPARATION)
+  "adjust": parseFloat(process.env.BUY_SEPARATION)
 };
 
 // Sell Many params
 const SELL_MANY_BODY = {
   "amount": parseFloat(process.env.SELL_AMOUNT),
-  "separation": parseFloat(process.env.SELL_SEPARATION)
+  "adjust": parseFloat(process.env.SELL_SEPARATION)
 };
 
 /* ---------------------------------------------------------------------------------- */
