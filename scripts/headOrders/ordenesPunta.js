@@ -1,7 +1,7 @@
 const rp = require('request-promise');
 
 // Constants
-const SECONDS_INTERVAL = process.env.SECONDS_INTERVAL; // Cycle interval in seconds
+const SECONDS_INTERVAL = parseFloat(process.env.HEAD_SECONDS_INTERVAL); // Cycle interval in seconds
 const BASE_URI = process.env.BASE_URI;
 const BUY_ORDER_URI = BASE_URI + '/api/orders/buy';
 const SELL_ORDER_URI = BASE_URI + '/api/orders/sell';
@@ -10,9 +10,9 @@ const GET_ASK_URI = BASE_URI + '/api/orders/ask';
 const MY_FILLS_URI = BASE_URI + '/api/orders/myfills';
 const CANCEL_URI = BASE_URI + '/api/orders/cancel';
 
-const DEFAULT_AMOUNT = process.env.DEFAULT_AMOUNT;
-const EXPOSURE = process.env.EXPOSURE;
-const DIFFERENCE_IN_PERCENTAGE = process.env.DIFFERENCE_IN_PERCENTAGE;
+const DEFAULT_AMOUNT = parseFloat(process.env.DEFAULT_AMOUNT);
+const EXPOSURE = process.env.EXPOSURE || 'low'; // low or high
+const DIFFERENCE_IN_PERCENTAGE = parseFloat(process.env.DIFFERENCE_IN_PERCENTAGE);
 
 let cycle;
 let myOrders = [];

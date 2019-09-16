@@ -7,18 +7,18 @@ const BUY_MANY_URI = BASE_URI + '/api/orders/buy-many';
 const SELL_MANY_URI = BASE_URI + '/api/orders/sell-many';
 
 /* ----------------------   PARÁMETROS CONFIGURABLES ------------------------------  */
-const SECONDS_INTERVAL = 10; // Cycle interval in seconds
+const SECONDS_INTERVAL = parseFloat(process.env.SUPPORT_SECONDS_INTERVAL); // Cycle interval in seconds
 
 // Buy Many params
 const BUY_MANY_BODY = {
-  "amount": process.env.BUY_AMOUNT,
-  "separation": process.env.BUY_SEPARATION
+  "amount": parseFloat(process.env.BUY_AMOUNT),
+  "separation": parseFloat(process.env.BUY_SEPARATION)
 };
 
 // Sell Many params
 const SELL_MANY_BODY = {
-  "amount": process.env.SELL_AMOUNT,
-  "separation": process.env.SELL_SEPARATION
+  "amount": parseFloat(process.env.SELL_AMOUNT),
+  "separation": parseFloat(process.env.SELL_SEPARATION)
 };
 
 /* ---------------------------------------------------------------------------------- */
