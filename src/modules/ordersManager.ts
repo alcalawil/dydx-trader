@@ -10,7 +10,7 @@ import {
 import _ from 'lodash';
 
 import { ISimpleOrder, IResponseOrder, MarketSide, IOrderbook } from 'src/entities/types';
-import { calculatePrice, createCustomRange, convertToDexOrder, calculatePercentage } from 'src/shared/utils';
+import { calculatePrice, createPriceRange, convertToDexOrder } from 'src/shared/utils';
 
 // Config
 const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
@@ -192,7 +192,7 @@ class OrdersManager {
 
   public async getBid() {
     const orderbook = await this.getOrderbook({ limit: 100 });
-    const buyPrice = orderbook.buyOrders[0].price;
+    const buyPrice = orderbook.buyOrders[1].price;
     return buyPrice;
   }
 
@@ -216,13 +216,10 @@ class OrdersManager {
   }
 
   public async buyMany(amount: number, adjust: number = 1) {
-    const percentages = createCustomRange();
+    const bidPrice = await this.getBid();
+    const prices = createPriceRange(bidPrice, adjust, 'buy');
 
-    const responseOrders = await Promise.all(percentages.map(async (percentage) => {
-      const adjustedPercentage = percentage * adjust;
-
-      const bidPrice = await this.getBid();
-      const price = bidPrice - calculatePercentage(bidPrice, adjustedPercentage);
+    const responseOrders = await Promise.all(prices.map(async (price) => {
 
       const { makerAmount, takerAmount } = convertToDexOrder({
         price,
@@ -239,12 +236,10 @@ class OrdersManager {
   }
 
   public async sellMany(amount: number, adjust: number = 1): Promise<IResponseOrder[]> {
-    const percentages = createCustomRange();
+    const askPrice = await this.getAsk();
+    const prices = createPriceRange(askPrice, adjust, 'sell');
 
-    const responseOrders = await Promise.all(percentages.map(async (percentage) => {
-      const adjustedPercentage = percentage * adjust;
-      const askPrice = await this.getAsk();
-      const price = askPrice + calculatePercentage(askPrice, adjustedPercentage);
+    const responseOrders = await Promise.all(prices.map(async (price) => {
 
       const { makerAmount, takerAmount } = convertToDexOrder({
         price,

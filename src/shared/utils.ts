@@ -1,6 +1,7 @@
 import { IDexOrder, ICexOrder } from '../entities/types';
 import BigNumber from 'bignumber.js';
 import web3 from 'web3';
+import { logger } from './Logger';
 
 // TODO: Use enum from types
 const MarketSide = {
@@ -84,8 +85,18 @@ export const createRange = (first: number, last: number): number[] => {
   return Array.from(new Array(last - first + 1), (x, i) => i + first);
 };
 
-export const createCustomRange = (): number[] => {
-  return [ 2, 4, 8, 15 ];
+export const createPriceRange = (price: number, adjust = 1, side = 'sell'): number[] => {
+  const prices: number[] = [];
+  for (let i = 1; i <= 4; i += 1) {
+    const adjustedPercentage = i * adjust;
+    const adjustedPrice = side === 'sell'
+    ? price + calculatePercentage(price, adjustedPercentage)
+    : price - calculatePercentage(price, adjustedPercentage);
+    prices.push(adjustedPrice);
+  }
+  logger.debug(`Price: ${price}, adjust: ${adjust}, side: ${side}`);
+
+  return prices;
 };
 
 export const calculatePercentage = (inputVale: number, percentageNumber: number): number => {
