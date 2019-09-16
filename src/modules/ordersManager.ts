@@ -192,7 +192,7 @@ class OrdersManager {
 
   public async getBid() {
     const orderbook = await this.getOrderbook({ limit: 100 });
-    const buyPrice = orderbook.buyOrders[1].price;
+    const buyPrice = orderbook.buyOrders[0].price;
     return buyPrice;
   }
 
