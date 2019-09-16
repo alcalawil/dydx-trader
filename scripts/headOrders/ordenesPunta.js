@@ -9,13 +9,18 @@ const GET_BID_URI = BASE_URI + '/api/orders/bid';
 const GET_ASK_URI = BASE_URI + '/api/orders/ask';
 const MY_FILLS_URI = BASE_URI + '/api/orders/myfills';
 const CANCEL_URI = BASE_URI + '/api/orders/cancel';
+const HITBTC_BASE_URI = process.env.HITBTC_BASE_URI;
+const HITBTC_ETHDAI_TICKER = HITBTC_BASE_URI + '/ticker/ethdai';
 
 const DEFAULT_AMOUNT = parseFloat(process.env.DEFAULT_AMOUNT) || 0.1;
 const EXPOSURE = process.env.EXPOSURE || 'low'; // low or high
+
 const DIFFERENCE_IN_PERCENTAGE =
   parseFloat(process.env.DIFFERENCE_IN_PERCENTAGE) || 0.01;
 const ORDER_SIDE = process.env.ORDER_SIDE || 'sell';
 
+const DIFFERENCE_BETWEEN_BID = process.env.DIFFERENCE_BETWEEN_BID;
+const DIFFERENCE_BETWEEN_ASK = process.env.DIFFERENCE_BETWEEN_ASK;
 let cycle;
 let myOrders = [];
 
@@ -82,23 +87,38 @@ const calculatePercentage = (inputVale, percentageNumber) => {
   return inputVale * (percentageNumber / 100);
 };
 
+const compareBid = (dydxBid, hitbtcBid) => {
+  if (hitbtcBid > dydxBid) return dydxBid + ((hitbtcBid - dydxBid) * DIFFERENCE_BETWEEN_BID);
+  if (hitbtcBid === dydxBid) return dydxBid;
+  if (hitbtcBid < dydxBid) return hitbtcBid;
+}
+
+const compareAsk = (dydxAsk, hitbtcAsk) => {
+  if (hitbtcAsk > dydxAsk) return hitbtcAsk;
+  if (hitbtcAsk === dydxAsk) return dydxAsk;
+  if (hitbtcAsk < dydxAsk) return hitbtcAsk + ((dydxAsk - hitbtcAsk) * DIFFERENCE_BETWEEN_ASK);
+}
+
 const calculatePrice = async (side = 'sell') => {
+  const hitbtc = await doGetRequest({ uri: HITBTC_ETHDAI_TICKER });
   if (side === 'buy') {
     const { bid } = await doGetRequest({ uri: GET_BID_URI });
+    const comparedBid = compareBid(bid, Number(hitbtc.bid));
     const percentage = Math.abs(
-      calculatePercentage(bid, DIFFERENCE_IN_PERCENTAGE)
+      calculatePercentage(comparedBid, DIFFERENCE_IN_PERCENTAGE)
     );
-    const price = EXPOSURE === 'high' ? bid + percentage : bid - percentage;
+    const price = EXPOSURE === 'high' ? comparedBid + percentage : comparedBid - percentage;
 
     console.log(`**** ${bid} ${side.toUpperCase()} PRICE ****`);
     return price;
   }
 
   const { ask } = await doGetRequest({ uri: GET_ASK_URI });
+  const comparedAsk = compareAsk(ask, Number(hitbtc.ask));
   const percentage = Math.abs(
-    calculatePercentage(ask, DIFFERENCE_IN_PERCENTAGE)
+    calculatePercentage(comparedAsk, DIFFERENCE_IN_PERCENTAGE)
   );
-  const price = EXPOSURE === 'high' ? ask - percentage : ask + percentage;
+  const price = EXPOSURE === 'high' ? comparedAsk - percentage : comparedAsk + percentage;
 
   console.log(`**** ${ask} ${side.toUpperCase()} PRICE ****`);
   return price;
