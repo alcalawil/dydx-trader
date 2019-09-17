@@ -69,7 +69,7 @@ const postOrder = async ({ side = 'sell', price }) => {
           uri: SELL_ORDER_URI,
           body: {
             price,
-            amount: 0.1
+            amount: DEFAULT_AMOUNT
           }
         });
 
