@@ -1,8 +1,8 @@
 const rp = require('request-promise');
 
 // Constants
-const SECONDS_INTERVAL = parseFloat(process.env.HEAD_SECONDS_INTERVAL); // Cycle interval in seconds
-const BASE_URI = process.env.BASE_URI;
+const SECONDS_INTERVAL = parseFloat(process.env.HEAD_SECONDS_INTERVAL) || 60; // Cycle interval in seconds
+const BASE_URI = process.env.BASE_URI || 'http://localhost:3000';
 const BUY_ORDER_URI = BASE_URI + '/api/orders/buy';
 const SELL_ORDER_URI = BASE_URI + '/api/orders/sell';
 const GET_BID_URI = BASE_URI + '/api/orders/bid';
@@ -10,9 +10,11 @@ const GET_ASK_URI = BASE_URI + '/api/orders/ask';
 const MY_FILLS_URI = BASE_URI + '/api/orders/myfills';
 const CANCEL_URI = BASE_URI + '/api/orders/cancel';
 
-const DEFAULT_AMOUNT = parseFloat(process.env.DEFAULT_AMOUNT);
+const DEFAULT_AMOUNT = parseFloat(process.env.DEFAULT_AMOUNT) || 0.1;
 const EXPOSURE = process.env.EXPOSURE || 'low'; // low or high
-const DIFFERENCE_IN_PERCENTAGE = parseFloat(process.env.DIFFERENCE_IN_PERCENTAGE);
+const DIFFERENCE_IN_PERCENTAGE =
+  parseFloat(process.env.DIFFERENCE_IN_PERCENTAGE) || 0.01;
+const ORDER_SIDE = process.env.ORDER_SIDE || 'sell';
 
 let cycle;
 let myOrders = [];
@@ -20,6 +22,7 @@ let myOrders = [];
 const stopCycle = () => clearInterval(cycle);
 
 const startCycle = () => {
+  tradingCycle();
   cycle = setInterval(tradingCycle, SECONDS_INTERVAL * 1000);
 };
 
@@ -56,19 +59,19 @@ const postOrder = async ({ side = 'sell', price }) => {
   const response =
     side === 'buy'
       ? await doPostRequest({
-        uri: BUY_ORDER_URI,
-        body: {
-          price,
-          amount: DEFAULT_AMOUNT
-        }
-      })
+          uri: BUY_ORDER_URI,
+          body: {
+            price,
+            amount: DEFAULT_AMOUNT
+          }
+        })
       : await doPostRequest({
-        uri: SELL_ORDER_URI,
-        body: {
-          price,
-          amount: 0.1
-        }
-      });
+          uri: SELL_ORDER_URI,
+          body: {
+            price,
+            amount: 0.1
+          }
+        });
 
   if (!response) return null;
 
@@ -87,6 +90,7 @@ const calculatePrice = async (side = 'sell') => {
     );
     const price = EXPOSURE === 'high' ? bid + percentage : bid - percentage;
 
+    console.log(`**** ${bid} ${side.toUpperCase()} PRICE ****`);
     return price;
   }
 
@@ -96,6 +100,7 @@ const calculatePrice = async (side = 'sell') => {
   );
   const price = EXPOSURE === 'high' ? ask - percentage : ask + percentage;
 
+  console.log(`**** ${ask} ${side.toUpperCase()} PRICE ****`);
   return price;
 };
 
@@ -111,9 +116,6 @@ const isFillOrPartiallyFill = async orderId => {
 };
 
 const tradingCycle = async () => {
-  const ORDER_SIDE = 'buy';
-  const price = await calculatePrice(ORDER_SIDE);
-
   console.log('My orders', myOrders.map((order, OrderId) => order.id));
 
   if (myOrders.length > 0) {
@@ -144,8 +146,11 @@ const tradingCycle = async () => {
     );
   }
 
-  // no tengo orden
+  // No orders case
+
+  const price = await calculatePrice(ORDER_SIDE);
   const order = await postOrder({ side: ORDER_SIDE, price });
+  
   if (!order) {
     console.log('Error posting order...');
     return;
@@ -153,5 +158,13 @@ const tradingCycle = async () => {
   myOrders.push(order);
   console.log(`Posted ${ORDER_SIDE} order at ${price} dai. Id: `, order.id);
 };
+
+console.log(`[${new Date().toISOString()}] - Starting program...`);
+console.log(` 
+  *** Orders side: ${ORDER_SIDE}
+  *** Exposure (risk): ${EXPOSURE}
+  *** Bid/Ask distance: ${DIFFERENCE_IN_PERCENTAGE}% 
+  *** Orders Amount: ${DEFAULT_AMOUNT}
+`);
 
 startCycle();
