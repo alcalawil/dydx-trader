@@ -1,5 +1,10 @@
 const rp = require('request-promise');
 
+// check for env-file
+if (process.env.LOADED !== 'TRUE') {
+  console.log('####### No .env file provided ########');
+  process.kill();
+}
 // Constants
 const SECONDS_INTERVAL = parseFloat(process.env.HEAD_SECONDS_INTERVAL) || 60; // Cycle interval in seconds
 const BASE_URI = process.env.BASE_URI || 'http://localhost:3000';
@@ -88,39 +93,46 @@ const calculatePercentage = (inputVale, percentageNumber) => {
 };
 
 const compareBid = (dydxBid, hitbtcBid) => {
-  if (hitbtcBid > dydxBid) return dydxBid + ((hitbtcBid - dydxBid) * DIFFERENCE_BETWEEN_BID);
+  if (hitbtcBid > dydxBid) return dydxBid + (hitbtcBid - dydxBid) * DIFFERENCE_BETWEEN_BID;
   if (hitbtcBid === dydxBid) return dydxBid;
   if (hitbtcBid < dydxBid) return hitbtcBid;
-}
+};
 
 const compareAsk = (dydxAsk, hitbtcAsk) => {
   if (hitbtcAsk > dydxAsk) return hitbtcAsk;
   if (hitbtcAsk === dydxAsk) return dydxAsk;
-  if (hitbtcAsk < dydxAsk) return hitbtcAsk + ((dydxAsk - hitbtcAsk) * DIFFERENCE_BETWEEN_ASK);
-}
+  if (hitbtcAsk < dydxAsk) return hitbtcAsk + (dydxAsk - hitbtcAsk) * DIFFERENCE_BETWEEN_ASK;
+};
 
 const calculatePrice = async (side = 'sell') => {
   const hitbtc = await doGetRequest({ uri: HITBTC_ETHDAI_TICKER });
-  if (side === 'buy') {
-    const { bid } = await doGetRequest({ uri: GET_BID_URI });
-    const comparedBid = compareBid(bid, Number(hitbtc.bid));
-    const percentage = Math.abs(
-      calculatePercentage(comparedBid, DIFFERENCE_IN_PERCENTAGE)
-    );
-    const price = EXPOSURE === 'high' ? comparedBid + percentage : comparedBid - percentage;
 
-    console.log(`**** ${bid} ${side.toUpperCase()} PRICE ****`);
+  if (side === 'buy') {
+    const { bid: dydxBid } = await doGetRequest({ uri: GET_BID_URI });
+    const bid = compareBid(dydxBid, Number(hitbtc.bid));
+    const percentage = Math.abs(
+      calculatePercentage(bid, DIFFERENCE_IN_PERCENTAGE)
+    );
+    console.log(`---- dYdX bid: ${dydxBid} ----`);
+    console.log(`---- HitBTC bid: ${hitbtc.bid} ----`);
+    console.log(`**** Calculated BID: ${bid} ****`);
+
+    const price = EXPOSURE === 'high' ? bid + percentage : bid - percentage;
+
     return price;
   }
 
-  const { ask } = await doGetRequest({ uri: GET_ASK_URI });
-  const comparedAsk = compareAsk(ask, Number(hitbtc.ask));
+  const { ask: dydxAsk } = await doGetRequest({ uri: GET_ASK_URI });
+  const ask = compareAsk(dydxAsk, Number(hitbtc.ask));
   const percentage = Math.abs(
-    calculatePercentage(comparedAsk, DIFFERENCE_IN_PERCENTAGE)
+    calculatePercentage(ask, DIFFERENCE_IN_PERCENTAGE)
   );
-  const price = EXPOSURE === 'high' ? comparedAsk - percentage : comparedAsk + percentage;
+  console.log(`---- dYdX ask: ${dydxAsk} ----`);
+  console.log(`---- HitBTC ask: ${hitbtc.ask} ----`);
+  console.log(`**** Calculated ASK: ${ask} ****`);
 
-  console.log(`**** ${ask} ${side.toUpperCase()} PRICE ****`);
+  const price = EXPOSURE === 'high' ? ask - percentage : ask + percentage;
+
   return price;
 };
 
@@ -148,6 +160,7 @@ const tradingCycle = async () => {
         if (filled) {
           // stop return
           console.log('Filleada baby');
+          myOrders = myOrders.filter(myOrder => myOrder.id !== order.id);
           return;
         }
 
@@ -170,13 +183,14 @@ const tradingCycle = async () => {
 
   const price = await calculatePrice(ORDER_SIDE);
   const order = await postOrder({ side: ORDER_SIDE, price });
-  
+
   if (!order) {
     console.log('Error posting order...');
     return;
   }
   myOrders.push(order);
-  console.log(`Posted ${ORDER_SIDE} order at ${price} dai. Id: `, order.id);
+  console.log(`>>> Posted ${ORDER_SIDE} order at ${price} dai. Id: `, order.id);
+  console.log('\n===============================================================\n');
 };
 
 console.log(`[${new Date().toISOString()}] - Starting program...`);
@@ -185,6 +199,7 @@ console.log(`
   *** Exposure (risk): ${EXPOSURE}
   *** Bid/Ask distance: ${DIFFERENCE_IN_PERCENTAGE}% 
   *** Orders Amount: ${DEFAULT_AMOUNT}
+  --------------------------------------------------
 `);
 
 startCycle();
