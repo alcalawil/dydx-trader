@@ -9,8 +9,8 @@ import {
 } from '@dydxprotocol/solo';
 import _ from 'lodash';
 
-import { ISimpleOrder, IResponseOrder, MarketSide, IOrderbook } from 'src/entities/types';
-import { calculatePrice, createPriceRange, convertToDexOrder } from 'src/shared/utils';
+import { ISimpleOrder, IResponseOrder, MarketSide, IOrderbook } from '../entities/types';
+import { calculatePrice, createPriceRange, convertToDexOrder } from '../shared/utils';
 
 // Config
 const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
@@ -159,7 +159,7 @@ class OrdersManager {
     return responseOrder;
   }
 
-  public async getOrderbook({ limit = 100}): Promise<IOrderbook> {
+  public async getOrderbook({ limit = 100 }): Promise<IOrderbook> {
     // TODO: Order as an Orderbook --> buy and sell separated
     const apiOrders = await this.getOrders({ limit });
     const parsedOrders = apiOrders.map((apiOrder) => this.parseApiOrder(apiOrder));

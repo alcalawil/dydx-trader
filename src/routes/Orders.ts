@@ -3,7 +3,8 @@ import { Request, Response, Router } from 'express';
 import { BAD_REQUEST, CREATED, OK } from 'http-status-codes';
 import BigNumber from 'bignumber.js';
 import { solo } from '../modules/solo';
-import { ISimpleOrder } from 'src/entities/types';
+import { ISimpleOrder } from '../entities/types';
+// tslint:disable-next-line: no-var-requires
 import ordersManagerFactory from '../modules/ordersManager';
 import awsManagerFactory from '../modules/awsManager';
 

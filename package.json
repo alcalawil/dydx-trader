@@ -6,10 +6,9 @@
     "build": "node ./util/build.js",
     "lint": "tslint --project \"tsconfig.json\"",
     "start-prod": "cross-env ENV_FILE=production node -r ./env -r module-alias/register ./dist/start.js",
-    "start-docker": "ts-node -r tsconfig-paths/register ./src/start.ts",
+    "start-docker": "node -r module-alias/register ./dist/start.js",
     "start": "nodemon --config \"./util/nodemon.json\"",
-    "test": "nodemon --config \"./util/nodemon.test.json\"",
-    "head-orders": "node -r dotenv/config ./scripts/headOrders/ordenesPunta.js dotenv_config_path=./scripts/scripts.env"
+    "test": "nodemon --config \"./util/nodemon.test.json\""
   },
   "_moduleAliases": {
     "@entities": "dist/entities",

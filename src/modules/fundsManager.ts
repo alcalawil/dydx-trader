@@ -1,5 +1,5 @@
 import { Solo, BigNumber } from '@dydxprotocol/solo';
-import { IBalances } from 'src/entities/types';
+import { IBalances } from '../entities/types';
 
 const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
 

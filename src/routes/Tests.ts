@@ -2,7 +2,7 @@ import { logger } from '@shared';
 import { Request, Response, Router } from 'express';
 import { BAD_REQUEST, CREATED, OK } from 'http-status-codes';
 import { ICexOrder, IDexOrder } from '@entities';
-import { convertToCexOrder, convertToDexOrder } from 'src/shared/utils';
+import { convertToCexOrder, convertToDexOrder } from '../shared/utils';
 
 const router = Router();
 
