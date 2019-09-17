@@ -5,7 +5,7 @@ import logger from 'morgan';
 import BaseRouter from './routes';
 import cors from 'cors';
 import { IError } from './entities/types';
-import { authKey } from './shared/authKey';
+import { authKey } from './middlewares/authKey';
 
 const app = express();
 
