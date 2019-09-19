@@ -10,16 +10,31 @@ import {
 import _ from 'lodash';
 
 import { ISimpleOrder, IResponseOrder, MarketSide, IOrderbook } from '../entities/types';
-import { calculatePrice, createPriceRange, convertToDexOrder } from '../shared/utils';
+import { calculatePrice, createPriceRange, convertToDexOrder, decrypt } from '../shared/utils';
+import awsManagerFactory from './awsManager';
+const awsManager = awsManagerFactory();
 
 // Config
 const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
 const DEFAULT_EXPIRATION = parseInt(process.env.DEFAULT_EXPIRATION_IN_SECONDS || '610');
+const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
+const DATA_KEY = process.env.DATA_KEY || '';
 
 class OrdersManager {
   public solo: Solo;
   constructor(solo: Solo) {
     this.solo = solo;
+    this.loadAccount();
+  }
+
+  private loadAccount = () => {
+    awsManager.decrypt(DATA_KEY).then((res: any) => {
+      const privateKey = decrypt(res, PRIVATE_KEY);
+      this.solo.loadAccount({
+        address: DEFAULT_ADDRESS,
+        privateKey
+      });
+    });
   }
 
   private _createOrder({

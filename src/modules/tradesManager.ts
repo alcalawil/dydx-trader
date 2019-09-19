@@ -19,7 +19,7 @@ class TradesManager {
     account?: string;
     limit?: number;
     startingBefore?: Date;
-    pairs?: Array<string>
+    pairs?: string[]
   }) {
     const trades = await this.solo.api.getTrades({
       startingBefore,

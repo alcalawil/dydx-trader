@@ -25,7 +25,7 @@ class AwsManager {
           reject(err);
         } else {
           const result: any = data.Plaintext;
-          resolve(Buffer.from(result).toString());
+          resolve(Buffer.from(result).toString('base64'));
         }
       });
     });
@@ -36,9 +36,7 @@ class AwsManager {
       const key: any = process.env.KEY_ID;
       const params = {
         Plaintext: plainText,
-        KeyId: key // The identifier of the CMK to use for encryption.
-        // You can use the key ID or Amazon Resource Name (ARN) of the CMK,
-        // or the name or ARN of an alias that refers to the CMK.
+        KeyId: key
       };
 
       kms.encrypt(params, (err, data) => {
