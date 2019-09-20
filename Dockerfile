@@ -1,12 +1,38 @@
-FROM node:10
+# --- Installing stage
+FROM node:10 AS installer
 
-WORKDIR /app
+WORKDIR /usr/src/app
 
-COPY package*.json /app/
+COPY package*.json ./
+COPY package-lock.json ./
 
 RUN npm install
 
-COPY dist /app/dist
+# ---
+
+# Building stage
+FROM installer AS builder
+
+## Workdir is shared between the stage so let's reuse it as we neeed the packages
+WORKDIR /usr/src/app
+
+COPY ./src src
+COPY tsconfig.json .
+COPY ./util  /usr/src/app/util
+RUN npm run build
+
+# ---
+
+# Running code under slim image (production part mostly)
+FROM node:10
+
+## Clean new directory
+WORKDIR /app
+
+## We just need the build and package to execute the command
+COPY --from=builder /usr/src/app/dist /app/dist
+COPY --from=installer /usr/src/app/node_modules /app/node_modules
+COPY package*.json /app/
 
 EXPOSE 3000
 
