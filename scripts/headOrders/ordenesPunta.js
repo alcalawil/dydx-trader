@@ -42,7 +42,11 @@ const doPostRequest = async ({ uri, body = {} }) => {
     response = await rp.post({
       uri,
       body,
-      json: true
+      json: true,
+      headers: {
+        'User-Agent': 'Request-Promise',
+        'api-key': process.env.OPERATOR_API_KEY
+      }
     });
   } catch (error) {
     console.log(`[${new Date().toISOString()}]`, error.message);
@@ -56,7 +60,11 @@ const doGetRequest = async ({ uri }) => {
   try {
     response = await rp.get({
       uri,
-      json: true
+      json: true,
+      headers: {
+        'User-Agent': 'Request-Promise',
+        'api-key': process.env.OPERATOR_API_KEY
+      }
     });
   } catch (error) {
     console.log(`[${new Date().toISOString()}]`, error.message);
@@ -92,52 +100,72 @@ const calculatePercentage = (inputVale, percentageNumber) => {
   return inputVale * (percentageNumber / 100);
 };
 
-const compareBid = (dydxBid, hitbtcBid) => {
-  if (hitbtcBid > dydxBid) return dydxBid + (hitbtcBid - dydxBid) * DIFFERENCE_BETWEEN_BID;
-  if (hitbtcBid === dydxBid) return dydxBid;
-  if (hitbtcBid < dydxBid) return hitbtcBid;
+const getMidPrice = async () => {
+  const { ask } = await doGetRequest({ uri: GET_ASK_URI });
+  const { bid } = await doGetRequest({ uri: GET_BID_URI });
+
+  if (!ask || !bid) {
+    return null;
+  }
+  const midPrice = (ask + bid) / 2;
+
+  return midPrice;
 };
 
-const compareAsk = (dydxAsk, hitbtcAsk) => {
-  if (hitbtcAsk > dydxAsk) return hitbtcAsk;
-  if (hitbtcAsk === dydxAsk) return dydxAsk;
-  if (hitbtcAsk < dydxAsk) return hitbtcAsk + (dydxAsk - hitbtcAsk) * DIFFERENCE_BETWEEN_ASK;
+const compareBid = (dydxBid, hitbtcBid, midPrice) => {
+  if (hitbtcBid > dydxBid) {
+    if (midPrice < hitbtcBid) { // midPrice away of the bid
+      return dydxBid + getPriceDiff(midPrice, dydxBid) * DIFFERENCE_BETWEEN_BID;
+    }
+    return dydxBid + getPriceDiff(hitbtcBid, dydxBid) * DIFFERENCE_BETWEEN_BID;
+  }
+
+  return hitbtcBid;
+};
+
+const compareAsk = (dydxAsk, hitbtcAsk, midPrice) => {
+  if (hitbtcAsk < dydxAsk) { // hitbtc is ask
+    if (midPrice > hitbtcAsk) { // midPrice away of the ask
+      return dydxAsk - getPriceDiff(midPrice, dydxAsk) * DIFFERENCE_BETWEEN_ASK;
+    }
+    return dydxAsk - getPriceDiff(hitbtcAsk, dydxAsk) * DIFFERENCE_BETWEEN_ASK;
+  }
+  
+  return hitbtcAsk;
+};
+
+const getPriceDiff = (price1, price2) => {
+  return Math.abs(price1 - price2);
 };
 
 const calculatePrice = async (side = 'sell') => {
   const hitbtc = await doGetRequest({ uri: HITBTC_ETHDAI_TICKER });
+  const midPrice = await getMidPrice();
+  console.log('---------------------------------- Mid Price = ', midPrice);
 
   if (side === 'buy') {
     const { bid: dydxBid } = await doGetRequest({ uri: GET_BID_URI });
-    const bid = compareBid(dydxBid, Number(hitbtc.bid));
-    const percentage = Math.abs(
-      calculatePercentage(bid, DIFFERENCE_IN_PERCENTAGE)
-    );
+    const price = compareBid(dydxBid, Number(hitbtc.bid), midPrice);
+
     console.log(`---- dYdX bid: ${dydxBid} ----`);
     console.log(`---- HitBTC bid: ${hitbtc.bid} ----`);
-    console.log(`**** Calculated BID: ${bid} ****`);
-
-    const price = EXPOSURE === 'high' ? bid + percentage : bid - percentage;
+    console.log(`**** Calculated Price: ${price} ****`);
 
     return price;
   }
 
   const { ask: dydxAsk } = await doGetRequest({ uri: GET_ASK_URI });
-  const ask = compareAsk(dydxAsk, Number(hitbtc.ask));
-  const percentage = Math.abs(
-    calculatePercentage(ask, DIFFERENCE_IN_PERCENTAGE)
-  );
+  const price = compareAsk(dydxAsk, Number(hitbtc.ask), midPrice);
+
   console.log(`---- dYdX ask: ${dydxAsk} ----`);
   console.log(`---- HitBTC ask: ${hitbtc.ask} ----`);
-  console.log(`**** Calculated ASK: ${ask} ****`);
-
-  const price = EXPOSURE === 'high' ? ask - percentage : ask + percentage;
+  console.log(`**** Calculated Price: ${price} ****`);
 
   return price;
 };
 
 const isFillOrPartiallyFill = async orderId => {
-  const fills = await doGetRequest({ uri: MY_FILLS_URI });
+  const { fills } = await doGetRequest({ uri: MY_FILLS_URI });
   const orderFilled = fills.find(fill => fill.orderId === orderId);
 
   if (orderFilled) {
@@ -146,6 +174,9 @@ const isFillOrPartiallyFill = async orderId => {
 
   return false;
 };
+
+// =============================================================================================
+// =============================================================================================
 
 const tradingCycle = async () => {
   console.log('My orders', myOrders.map((order, OrderId) => order.id));
@@ -192,6 +223,9 @@ const tradingCycle = async () => {
   console.log(`>>> Posted ${ORDER_SIDE} order at ${price} dai. Id: `, order.id);
   console.log('\n===============================================================\n');
 };
+
+
+// main 
 
 console.log(`[${new Date().toISOString()}] - Starting program...`);
 console.log(` 
