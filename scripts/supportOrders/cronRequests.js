@@ -29,7 +29,11 @@ const doRequest = async ({ uri, body = {} }) => {
     response = await rp.post({
       uri,
       body,
-      json: true
+      json: true,
+      headers: {
+        'User-Agent': 'Request-Promise',
+        'api-key': process.env.OPERATOR_API_KEY
+      }
     })
   } catch (error) {
     console.log(`[${new Date().toISOString()}]`, error.message);
