@@ -67,4 +67,4 @@ class AwsManager {
   }
 }
 
-export default () => new AwsManager();
+export default new AwsManager();

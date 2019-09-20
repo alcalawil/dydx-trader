@@ -6,11 +6,10 @@ import { solo } from '../modules/solo';
 import { ISimpleOrder } from '../entities/types';
 // tslint:disable-next-line: no-var-requires
 import ordersManagerFactory from '../modules/ordersManager';
-import awsManagerFactory from '../modules/awsManager';
+import awsManager from '../modules/awsManager';
 
 const ordersManager = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
 const router = Router();
-const awsManager = awsManagerFactory();
 
 /******************************************************************************
  *                      Get order by id - "GET /api/orders/order"

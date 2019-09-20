@@ -4,11 +4,10 @@ import { BAD_REQUEST, CREATED, OK } from 'http-status-codes';
 import { solo } from '../modules/solo';
 
 import tradesManagerFactory from '../modules/tradesManager';
-import awsManagerFactory from '../modules/awsManager';
+import awsManager from '../modules/awsManager';
 
 const tradesManager = tradesManagerFactory(solo);
 const router = Router();
-const awsManager = awsManagerFactory();
 
 /******************************************************************************
  *                       Get Trades - "GET /api/trades/mytrades"

@@ -9,15 +9,26 @@ import {
 } from '@dydxprotocol/solo';
 import _ from 'lodash';
 
-import { ISimpleOrder, IResponseOrder, MarketSide, IOrderbook } from '../entities/types';
-import { calculatePrice, createPriceRange, convertToDexOrder, decrypt } from '../shared/utils';
-import awsManagerFactory from './awsManager';
-const awsManager = awsManagerFactory();
+import {
+  ISimpleOrder,
+  IResponseOrder,
+  MarketSide,
+  IOrderbook
+} from '../entities/types';
+import {
+  calculatePrice,
+  createPriceRange,
+  convertToDexOrder,
+  decrypt
+} from '../shared/utils';
+import awsManager from './awsManager';
 
 // Config
 const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
-const DEFAULT_EXPIRATION = parseInt(process.env.DEFAULT_EXPIRATION_IN_SECONDS || '610');
-const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
+const DEFAULT_EXPIRATION = parseInt(
+  process.env.DEFAULT_EXPIRATION_IN_SECONDS || '610'
+);
+const ENCRYPTED_PRIVATE_KEY = process.env.ENCRYPTED_PRIVATE_KEY || '';
 const DATA_KEY = process.env.DATA_KEY || '';
 
 class OrdersManager {
@@ -27,13 +38,17 @@ class OrdersManager {
     this.loadAccount();
   }
 
-  private loadAccount = () => {
-    awsManager.decrypt(DATA_KEY).then((res: any) => {
-      const privateKey = decrypt(res, PRIVATE_KEY);
-      this.solo.loadAccount({
-        address: DEFAULT_ADDRESS,
-        privateKey
-      });
+  private async loadAccount() {
+    let privateKey = process.env.PRIVATE_KEY || '';
+
+    if (ENCRYPTED_PRIVATE_KEY) {
+      const decryptedDataKey: any = await awsManager.decrypt(DATA_KEY);
+      privateKey = decrypt(decryptedDataKey, ENCRYPTED_PRIVATE_KEY);
+    }
+
+    this.solo.loadAccount({
+      address: DEFAULT_ADDRESS,
+      privateKey
     });
   }
 
@@ -150,7 +165,7 @@ class OrdersManager {
   }: {
     account?: string;
     limit?: number;
-    pairs?: string[]
+    pairs?: string[];
   }) {
     const { orders } = await this.solo.api.getOrders({
       limit,
@@ -163,7 +178,9 @@ class OrdersManager {
 
   public async getOwnOrders(account = DEFAULT_ADDRESS) {
     const apiOrders = await this.getOrders({ account });
-    const parsedOrders = apiOrders.map((apiOrder) => this.parseApiOrder(apiOrder));
+    const parsedOrders = apiOrders.map((apiOrder) =>
+      this.parseApiOrder(apiOrder)
+    );
     return parsedOrders;
   }
 
@@ -177,11 +194,19 @@ class OrdersManager {
   public async getOrderbook({ limit = 100 }): Promise<IOrderbook> {
     // TODO: Order as an Orderbook --> buy and sell separated
     const apiOrders = await this.getOrders({ limit });
-    const parsedOrders = apiOrders.map((apiOrder) => this.parseApiOrder(apiOrder));
-    const sellOrders = _.orderBy(parsedOrders.filter((order) =>
-      order.side === 'SELL'), ['price'], ['asc']);
-    const buyOrders = _.orderBy(parsedOrders.filter((order) =>
-      order.side === 'BUY'), ['price'], ['desc']);
+    const parsedOrders = apiOrders.map((apiOrder) =>
+      this.parseApiOrder(apiOrder)
+    );
+    const sellOrders = _.orderBy(
+      parsedOrders.filter((order) => order.side === 'SELL'),
+      ['price'],
+      ['asc']
+    );
+    const buyOrders = _.orderBy(
+      parsedOrders.filter((order) => order.side === 'BUY'),
+      ['price'],
+      ['desc']
+    );
 
     return {
       sellOrders,
@@ -211,10 +236,6 @@ class OrdersManager {
     return buyPrice;
   }
 
-  private sortOrderByAscPrice(a: IResponseOrder, b: IResponseOrder) {
-    return Number(a.price) - Number(b.price);
-  }
-
   private async cancelAllOrder(account: string) {
     const orders = await this.getOwnOrders(account);
     const ordersCanceled = Array<IResponseOrder>();
@@ -234,51 +255,61 @@ class OrdersManager {
     const bidPrice = await this.getBid();
     const prices = createPriceRange(bidPrice, adjust, 'buy');
 
-    const responseOrders = await Promise.all(prices.map(async (price) => {
+    const responseOrders = await Promise.all(
+      prices.map(async (price) => {
+        const { makerAmount, takerAmount } = convertToDexOrder({
+          price,
+          amount,
+          side: MarketSide.buy
+        });
 
-      const { makerAmount, takerAmount } = convertToDexOrder({
-        price,
-        amount,
-        side: MarketSide.buy
-      });
+        const order = await this.buy(makerAmount, takerAmount);
 
-      const order = await this.buy(makerAmount, takerAmount);
-
-      return order;
-    }));
+        return order;
+      })
+    );
     // TODO: Return price reference
     return responseOrders;
   }
 
-  public async sellMany(amount: number, adjust: number = 1): Promise<IResponseOrder[]> {
+  public async sellMany(
+    amount: number,
+    adjust: number = 1
+  ): Promise<IResponseOrder[]> {
     const askPrice = await this.getAsk();
     const prices = createPriceRange(askPrice, adjust, 'sell');
 
-    const responseOrders = await Promise.all(prices.map(async (price) => {
+    const responseOrders = await Promise.all(
+      prices.map(async (price) => {
+        const { makerAmount, takerAmount } = convertToDexOrder({
+          price,
+          amount,
+          side: MarketSide.sell
+        });
 
-      const { makerAmount, takerAmount } = convertToDexOrder({
-        price,
-        amount,
-        side: MarketSide.sell
-      });
+        const order = await this.sell(makerAmount, takerAmount);
 
-      const order = await this.sell(makerAmount, takerAmount);
-
-      return order;
-    }));
+        return order;
+      })
+    );
 
     return responseOrders;
   }
 
-  private calcAmount(price: number, amount: number, percentage: number, type: string) {
+  private calcAmount(
+    price: number,
+    amount: number,
+    percentage: number,
+    type: string
+  ) {
     let result = 0;
     let newPrice = 0;
 
     if (type.includes('buy')) {
-      newPrice = price - (price * (percentage / 100));
+      newPrice = price - price * (percentage / 100);
       result = amount / newPrice;
     } else if (type.includes('sell')) {
-      newPrice = price + (price * (percentage / 100));
+      newPrice = price + price * (percentage / 100);
       result = newPrice * amount;
     }
 
@@ -286,7 +317,15 @@ class OrdersManager {
   }
 
   private parseApiOrder(orderApi: ApiOrder): IResponseOrder {
-    const { id, pair, createdAt, expiresAt, makerAmount, takerAmount, status } = orderApi;
+    const {
+      id,
+      pair,
+      createdAt,
+      expiresAt,
+      makerAmount,
+      takerAmount,
+      status
+    } = orderApi;
 
     const makerMarket = pair.makerCurrency.soloMarket;
     const price = calculatePrice({
