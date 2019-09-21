@@ -3,7 +3,7 @@ import { Request, Response, Router } from 'express';
 import { BAD_REQUEST, CREATED, OK } from 'http-status-codes';
 import BigNumber from 'bignumber.js';
 import { solo } from '../modules/solo';
-import { ISimpleOrder } from '../entities/types';
+import { ISimpleOrder, IResponseFill } from '../entities/types';
 // tslint:disable-next-line: no-var-requires
 import ordersManagerFactory from '../modules/ordersManager';
 import awsManager from '../modules/awsManager';
@@ -410,5 +410,67 @@ router.get('/myfills', async (req: Request, res: Response) => {
     });
   }
 });
+
+
+/******************************************************************************
+ *                      Get Csv of my fills - "GET /api/orders/myfillsCsv"
+ ******************************************************************************/
+
+
+router.get('/myfillsCsv', async (req: Request, res: Response) => {
+  try {
+    const myFills = await ordersManager.getMyFills();
+    const csvHeader = [
+      'transactionHash',
+      'orderId',
+      'pair',
+      'side',
+      'createdAt',
+      'updatedAt',
+      'price',
+      'fillAmount',
+      'amount',
+      'fillStatus',
+      'orderStatus'
+    ];
+    const msg = {
+      Message: myFills,
+      MessageAttributes: {
+        operation: {
+          DataType: 'String',
+          StringValue: 'myFillsCsv'
+        }
+      }
+    };
+
+    awsManager.publish(msg);
+    res.setHeader('Content-Type', 'text/csv');
+    res.attachment(`myFills-${new Date().toISOString()}.csv`);
+    res.status(OK);
+    csvHeader.forEach((item) => {
+      res.write(item.toString().replace(/\"/g, '""') + ',');
+    });
+    res.write('\r\n');
+    myFills.forEach((fill: IResponseFill) => {
+      res.write('"' + fill.transactionHash.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + fill.orderId.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + fill.pair.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + fill.side.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + fill.createdAt.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + fill.updatedAt.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + fill.price.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + fill.fillAmount.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + fill.amount.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + fill.fillStatus.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + fill.orderStatus.toString().replace(/\"/g, '""') + '"' + '\r\n');
+    });
+    res.end();
+  } catch (err) {
+    logger.error(err.message, JSON.stringify(err));
+    return res.status(BAD_REQUEST).json({
+      error: err.message
+    });
+  }
+})
 
 export default router;

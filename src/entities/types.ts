@@ -49,3 +49,27 @@ export interface IOrderbook {
   sellOrders: IResponseOrder[];
   buyOrders: IResponseOrder[];
 }
+
+export interface IResponseTrade {
+  transactionHash: string;
+  pair: string;
+  side: string;
+  createdAt: string;
+  price: number;
+  amount: number;
+  status: string;
+}
+
+export interface IResponseFill {
+  transactionHash: string;
+  orderId: string;
+  pair: string;
+  side: string;
+  createdAt: string;
+  updatedAt: string;
+  price: number;
+  amount: number;
+  fillAmount: number;
+  fillStatus: string;
+  orderStatus: string;
+}

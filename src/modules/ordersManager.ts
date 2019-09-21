@@ -5,7 +5,8 @@ import {
   Solo,
   SignedLimitOrder,
   LimitOrder,
-  ApiOrder
+  ApiOrder,
+  ApiFill
 } from '@dydxprotocol/solo';
 import _ from 'lodash';
 
@@ -13,7 +14,8 @@ import {
   ISimpleOrder,
   IResponseOrder,
   MarketSide,
-  IOrderbook
+  IOrderbook,
+  IResponseFill
 } from '../entities/types';
 import {
   calculatePrice,
@@ -220,8 +222,12 @@ class OrdersManager {
       startingBefore: new Date(),
       limit: 50
     });
+    const fillsList: any = fills;
+    const parsedFills = fillsList.map((fill: ApiFill) => {
+      return this.parseApiFill(fill);
+    });
 
-    return fills;
+    return parsedFills;
   }
 
   public async getAsk() {
@@ -355,6 +361,53 @@ class OrdersManager {
       price,
       amount: parseFloat(amount),
       status
+    };
+
+    return responseOrder;
+  }
+
+  private parseApiFill(fillApi: ApiFill): IResponseFill {
+    const {
+      orderId,
+      transactionHash,
+      order,
+      createdAt,
+      updatedAt,
+      fillAmount,
+      status
+    } = fillApi;
+    const { makerAmount, takerAmount, pair } = order;
+    const makerMarket = pair.makerCurrency.soloMarket;
+    const price = calculatePrice({
+      makerMarket: pair.makerCurrency.soloMarket,
+      takerMarket: pair.takerCurrency.soloMarket,
+      makerAmount,
+      takerAmount
+    });
+
+    let side: string;
+    let amount: string;
+
+    if (makerMarket === MarketId.WETH.toNumber()) {
+      side = 'SELL'; // Si estoy ofreciendo WETH, significa que estoy vendiendo
+      amount = this.solo.web3.utils.fromWei(makerAmount, 'ether');
+    } else {
+      side = 'BUY';
+      amount = this.solo.web3.utils.fromWei(takerAmount, 'ether');
+    }
+
+    const responseOrder: IResponseFill = {
+      transactionHash,
+      orderId,
+      pair: 'ETH-DAI',
+      side,
+      createdAt,
+      updatedAt,
+      price,
+      fillAmount: parseFloat(this.solo.web3.utils.fromWei(fillAmount, 'ether')),
+      amount: parseFloat(amount),
+      fillStatus: status,
+      orderStatus: order.status
     };
 
     return responseOrder;

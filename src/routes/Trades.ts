@@ -5,6 +5,7 @@ import { solo } from '../modules/solo';
 
 import tradesManagerFactory from '../modules/tradesManager';
 import awsManager from '../modules/awsManager';
+import { IResponseTrade } from '@entities';
 
 const tradesManager = tradesManagerFactory(solo);
 const router = Router();
@@ -19,15 +20,59 @@ router.get('/mytrades', async (req: Request, res: Response) => {
     const msg = {
       Message: trades,
       MessageAttributes: {
-        'operation': {
+        operation: {
           DataType: 'String',
           StringValue: 'myTrades'
         }
       }
     };
-
     awsManager.publish(msg);
-    return res.status(OK).json(trades);
+    return res.status(OK).json({ trades });
+  } catch (err) {
+    logger.error(err.message, err);
+    return res.status(BAD_REQUEST).json({
+      error: err.message
+    });
+  }
+});
+
+
+/******************************************************************************
+ *                      Get CSV of my trades - "GET /api/trade/mytradesCsv"
+ ******************************************************************************/
+
+
+router.get('/mytradesCsv', async (req: Request, res: Response) => {
+  try {
+    const trades = await tradesManager.getOwnTrades();
+    const csvHeader = ['transactionHash', 'pair', 'side', 'createdAt', 'price', 'amount', 'status'];
+    const msg = {
+      Message: trades,
+      MessageAttributes: {
+        operation: {
+          DataType: 'String',
+          StringValue: 'myTradesCsv'
+        }
+      }
+    };
+    awsManager.publish(msg);
+    res.setHeader('Content-Type', 'text/csv');
+    res.attachment(`myTrades-${new Date().toISOString()}.csv`);
+    res.status(OK);
+    csvHeader.forEach((item) => {
+      res.write(item.toString().replace(/\"/g, '""') + ',');
+    });
+    res.write('\r\n');
+    trades.forEach((trade: IResponseTrade) => {
+      res.write('"' + trade.transactionHash.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + trade.pair.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + trade.side.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + trade.createdAt.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + trade.price.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + trade.amount.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + trade.status.toString().replace(/\"/g, '""') + '"' + '\r\n');
+    });
+    res.end();
   } catch (err) {
     logger.error(err.message, err);
     return res.status(BAD_REQUEST).json({
