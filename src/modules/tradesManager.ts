@@ -38,8 +38,8 @@ class TradesManager {
     return trades;
   }
 
-  public async getOwnTrades(account = DEFAULT_ADDRESS) {
-    const trades: any = await this.getTrades({ account });
+  public async getOwnTrades(limit: number, startingBefore: Date) {
+    const trades: any = await this.getTrades({ account: DEFAULT_ADDRESS, limit, startingBefore });
     const parsedTrades: any = trades.map((trade: any) => {
       return this.parseApiTrade(trade);
     });

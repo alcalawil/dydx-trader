@@ -216,11 +216,11 @@ class OrdersManager {
     };
   }
 
-  public async getMyFills(limit = 50) {
+  public async getMyFills(limit: number, startingBefore: Date) {
     const { fills } = await this.solo.api.getFills({
       makerAccountOwner: DEFAULT_ADDRESS,
-      startingBefore: new Date(),
-      limit: 50
+      startingBefore,
+      limit
     });
     const fillsList: any = fills;
     const parsedFills = fillsList.map((fill: ApiFill) => {

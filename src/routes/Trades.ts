@@ -6,6 +6,7 @@ import { solo } from '../modules/solo';
 import tradesManagerFactory from '../modules/tradesManager';
 import awsManager from '../modules/awsManager';
 import { IResponseTrade } from '@entities';
+import { isDate } from 'util';
 
 const tradesManager = tradesManagerFactory(solo);
 const router = Router();
@@ -16,7 +17,18 @@ const router = Router();
 
 router.get('/mytrades', async (req: Request, res: Response) => {
   try {
-    const trades = await tradesManager.getOwnTrades();
+    let {
+      limit = 100,
+      startingBefore = new Date()
+    }:
+      {
+        limit: number;
+        startingBefore: Date;
+      } = req.query;
+    if (!isDate(startingBefore)) {
+      startingBefore = new Date(startingBefore);
+    }
+    const trades = await tradesManager.getOwnTrades(limit, startingBefore);
     const msg = {
       Message: trades,
       MessageAttributes: {
@@ -44,7 +56,18 @@ router.get('/mytrades', async (req: Request, res: Response) => {
 
 router.get('/mytradesCsv', async (req: Request, res: Response) => {
   try {
-    const trades = await tradesManager.getOwnTrades();
+    let {
+      limit = 100,
+      startingBefore = new Date()
+    }:
+      {
+        limit: number;
+        startingBefore: Date;
+      } = req.query;
+    if (!isDate(startingBefore)) {
+      startingBefore = new Date(startingBefore);
+    }
+    const trades = await tradesManager.getOwnTrades(limit, startingBefore);
     const csvHeader = ['transactionHash', 'pair', 'side', 'createdAt', 'price', 'amount', 'status'];
     const msg = {
       Message: trades,

@@ -7,6 +7,7 @@ import { ISimpleOrder, IResponseFill } from '../entities/types';
 // tslint:disable-next-line: no-var-requires
 import ordersManagerFactory from '../modules/ordersManager';
 import awsManager from '../modules/awsManager';
+import { isDate } from 'util';
 
 const ordersManager = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
 const router = Router();
@@ -388,7 +389,18 @@ router.post('/sell-many', async (req: Request, res: Response) => {
 
 router.get('/myfills', async (req: Request, res: Response) => {
   try {
-    const myFills = await ordersManager.getMyFills();
+    let {
+      limit = 100,
+      startingBefore = new Date()
+    }:
+      {
+        limit: number;
+        startingBefore: Date;
+      } = req.query;
+    if (!isDate(startingBefore)) {
+      startingBefore = new Date(startingBefore);
+    }
+    const myFills = await ordersManager.getMyFills(limit, startingBefore);
     const msg = {
       Message: myFills,
       MessageAttributes: {
@@ -419,7 +431,18 @@ router.get('/myfills', async (req: Request, res: Response) => {
 
 router.get('/myfillsCsv', async (req: Request, res: Response) => {
   try {
-    const myFills = await ordersManager.getMyFills();
+    let {
+      limit = 100,
+      startingBefore = new Date()
+    }:
+      {
+        limit: number;
+        startingBefore: Date;
+      } = req.query;
+    if (!isDate(startingBefore)) {
+      startingBefore = new Date(startingBefore);
+    }
+    const myFills = await ordersManager.getMyFills(limit, startingBefore);
     const csvHeader = [
       'transactionHash',
       'orderId',
