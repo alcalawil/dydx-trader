@@ -57,7 +57,6 @@ class OrdersManager {
   private _createOrder({
     makerAmount,
     takerAmount,
-    expiration, // TODO: Delete unused param expiration - Make sure test it
     makerMarket,
     takerMarket
   }: ISimpleOrder): LimitOrder {
@@ -194,7 +193,6 @@ class OrdersManager {
   }
 
   public async getOrderbook({ limit = 100 }): Promise<IOrderbook> {
-    // TODO: Order as an Orderbook --> buy and sell separated
     const apiOrders = await this.getOrders({ limit });
     const parsedOrders = apiOrders.map((apiOrder) =>
       this.parseApiOrder(apiOrder)

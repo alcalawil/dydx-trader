@@ -10,7 +10,7 @@
     "start": "nodemon --config \"./util/nodemon.json\"",
     "test": "nodemon --config \"./util/nodemon.test.json\"",
     "head-orders": "node -r dotenv/config ./scripts/headOrders/ordenesPunta.js dotenv_config_path=./scripts/scripts.env",
-    "support-orders": "node -r dotenv/config ./scripts/supportOrders/cronRequests.js dotenv_config_path=./scripts/scripts.env"
+    "support-orders": "node -r dotenv/config ./scripts/supportOrders/supportOrders.js dotenv_config_path=./scripts/scripts.env"
   },
   "_moduleAliases": {
     "@entities": "dist/entities",

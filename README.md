@@ -2,10 +2,19 @@
 
 This is a market maker bot made in typescript to increase liquidity and earn spreads profits in dydx exchange
 
-### Usage
+### Start market maker bot
 
 - `npm i`
 - `npm start`
+
+### Start support orders
+
+- `npm run support-orders`
+
+### Start head orders
+
+- `npm run head-orders`
+
 
 ### Docker
 
@@ -14,5 +23,4 @@ This is a market maker bot made in typescript to increase liquidity and earn spr
 
 ### TODO
 
- - Compile ts code in Dockerfile
  - Return bid/ask on a single endpoint
