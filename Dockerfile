@@ -4,7 +4,6 @@ FROM node:10 AS installer
 WORKDIR /usr/src/app
 
 COPY package*.json ./
-COPY package-lock.json ./
 
 RUN npm install
 
@@ -34,6 +33,6 @@ COPY --from=builder /usr/src/app/dist /app/dist
 COPY --from=installer /usr/src/app/node_modules /app/node_modules
 COPY package*.json /app/
 
-EXPOSE 3000
+USER node
 
-CMD [ "npm", "run", "start-docker" ]
+CMD [ "node", "-r", "module-alias/register", "./dist/start.js" ]
