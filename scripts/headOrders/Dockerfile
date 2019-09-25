@@ -4,6 +4,6 @@ WORKDIR /app
 
 RUN npm install request-promise request
 
-COPY ordenesPunta.js .
+COPY headOrders.js .
 
-CMD [ "node", "ordenesPunta.js" ]
+CMD [ "node", "headOrders.js" ]
