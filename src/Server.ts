@@ -22,16 +22,13 @@ app.use('/api', BaseRouter);
 app.use((req: Request, res: Response, next: NextFunction) => {
   const err: IError = new Error('Route not found');
   err.status = 404;
-  next(err);
-});
-
-app.use((error: IError, req: Request, res: Response) => {
-  res.status(error.status || 500);
+  res.status(err.status);
   res.json({
     error: {
-      message: error.message
+      message: err.message
     }
   });
 });
+
 
 export default app;
