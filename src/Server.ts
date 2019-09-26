@@ -20,7 +20,7 @@ app.use('/api', BaseRouter);
 
 // Errors handling
 app.use((req: Request, res: Response, next: NextFunction) => {
-  const err: IError = new Error('There was an error');
+  const err: IError = new Error('Route not found');
   err.status = 404;
   next(err);
 });

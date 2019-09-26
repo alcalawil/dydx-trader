@@ -25,13 +25,15 @@ RUN npm run build
 # Running code under slim image (production part mostly)
 FROM node:10
 
-## Clean new directory
+## Clean new directory  
 WORKDIR /app
 
 ## We just need the build and package to execute the command
 COPY --from=builder /usr/src/app/dist /app/dist
-COPY --from=installer /usr/src/app/node_modules /app/node_modules
+
 COPY package*.json /app/
+
+RUN npm install --production
 
 USER node
 
