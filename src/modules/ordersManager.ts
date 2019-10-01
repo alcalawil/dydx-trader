@@ -328,7 +328,9 @@ class OrdersManager {
       expiresAt,
       makerAmount,
       takerAmount,
-      status
+      status,
+      makerAmountRemaining,
+      takerAmountRemaining
     } = orderApi;
 
     const makerMarket = pair.makerCurrency.soloMarket;
@@ -340,14 +342,17 @@ class OrdersManager {
     });
 
     let side: string;
-    let amount: string;
+    let amount: number;
+    let amountRemaining: number;
 
     if (makerMarket === MarketId.WETH.toNumber()) {
       side = 'SELL'; // Si estoy ofreciendo WETH, significa que estoy vendiendo
-      amount = this.solo.web3.utils.fromWei(makerAmount, 'ether');
+      amount = parseFloat(this.solo.web3.utils.fromWei(makerAmount, 'ether'));
+      amountRemaining = parseFloat(this.solo.web3.utils.fromWei(makerAmountRemaining, 'ether'));
     } else {
       side = 'BUY';
-      amount = this.solo.web3.utils.fromWei(takerAmount, 'ether');
+      amount = parseFloat(this.solo.web3.utils.fromWei(takerAmount, 'ether'));
+      amountRemaining = parseFloat(this.solo.web3.utils.fromWei(takerAmountRemaining, 'ether'));
     }
 
     const responseOrder: IResponseOrder = {
@@ -357,8 +362,10 @@ class OrdersManager {
       createdAt,
       expiresAt,
       price,
-      amount: parseFloat(amount),
-      status
+      amount,
+      status,
+      amountFilled: (amount - amountRemaining),
+      amountRemaining
     };
 
     return responseOrder;

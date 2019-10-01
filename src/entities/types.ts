@@ -33,6 +33,8 @@ export interface IResponseOrder {
   price: number;
   amount: number;
   status: string;
+  amountFilled?: number;
+  amountRemaining?: number;
 }
 
 export interface IError {
