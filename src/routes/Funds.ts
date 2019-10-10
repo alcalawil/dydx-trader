@@ -24,7 +24,7 @@ router.get('/balances', async (req: Request, res: Response, next: NextFunction) 
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });

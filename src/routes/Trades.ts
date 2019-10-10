@@ -22,12 +22,11 @@ router.get('/mytrades', async (req: Request, res: Response, next: NextFunction) 
     if (startingBefore) {
       startingBefore = new Date(startingBefore);
     }
-
     const trades = await tradesManager.getOwnTrades(limit, pair, startingBefore);
     return res.status(OK).json({ trades });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -66,7 +65,7 @@ router.get('/mytradesCsv', async (req: Request, res: Response, next: NextFunctio
     res.end();
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });

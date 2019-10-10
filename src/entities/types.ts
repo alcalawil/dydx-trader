@@ -28,6 +28,7 @@ export const MarketSide = {
 export const MarketSideString = ['sell', 'buy'];
 
 export interface IResponseOrder {
+  account: string;
   id: string;
   pair: string;
   side: string;
@@ -104,4 +105,18 @@ export interface ISQSConsumer {
 export interface ISQSRoute {
   topic: string;
   handler: (body: any) => Promise<any>;
+}
+
+export interface IFundsBalances {
+  account: string;
+  eth: number;
+  dai: number;
+  usdc: number;
+}
+
+export interface IOrderChange {
+  account: string;
+  id: string;
+  status: string;
+  timestamp: string;
 }

@@ -8,7 +8,9 @@ import { IHTTPError } from './entities/types';
 import { authKey } from './middlewares/authKey';
 import errorHandler from './middlewares/errorHandler';
 import errorsConstants from './shared/errorsConstants';
+import observer from './observer';
 const app = express();
+observer.startInterval();
 
 // Add middleware/settings/routes to express.
 app.use(logger('dev'));

@@ -11,6 +11,7 @@ import {
   ORDERS_BUY_MANY,
   ORDERS_SELL_MANY
 } from '../constants/Topics';
+import awsManager from '../modules/awsManager';
 
 const ordersManager = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
 
@@ -55,7 +56,7 @@ const placeOrderRoute: ISQSRoute = {
         pair
       );
       // Here add result to the application state or/and publish to sqs
-
+      awsManager.publishLogToSNS('place', result);
       logger.info(`Topic ${topic} is working`);
       return result;
     } catch (err) {
@@ -73,7 +74,7 @@ const buyOrderRoute: ISQSRoute = {
       const { price, amount, pair } = body;
       const result = await ordersManager.buy(price, amount, pair);
       // Here add result to the application state or/and publish to sqs
-
+      awsManager.publishLogToSNS('buy', result);
       logger.info(`Topic ${topic} is working`);
       return result;
     } catch (err) {
@@ -91,7 +92,7 @@ const sellOrderRoute: ISQSRoute = {
       const { price, amount, pair } = body;
       const result = await ordersManager.sell(price, amount, pair);
       // Here add result to the application state or/and publish to sqs
-
+      awsManager.publishLogToSNS('sell', result);
       logger.info(`Topic ${topic} is working`);
       return result;
     } catch (err) {
@@ -128,7 +129,7 @@ const buyManyRoute: ISQSRoute = {
       const { amount, adjust, pair } = body;
       const result = await ordersManager.postMany(amount, adjust, side, pair);
       // Here add result to the application state or/and publish to sqs
-
+      awsManager.publishLogToSNS('buyMany', result);
       logger.info(`Topic ${topic} is working`);
       return result;
     } catch (err) {
@@ -147,7 +148,7 @@ const sellManyRoute: ISQSRoute = {
       const { amount, adjust, pair } = body;
       const result = await ordersManager.postMany(amount, adjust, side, pair);
       // Here add result to the application state or/and publish to sqs
-
+      awsManager.publishLogToSNS('sellMany', result);
       logger.info(`Topic ${topic} is working`);
       return result;
     } catch (err) {
@@ -157,4 +158,13 @@ const sellManyRoute: ISQSRoute = {
   }
 };
 
-export default [testRoute, cancelRoute, placeOrderRoute, buyOrderRoute, sellOrderRoute, cancelAllRoute, buyManyRoute, sellManyRoute];
+export default [
+  testRoute,
+  cancelRoute,
+  placeOrderRoute,
+  buyOrderRoute,
+  sellOrderRoute,
+  cancelAllRoute,
+  buyManyRoute,
+  sellManyRoute
+];

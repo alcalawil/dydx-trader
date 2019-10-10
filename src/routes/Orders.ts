@@ -27,7 +27,7 @@ router.get('/order', async (req: Request, res: Response, next: NextFunction) => 
     res.status(OK).json(order);
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -48,7 +48,7 @@ router.get('/myorders', async (req: Request, res: Response, next: NextFunction) 
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -58,7 +58,7 @@ router.get('/myorders', async (req: Request, res: Response, next: NextFunction) 
  ******************************************************************************/
 
 router.get('/orderbook', async (req: Request, res: Response, next: NextFunction) => {
-  const { limit = 10, side = 'both' }: { limit: number; side: string; } = req.query;
+  const { limit = 10, side = 'both' }: { limit: number; side: string } = req.query;
   const pair = req.query.pair || 'WETH-DAI';
 
   try {
@@ -84,7 +84,7 @@ router.get('/orderbook', async (req: Request, res: Response, next: NextFunction)
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -95,10 +95,7 @@ router.get('/orderbook', async (req: Request, res: Response, next: NextFunction)
 
 router.post('/place/:side', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const {
-      price,
-      amount
-    }: ICexOrder = req.body;
+    const { price, amount }: ICexOrder = req.body;
 
     const side = req.params.side === 'buy' ? MarketSide.buy : MarketSide.sell;
 
@@ -108,11 +105,14 @@ router.post('/place/:side', async (req: Request, res: Response, next: NextFuncti
       return next(errors.BAD_PARAMS);
     }
 
-    const order = await ordersManager.placeOrder({
-      amount,
-      price,
-      side
-    }, pair);
+    const order = await ordersManager.placeOrder(
+      {
+        amount,
+        price,
+        side
+      },
+      pair
+    );
 
     res.status(CREATED).json({
       message: 'Order successfully created',
@@ -120,7 +120,7 @@ router.post('/place/:side', async (req: Request, res: Response, next: NextFuncti
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -139,7 +139,7 @@ router.post('/buy', async (req: Request, res: Response, next: NextFunction) => {
     }
 
     const order = await ordersManager.buy(price, amount, pair);
-    awsManager.publishToSNS('buy route', JSON.stringify(order));
+    awsManager.publishLogToSNS('buy', order);
 
     return res.status(CREATED).json({
       message: 'Order successfully created',
@@ -147,7 +147,7 @@ router.post('/buy', async (req: Request, res: Response, next: NextFunction) => {
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -172,14 +172,14 @@ router.post('/sell', async (req: Request, res: Response, next: NextFunction) => 
 
     const order = await ordersManager.sell(price, amount, pair);
 
-    awsManager.publishToSNS('sell route', JSON.stringify(order));
+    awsManager.publishLogToSNS('sell', order);
     return res.status(CREATED).json({
       message: 'Order successfully created',
       order
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -203,7 +203,7 @@ router.post('/cancel', async (req: Request, res: Response, next: NextFunction) =
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -221,7 +221,7 @@ router.get('/bid', async (req: Request, res: Response, next: NextFunction) => {
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -239,7 +239,7 @@ router.get('/ask', async (req: Request, res: Response, next: NextFunction) => {
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -261,7 +261,7 @@ router.get('/best-prices', async (req: Request, res: Response, next: NextFunctio
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -281,7 +281,7 @@ router.post('/cancel-all', async (req: Request, res: Response, next: NextFunctio
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -303,7 +303,7 @@ router.post('/buy-many', async (req: Request, res: Response, next: NextFunction)
     return res.status(OK).json(result);
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -326,7 +326,7 @@ router.post('/sell-many', async (req: Request, res: Response, next: NextFunction
     return res.status(OK).json(result);
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -343,13 +343,14 @@ router.get('/myfills', async (req: Request, res: Response, next: NextFunction) =
     if (startingBefore) {
       startingBefore = new Date(startingBefore);
     }
+
     const myFills = await ordersManager.getMyFills(limit, pair, startingBefore);
     return res.status(OK).json({
       fills: myFills
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -407,7 +408,7 @@ router.get('/myfillsCsv', async (req: Request, res: Response, next: NextFunction
     res.end();
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });

@@ -1,4 +1,4 @@
-import AWS, { SQS, SNS, KMS, SecretsManager, AWSError } from 'aws-sdk';
+import AWS, { SQS, SNS, KMS, SecretsManager } from 'aws-sdk';
 import { decrypt } from '../shared/utils';
 
 AWS.config.update({
@@ -59,15 +59,23 @@ class AwsManager {
     });
   }
 
-  public publishToSNS(operation: string, message: string) {
+  public publishLogToSNS(operation: string, message: any, level: string = 'debug') {
     return new Promise<any>((resolve, reject) => {
       const publishParams: SNS.PublishInput = {
         TopicArn: process.env.SNS_ARN || 'none',
-        Message: message,
+        Message: JSON.stringify(message),
         MessageAttributes: {
           operation: {
             DataType: 'String',
             StringValue: operation
+          },
+          level: {
+            DataType: 'String',
+            StringValue: level
+          },
+          timestamp: {
+            DataType: 'String',
+            StringValue: new Date().toISOString()
           }
         }
       };
