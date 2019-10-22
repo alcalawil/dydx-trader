@@ -24,9 +24,8 @@ class FundsManager {
       new BigNumber(balances.balances['1'].wei).toFixed(0)
     );
 
-    const usdc = this.solo.web3.utils.fromWei(
-      new BigNumber(balances.balances['2'].wei).toFixed(0)
-    );
+    const usdcInWei = new BigNumber(balances.balances['2'].wei).toNumber();
+    const usdc = (usdcInWei / Number('1e6')).toString();
 
     return {
       eth,
