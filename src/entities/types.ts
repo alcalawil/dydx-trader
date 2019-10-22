@@ -42,9 +42,11 @@ export interface IError {
   message?: string;
 }
 
+// TODO: Add a USDC property to the interface
 export interface IBalances {
   eth: string;
   dai: string;
+  usdc: string;
 }
 
 export interface IOrderbook {
@@ -61,7 +63,6 @@ export interface IResponseTrade {
   amount: number;
   status: string;
 }
-
 export interface IResponseFill {
   transactionHash: string;
   orderId: string;

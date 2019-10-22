@@ -19,13 +19,19 @@ class FundsManager {
     const eth = this.solo.web3.utils.fromWei(
       new BigNumber(balances.balances['0'].wei).toFixed(0)
     );
+
     const dai = this.solo.web3.utils.fromWei(
       new BigNumber(balances.balances['1'].wei).toFixed(0)
     );
 
+    const usdc = this.solo.web3.utils.fromWei(
+      new BigNumber(balances.balances['2'].wei).toFixed(0)
+    );
+
     return {
       eth,
-      dai
+      dai,
+      usdc
     };
   }
 }
