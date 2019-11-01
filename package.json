@@ -9,6 +9,8 @@
     "start": "nodemon --config \"./util/nodemon.json\"",
     "test": "nodemon --config \"./util/nodemon.test.json\"",
     "head-orders": "node -r dotenv/config ./scripts/headOrders/headOrders.js dotenv_config_path=./scripts/scripts.env",
+    "head-orders-buy": "cross-env ORDER_SIDE=buy npm run head-orders",
+    "head-orders-sell": "cross-env ORDER_SIDE=sell npm run head-orders",
     "support-orders": "node -r dotenv/config ./scripts/supportOrders/supportOrders.js dotenv_config_path=./scripts/scripts.env"
   },
   "_moduleAliases": {
