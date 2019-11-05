@@ -189,29 +189,9 @@ const rePost = async (oldOrder, newPrice) => {
 
 // =============================================================================================
 // =============================================================================================
+let openOrders = [];
 
 const tradingCycle = async () => {
-//   const price = await calculatePrice(ORDER_SIDE);
-
-//   if (_myOrders.length < 1) {
-//     const order = await postOrder(price);
-//     console.log(order);
-//   }
-
-//   await Promise.all(
-//     _myOrders.map(async order => rePost(order, price))
-//   );
-
-// // main
-
-// console.log(`[${new Date().toISOString()}] - Starting program...`);
-// console.log(` 
-//   *** Orders side: ${ORDER_SIDE}
-//   *** Exposure (risk): ${EXPOSURE}
-//   *** Bid/Ask distance: ${DIFFERENCE_IN_PERCENTAGE}% 
-//   *** Orders Amount: ${DEFAULT_AMOUNT}
-//   --------------------------------------------------
-// `);
 
   const spreadOrders = new SpreadOrders(_range);
   // TODO: Use best-prices endpoint
@@ -222,15 +202,29 @@ const tradingCycle = async () => {
   const internalPrice = new PriceDetail(dydxAsk, dydxBid);
   const externalPrice = new PriceDetail(hitbtcPrice.ask, hitbtcPrice.bid);
 
-  const orders = spreadOrders.output({ internalPrice, externalPrice });
-
-
   
+  // Cancel all
+  await cancelOrders(_openOrders);
+  
+  // Generate orders from rules
+  const cexOrders = spreadOrders.output({ internalPrice, externalPrice });
+  
+  // Post(orders)
+  const responseOrders = await postMany(cexOrders);
+
 }
 
-startCycle();
+const postMany =  (cexOrders) => Promise.all(
+  cexOrders.map(order => postOrder(order))
+);
 
-// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+const cancelOrders = (orders) => Promise.all(
+  orders.map((order) => cancelOrder(order.id))
+);
+
+
+
+startCycle();
 
 const _range = [
   {
