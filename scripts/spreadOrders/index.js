@@ -16,6 +16,7 @@ const {
 
 const spreadOrders = new SpreadOrders(_range);
 let _myOrders = [];
+
 // ========================================TRADING CYCLE ===============================================
 const tradingCycle = async () => {
   // TODO: Use best-prices endpoint

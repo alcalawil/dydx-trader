@@ -5,24 +5,24 @@ class SpreadOrders {
 
   outputOrders(marketData) {
     const { internalPrice, externalPrice } = marketData;
-  
+    const cexOrders = [];
 
-    return this.range.map(({ spread, amount }) => {
+    this.range.map(({ spread, amount }) => {
       const { ask, bid } = this.calculatePrices(internalPrice, externalPrice, spread);
+      cexOrders.push({
+        price: ask,
+        amount,
+        side: 'sell'
+      });
 
-      return {
-        ask: {
-          price: ask,
-          amount,
-          side: 'sell'
-        },
-        bid: {
-          price: bid,
-          amount,
-          side: 'buy'
-        }
-      }
+      cexOrders.push({
+        price: bid,
+        amount,
+        side: 'buy'
+      });
     });
+
+    return cexOrders;
   }
 
   calculatePrices(internalPrice, externalPrice, spread) {
