@@ -14,9 +14,10 @@ const {
 } = require('./constants');
 
 
+const spreadOrders = new SpreadOrders(_range);
+let _myOrders = [];
 // ========================================TRADING CYCLE ===============================================
 const tradingCycle = async () => {
-  const spreadOrders = new SpreadOrders(_range);
   // TODO: Use best-prices endpoint
   const { ask: dydxAsk } = await doGetRequest({ uri: GET_ASK_URI });
   const { bid: dydxBid } = await doGetRequest({ uri: GET_BID_URI });
@@ -26,35 +27,38 @@ const tradingCycle = async () => {
   const externalPrice = new PriceDetail(hitbtcPrice.ask, hitbtcPrice.bid);
   
   // Cancel all
-  await cancelOrders(_openOrders);
+  const canceledOrders = await cancelOrders(_openOrders);
   
-  // Generate orders from rules
+  // Remove all canceled orders
+  // TODO: remover solo si el cancel fue success o si la orden fue cancelada antes
+  canceledOrders.map(canceledOrder => 
+    removeOrderFromRegistry(canceledOrder.id)
+  );
+  
+  // Generate new orders from rules
   const cexOrders = spreadOrders.output({ internalPrice, externalPrice });
   
-  // Post(orders)
+  // Post generated orders
   const responseOrders = await postMany(cexOrders);
+  // Save successfully posted orders in registry
+  _myOrders = responseOrders;
 }
 
 // =============================================================================================
 
+// TODO: Handlear errores para que retorne solamente ordenes correctamente posteadas
 const postMany =  (cexOrders) => Promise.all(
   cexOrders.map(order => postOrder(order))
 );
 
+// TODO: Handlear errores para que retorne solo responses de ordenes correctamente canceladas
 const cancelOrders = (orders) => Promise.all(
   orders.map((order) => cancelOrder(order.id))
-);
-
-
-      // // TODO: Poner un try catch para validar que la orden haya sido succes antes de guardarla
-      // _myOrders.push(order);
-
-      // // TODO: remover solo si el cancel fue success o si la orden fue cancelada antes
-      // removeOrderFromRegistry(oldOrder.id);
+);      
       
-      // const removeOrderFromRegistry = (orderId) => {
-      //   _myOrders = _myOrders.filter(myOrder => myOrder.id !== orderId);
-      // };
+const removeOrderFromRegistry = (orderId) => {
+  _myOrders = _myOrders.filter(myOrder => myOrder.id !== orderId);
+};
       
 
 const startCycle = () => {
