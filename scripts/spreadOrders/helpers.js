@@ -1,5 +1,5 @@
 const rp = require('request-promise');
-const {  BUY_ORDER_URI, SELL_ORDER_URI, CANCEL_URI } = require('./constants');
+const { BUY_ORDER_URI, SELL_ORDER_URI, CANCEL_URI } = require('./constants');
 
 const doPostRequest = async ({ uri, body = {} }) => {
   let response = null;
@@ -39,38 +39,41 @@ const doGetRequest = async ({ uri }) => {
 };
 
 const postOrder = async ({ price, side, amount, pair }) => {
-  const { order } = side === 'sell'
+  const response = side === 'sell'
     ? await doPostRequest({
-        uri: BUY_ORDER_URI,
-        body: {
-          price,
-          amount,
-          pair
-        }
-      })
+      uri: BUY_ORDER_URI,
+      body: {
+        price,
+        amount,
+        pair
+      }
+    })
     : await doPostRequest({
-        uri: SELL_ORDER_URI,
-        body: {
-          price,
-          amount,
-          pair
-        }
+      uri: SELL_ORDER_URI,
+      body: {
+        price,
+        amount,
+        pair
+      }
     });
-
-  return order;
+  if (response) {
+    return response.order;
+  }
+  return undefined;
 };
 
 const cancelOrder = async (orderId) => {
   // TODO: obtener el codigo del response y verificarlo
-
-  const response = doPostRequest({
+  const response = await doPostRequest({
     uri: CANCEL_URI,
     body: {
       orderId: orderId
     }
   });
-
-  return response;
+  if (response) {
+    response.order;
+  };
+  return undefined;
 };
 
 class PriceDetail {
@@ -81,4 +84,4 @@ class PriceDetail {
   }
 }
 
-module.exports = { doGetRequest, doPostRequest, postOrder,  cancelOrder, PriceDetail };
+module.exports = { doGetRequest, doPostRequest, postOrder, cancelOrder, PriceDetail };
