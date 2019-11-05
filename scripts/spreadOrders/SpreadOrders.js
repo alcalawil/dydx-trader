@@ -1,6 +1,7 @@
 class SpreadOrders {
-  constructor(range) {
+  constructor(range, pair) {
     this.range = range;
+    this.pair = pair;
   }
 
   outputOrders(marketData) {
@@ -12,13 +13,15 @@ class SpreadOrders {
       cexOrders.push({
         price: ask,
         amount,
-        side: 'sell'
+        side: 'sell',
+        pair: this.pair
       });
 
       cexOrders.push({
         price: bid,
         amount,
-        side: 'buy'
+        side: 'buy',
+        pair: this.pair
       });
     });
 

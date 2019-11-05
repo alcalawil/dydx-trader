@@ -10,11 +10,12 @@ const {
   GET_ASK_URI,
   GET_BID_URI,
   HITBTC_ETHDAI_TICKER,
-  SECONDS_INTERVAL
+  SECONDS_INTERVAL,
+  DEFAULT_PAIR
 } = require('./constants');
 
 
-const spreadOrders = new SpreadOrders(_range);
+const spreadOrders = new SpreadOrders(_range, DEFAULT_PAIR);
 let _myOrders = [];
 
 // ========================================TRADING CYCLE ===============================================
@@ -38,7 +39,7 @@ const tradingCycle = async () => {
 
   // Generate new orders from rules
   const cexOrders = spreadOrders.outputOrders({ internalPrice, externalPrice });
-
+  console.log(cexOrders);
   // Post generated orders
   const responseOrders = await postMany(cexOrders);
   // Save successfully posted orders in registry

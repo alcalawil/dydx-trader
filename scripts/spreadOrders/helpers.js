@@ -1,4 +1,5 @@
 const rp = require('request-promise');
+const {  BUY_ORDER_URI, SELL_ORDER_URI, CANCEL_URI } = require('./constants');
 
 const doPostRequest = async ({ uri, body = {} }) => {
   let response = null;
@@ -37,25 +38,24 @@ const doGetRequest = async ({ uri }) => {
   return response;
 };
 
-const postOrder = async (price) => {
-  const { order } =
-    ORDER_SIDE === 'sell'
-      ? await doPostRequest({
-          uri: BUY_ORDER_URI,
-          body: {
-            price,
-            amount: DEFAULT_AMOUNT,
-            pair: DEFAULT_PAIR
-          }
-        })
-      : await doPostRequest({
-          uri: SELL_ORDER_URI,
-          body: {
-            price,
-            amount: DEFAULT_AMOUNT,
-            pair: DEFAULT_PAIR
-          }
-        });
+const postOrder = async ({ price, side, amount, pair }) => {
+  const { order } = side === 'sell'
+    ? await doPostRequest({
+        uri: BUY_ORDER_URI,
+        body: {
+          price,
+          amount,
+          pair
+        }
+      })
+    : await doPostRequest({
+        uri: SELL_ORDER_URI,
+        body: {
+          price,
+          amount,
+          pair
+        }
+    });
 
   return order;
 };
@@ -70,6 +70,7 @@ const cancelOrder = async (orderId) => {
     }
   });
 
+  return response;
 };
 
 class PriceDetail {
