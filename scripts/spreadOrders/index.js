@@ -29,17 +29,17 @@ const tradingCycle = async () => {
   const externalPrice = new PriceDetail(parseFloat(hitbtcPrice.ask), parseFloat(hitbtcPrice.bid));
 
   // Cancel all
-  const canceledOrders = await cancelOrders(_myOrders);
-
-  // Remove all canceled orders
-  // TODO: remover solo si el cancel fue success o si la orden fue cancelada antes
-  canceledOrders.map(canceledOrder =>
-    removeOrderFromRegistry(canceledOrder.id)
-  );
-
+  if (_myOrders.length > 0) {
+    const cancelledOrders = cancelOrders(_myOrders);
+    // Que pasara con las ordenes que por X razon no fueron canceladas?
+    // TODO: remover solo si el cancel fue success o si la orden fue cancelada antes
+    cancelledOrders.map(canceledOrder =>
+      removeOrderFromRegistry(canceledOrder.id)
+    );
+  }
   // Generate new orders from rules
   const cexOrders = spreadOrders.outputOrders({ internalPrice, externalPrice });
-  console.log(cexOrders);
+  // console.log(cexOrders);
   // Post generated orders
   const responseOrders = await postMany(cexOrders);
   // Save successfully posted orders in registry
@@ -48,15 +48,21 @@ const tradingCycle = async () => {
 
 // =============================================================================================
 
-// TODO: Handlear errores para que retorne solamente ordenes correctamente posteadas
-const postMany = (cexOrders) => Promise.all(
-  cexOrders.map(order => postOrder(order))
-);
+const postMany = async (cexOrders) => {
+  const postedOrders = await Promise.all(
+    cexOrders.map(order => postOrder(order))
+  );
+  const successPostedOrders = postedOrders.filter(order => order);
+  return successPostedOrders;
+};
 
-// TODO: Handlear errores para que retorne solo responses de ordenes correctamente canceladas
-const cancelOrders = (orders) => Promise.all(
-  orders.map((order) => cancelOrder(order.id))
-);
+const cancelOrders = async (orders) => {
+  const cancelledOrders = await Promise.all(
+    orders.map(async (order) => cancelOrder(order.id))
+  );
+  const successCancelledOrders = cancelledOrders.filter(order => order);
+  return successCancelledOrders;
+};
 
 const removeOrderFromRegistry = (orderId) => {
   _myOrders = _myOrders.filter(myOrder => myOrder.id !== orderId);
