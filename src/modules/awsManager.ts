@@ -1,4 +1,4 @@
-import AWS from 'aws-sdk';
+import AWS, { SQS, SNS, KMS, SecretsManager } from 'aws-sdk';
 import { decrypt } from '../shared/utils';
 
 AWS.config.update({
@@ -6,17 +6,20 @@ AWS.config.update({
   secretAccessKey: process.env.SECRET_ACCESS_KEY
 });
 
-// FIXME: This may throw an unhanled exception
-const kms = new AWS.KMS({
+const kms = new KMS({
   region: process.env.KMS_REGION
 });
 
-const sns = new AWS.SNS({
+const sns = new SNS({
   region: process.env.SNS_REGION
 });
 
-const sm = new AWS.SecretsManager({
+const sm = new SecretsManager({
   region: process.env.SM_REGION
+});
+
+const sqs = new SQS({
+  region: process.env.SQS_REGION
 });
 
 class AwsManager {
@@ -102,7 +105,24 @@ class AwsManager {
     return decrypt(decryptedDataKey, encryptedData.DATA);
   }
 
-  // TODO: Add publishTOSQS function (There is a branch with that)
+  public publishToSQS(groupId: string, msg: any, attributes: any = {}) {
+    return new Promise(async (resolve, reject) => {
+      const publishParams: SQS.SendMessageRequest = {
+        MessageBody: JSON.stringify(msg),
+        QueueUrl: process.env.SQS_URL || 'none',
+        MessageAttributes: attributes,
+        MessageDeduplicationId: Date.now().toString(),
+        MessageGroupId: groupId
+      };
+
+      sqs.sendMessage(publishParams, (err, data) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(data);
+      });
+    });
+  }
 }
 
 export default new AwsManager();
