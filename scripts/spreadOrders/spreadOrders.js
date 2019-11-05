@@ -300,41 +300,9 @@ class SpreadOrders {
     }
   }
 
-  rulesAsk(internalPrice, externalPrice, spread) {
-
-  }
-
-  rulesBid(internalPrice, externalPrice, spread) {
-    if (externalPrice.mid > internalPrice.mid) {
-      let spreadPrice = calcSpreadPrice(externalPrice.mid, spread);
-
-      if (spreadPrice > internalPrice.mid) {
-        spreadPrice = calcSpreadPrice(internalPrice.mid, spread);
-      }
-
-      return spreadPrice;
-    }
-
-
-  }
-
   calcSpreadPrice(midPrice, spread) {
     return midPrice * (1 - spread / 2);
   }
-
-  // createPriceRange(priceFrom, side, adjust = 0.5) {
-  //   const prices = [];
-  //   for (let i = 1; i <= 4; i += 1) {
-  //     const adjustedPercentage = i * adjust;
-  //     const adjustedPrice =
-  //       side === MarketSide.sell
-  //         ? priceFrom + calculatePercentage(priceFrom, adjustedPercentage)
-  //         : priceFrom - calculatePercentage(priceFrom, adjustedPercentage);
-  //     prices.push(adjustedPrice);
-  //   }
-
-  //   return prices;
-  // }
 }
 
 class PriceDetail {
