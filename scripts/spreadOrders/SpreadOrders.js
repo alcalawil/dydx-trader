@@ -9,7 +9,7 @@ class SpreadOrders {
     const cexOrders = [];
 
     this.range.map(({ spread, amount }) => {
-      const { ask, bid } = this.calculatePrices(internalPrice, externalPrice, spread);
+      const { ask, bid } = this.calculatePrices(internalPrice, externalPrice, (spread / 100));
       cexOrders.push({
         price: ask,
         amount,
