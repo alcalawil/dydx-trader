@@ -12,7 +12,7 @@ class SpreadOrders {
     this.range.map((options) => {
       const { ask, bid } = this.useExternalPrice 
       ? this.calculatePrices(internalPrice, externalPrice, options.ask, options.bid)
-      : this.calculatePricesOnlyInternal(internalPrice, option.ask, option.bid);
+      : this.calculatePricesOnlyInternal(internalPrice, options.ask, options.bid);
 
       cexOrders.push({
         price: ask,
