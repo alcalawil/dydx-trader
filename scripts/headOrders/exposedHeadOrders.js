@@ -6,7 +6,7 @@ if (process.env.LOADED !== 'TRUE') {
   process.kill();
 }
 // Constants
-const SECONDS_INTERVAL = parseFloat(process.env.HEAD_SECONDS_INTERVAL) || 60; // Cycle interval in seconds
+const SECONDS_INTERVAL = parseFloat(process.env.EXPOSED_HEAD_SECONDS_INTERVAL) || 60; // Cycle interval in seconds
 const BASE_URI = process.env.BASE_URI || 'http://localhost:3000';
 const BUY_ORDER_URI = BASE_URI + '/api/orders/buy';
 const SELL_ORDER_URI = BASE_URI + '/api/orders/sell';
@@ -15,11 +15,13 @@ const GET_ASK_URI = BASE_URI + '/api/orders/ask';
 const MY_FILLS_URI = BASE_URI + '/api/orders/myfills';
 const CANCEL_URI = BASE_URI + '/api/orders/cancel';
 
-const DEFAULT_AMOUNT = parseFloat(process.env.DEFAULT_AMOUNT) || 0.1;
-const EXPOSURE = process.env.EXPOSURE || 'low'; // low or high
+const DEFAULT_AMOUNT_BUY = parseFloat(process.env.EXPOSED_DEFAULT_AMOUNT_BUY) || 0.1;
+const DEFAULT_AMOUNT_SELL = parseFloat(process.env.EXPOSED_DEFAULT_AMOUNT_SELL) || 0.1;
+
+const EXPOSURE = process.env.EXPOSED_EXPOSURE || 'low'; // low or high
 
 const DIFFERENCE_IN_PERCENTAGE =
-  parseFloat(process.env.DIFFERENCE_IN_PERCENTAGE) || 0.01;
+  parseFloat(process.env.EXPOSED_DIFFERENCE_IN_PERCENTAGE) || 0.01;
 const ORDER_SIDE = process.env.ORDER_SIDE || 'sell';
 
 let cycle;
@@ -76,14 +78,14 @@ const postOrder = async ({ side = 'sell', price }) => {
         uri: BUY_ORDER_URI,
         body: {
           price,
-          amount: DEFAULT_AMOUNT
+          amount: DEFAULT_AMOUNT_BUY
         }
       })
       : await doPostRequest({
         uri: SELL_ORDER_URI,
         body: {
           price,
-          amount: DEFAULT_AMOUNT
+          amount: DEFAULT_AMOUNT_SELL
         }
       });
 
@@ -182,7 +184,7 @@ console.log(`
   *** Orders side: ${ORDER_SIDE}
   *** Exposure (risk): ${EXPOSURE}
   *** Bid/Ask distance: ${DIFFERENCE_IN_PERCENTAGE}% 
-  *** Orders Amount: ${DEFAULT_AMOUNT}
+  *** Orders Amount: ${ORDER_SIDE === 'buy' ? DEFAULT_AMOUNT_BUY : DEFAULT_AMOUNT_SELL}
   --------------------------------------------------
 `);
 
