@@ -17,15 +17,23 @@ const ORDER_SIDE = process.env.ORDER_SIDE || 'sell';
 const _range = [
   {
     spread: 0.25,
-    amount: 0.1
+    amount: 1
   },
   {
     spread: 0.5,
-    amount: 0.1
+    amount: 2
+  },
+  {
+    spread: 0.6,
+    amount: 3
   },
   {
     spread: 0.75,
-    amount: 0.1
+    amount: 4
+  },
+  {
+    spread: 1,
+    amount: 5
   }
 ];
 

@@ -30,23 +30,28 @@ const tradingCycle = async () => {
   const internalPrice = new PriceDetail(dydxAsk, dydxBid);
   const externalPrice = new PriceDetail(parseFloat(hitbtcPrice.ask), parseFloat(hitbtcPrice.bid));
   
-  console.log('My orders:', _myOrders);
+  console.log('My orders:', _myOrders.length);
   
   // Cancel all
   if (_myOrders.length > 0) {
     _myOrders = await updateOrders(_myOrders);
-    const openOrders = _myOrders.filter(order => order.status === 'OPEN');
+    const openOrders = _myOrders.filter(order => order.status === 'OPEN' || order.status === 'PARTIALLY_FILLED');
+    console.log('Cancelling open orders...');
     const cancelledOrders = await cancelOrders(openOrders);
-
+    console.log(`Canceled ${cancelledOrders.length} orders`)
     cancelledOrders.map(canceledOrder =>
       removeOrderFromRegistry(canceledOrder.id)
     );
   }
   // Generate new orders from rules
   const cexOrders = spreadOrders.outputOrders({ internalPrice, externalPrice });
+  console.log('Calculating prices...');
+  console.log(cexOrders);
   // Post generated orders
+  console.log('Posting orders...');
   const responseOrders = await postMany(cexOrders);
   // Save successfully posted orders in registry
+  console.log(`Posted ${responseOrders.length} orders`);
   _myOrders = responseOrders;
 }
 
@@ -78,7 +83,6 @@ const updateOrders = async (orders) => {
   } 
   const updatedOrders = await Promise.all(
     orders.map(async (order) => {
-      console.log('Order id: ', order.id)
       const newOrder = await getOrderById(order.id);
       return newOrder || order;
     })
