@@ -14,8 +14,6 @@ const GET_BID_URI = BASE_URI + '/api/orders/bid';
 const GET_ASK_URI = BASE_URI + '/api/orders/ask';
 const MY_FILLS_URI = BASE_URI + '/api/orders/myfills';
 const CANCEL_URI = BASE_URI + '/api/orders/cancel';
-const HITBTC_BASE_URI = process.env.HITBTC_BASE_URI;
-const HITBTC_ETHDAI_TICKER = HITBTC_BASE_URI + '/ticker/ethdai';
 
 const DEFAULT_AMOUNT = parseFloat(process.env.DEFAULT_AMOUNT) || 0.1;
 const EXPOSURE = process.env.EXPOSURE || 'low'; // low or high
@@ -24,8 +22,6 @@ const DIFFERENCE_IN_PERCENTAGE =
   parseFloat(process.env.DIFFERENCE_IN_PERCENTAGE) || 0.01;
 const ORDER_SIDE = process.env.ORDER_SIDE || 'sell';
 
-const DIFFERENCE_BETWEEN_BID = process.env.DIFFERENCE_BETWEEN_BID;
-const DIFFERENCE_BETWEEN_ASK = process.env.DIFFERENCE_BETWEEN_ASK;
 let cycle;
 let myOrders = [];
 
@@ -98,18 +94,6 @@ const postOrder = async ({ side = 'sell', price }) => {
 
 const calculatePercentage = (inputVale, percentageNumber) => {
   return inputVale * (percentageNumber / 100);
-};
-
-const compareBid = (dydxBid, hitbtcBid) => {
-  if (hitbtcBid > dydxBid) return dydxBid + (hitbtcBid - dydxBid) * DIFFERENCE_BETWEEN_BID;
-  if (hitbtcBid === dydxBid) return dydxBid;
-  if (hitbtcBid < dydxBid) return hitbtcBid;
-};
-
-const compareAsk = (dydxAsk, hitbtcAsk) => {
-  if (hitbtcAsk > dydxAsk) return hitbtcAsk;
-  if (hitbtcAsk === dydxAsk) return dydxAsk;
-  if (hitbtcAsk < dydxAsk) return hitbtcAsk + (dydxAsk - hitbtcAsk) * DIFFERENCE_BETWEEN_ASK;
 };
 
 const calculatePrice = async (side = 'sell') => {
