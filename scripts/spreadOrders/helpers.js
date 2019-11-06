@@ -1,47 +1,34 @@
 const rp = require('request-promise');
-const { BUY_ORDER_URI, SELL_ORDER_URI, CANCEL_URI } = require('./constants');
+const { BUY_ORDER_URI, SELL_ORDER_URI, CANCEL_URI, GET_ORDER_URI } = require('./constants');
 
 const doPostRequest = async ({ uri, body = {} }) => {
-  let response = null;
-  try {
-    response = await rp.post({
-      uri,
-      body,
-      json: true,
-      headers: {
-        'User-Agent': 'Request-Promise',
-        'api-key': process.env.OPERATOR_API_KEY
-      }
-    });
-  } catch (error) {
-    console.log(`[${new Date().toISOString()}]`, error.message);
-  }
-
-  return response;
+  return rp.post({
+    uri,
+    body,
+    json: true,
+    headers: {
+      'User-Agent': 'Request-Promise',
+      'api-key': process.env.OPERATOR_API_KEY ||  '12345'
+    }
+  });
 };
 
 const doGetRequest = async ({ uri }) => {
-  let response = null;
-  try {
-    response = await rp.get({
-      uri,
-      json: true,
-      headers: {
-        'User-Agent': 'Request-Promise',
-        'api-key': process.env.OPERATOR_API_KEY
-      }
-    });
-  } catch (error) {
-    console.log(`[${new Date().toISOString()}]`, error.message);
-  }
-
-  return response;
+  return rp.get({
+    uri,
+    json: true,
+    headers: {
+      'User-Agent': 'Request-Promise',
+      'api-key': process.env.OPERATOR_API_KEY || '12345'
+    }
+  });
 };
 
 const postOrder = async ({ price, side, amount, pair }) => {
-  const response = side === 'sell'
+  try {
+    const response = side === 'sell'
     ? await doPostRequest({
-      uri: BUY_ORDER_URI,
+      uri: SELL_ORDER_URI,
       body: {
         price,
         amount,
@@ -49,31 +36,43 @@ const postOrder = async ({ price, side, amount, pair }) => {
       }
     })
     : await doPostRequest({
-      uri: SELL_ORDER_URI,
+      uri: BUY_ORDER_URI,
       body: {
         price,
         amount,
         pair
       }
     });
-  if (response) {
+
     return response.order;
+  } catch (err) {
+    console.log(err.message);
   }
-  return undefined;
 };
 
 const cancelOrder = async (orderId) => {
-  // TODO: obtener el codigo del response y verificarlo
-  const response = await doPostRequest({
-    uri: CANCEL_URI,
-    body: {
-      orderId: orderId
-    }
-  });
-  if (response) {
-    response.order;
-  };
-  return undefined;
+  try {
+    const { result: order } = await doPostRequest({
+      uri: CANCEL_URI,
+      body: {
+        orderId: orderId
+      }
+    });
+
+    console.log(order)
+    return order;
+  } catch (err) {
+    console.log(err.message);
+  }
+};
+
+const getOrderById = async (orderId) => {
+  try {
+    const uri = `${GET_ORDER_URI}?id=${orderId}`; 
+    return doGetRequest({ uri });
+  } catch (err) {
+    console.log(err.message);
+  }
 };
 
 class PriceDetail {
@@ -84,4 +83,11 @@ class PriceDetail {
   }
 }
 
-module.exports = { doGetRequest, doPostRequest, postOrder, cancelOrder, PriceDetail };
+module.exports = { 
+  doGetRequest, 
+  doPostRequest, 
+  postOrder, 
+  cancelOrder, 
+  PriceDetail,
+  getOrderById
+};

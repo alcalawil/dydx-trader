@@ -3,15 +3,17 @@ const {
   doGetRequest,
   PriceDetail,
   cancelOrder,
-  postOrder
+  postOrder,
+  getOrderById
 } = require('./helpers');
 const {
   _range,
   GET_ASK_URI,
   GET_BID_URI,
   HITBTC_ETHDAI_TICKER,
-  SECONDS_INTERVAL,
-  DEFAULT_PAIR
+  SECONDS_INTERVAL_SPREAD,
+  DEFAULT_PAIR,
+  GET_ORDER_URI
 } = require('./constants');
 
 
@@ -24,22 +26,24 @@ const tradingCycle = async () => {
   const { ask: dydxAsk } = await doGetRequest({ uri: GET_ASK_URI });
   const { bid: dydxBid } = await doGetRequest({ uri: GET_BID_URI });
   const hitbtcPrice = await doGetRequest({ uri: HITBTC_ETHDAI_TICKER });
-
+  
   const internalPrice = new PriceDetail(dydxAsk, dydxBid);
   const externalPrice = new PriceDetail(parseFloat(hitbtcPrice.ask), parseFloat(hitbtcPrice.bid));
-
+  
+  console.log('My orders:', _myOrders);
+  
   // Cancel all
   if (_myOrders.length > 0) {
-    const cancelledOrders = cancelOrders(_myOrders);
-    // Que pasara con las ordenes que por X razon no fueron canceladas?
-    // TODO: remover solo si el cancel fue success o si la orden fue cancelada antes
+    _myOrders = await updateOrders(_myOrders);
+    const openOrders = _myOrders.filter(order => order.status === 'OPEN');
+    const cancelledOrders = await cancelOrders(openOrders);
+
     cancelledOrders.map(canceledOrder =>
       removeOrderFromRegistry(canceledOrder.id)
     );
   }
   // Generate new orders from rules
   const cexOrders = spreadOrders.outputOrders({ internalPrice, externalPrice });
-  // console.log(cexOrders);
   // Post generated orders
   const responseOrders = await postMany(cexOrders);
   // Save successfully posted orders in registry
@@ -52,26 +56,40 @@ const postMany = async (cexOrders) => {
   const postedOrders = await Promise.all(
     cexOrders.map(order => postOrder(order))
   );
-  const successPostedOrders = postedOrders.filter(order => order);
-  return successPostedOrders;
+
+  return postedOrders.filter(order => order);
 };
 
 const cancelOrders = async (orders) => {
   const cancelledOrders = await Promise.all(
     orders.map(async (order) => cancelOrder(order.id))
   );
-  const successCancelledOrders = cancelledOrders.filter(order => order);
-  return successCancelledOrders;
+
+  return cancelledOrders.filter(order => order);
 };
 
 const removeOrderFromRegistry = (orderId) => {
   _myOrders = _myOrders.filter(myOrder => myOrder.id !== orderId);
 };
 
+const updateOrders = async (orders) => {
+  if (!orders.length) {
+    return [];
+  } 
+  const updatedOrders = await Promise.all(
+    orders.map(async (order) => {
+      console.log('Order id: ', order.id)
+      const newOrder = await getOrderById(order.id);
+      return newOrder || order;
+    })
+  );
+
+  return updatedOrders;
+};
 
 const startCycle = () => {
   tradingCycle();
-  cycle = setInterval(tradingCycle, SECONDS_INTERVAL * 1000);
+  cycle = setInterval(tradingCycle, SECONDS_INTERVAL_SPREAD * 1000);
 };
 
 startCycle();
