@@ -67,6 +67,8 @@ class SpreadOrders {
 
   calculatePricesOnlyInternal(internalPrice, spreadInPercent) {
     const spread = spreadInPercent / 100;
+
+    console.log(`Internal price: ${internalPrice.mid}`);
     return {
       ask: internalPrice.mid * (1 + spread / 2),
       bid: internalPrice.mid * (1 - spread / 2)

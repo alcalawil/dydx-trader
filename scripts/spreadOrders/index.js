@@ -21,6 +21,7 @@ const {
 const spreadOrders = new SpreadOrders(_range, DEFAULT_PAIR, { useExternalPrice: USE_EXTERNAL_PRICE });
 let _myOrders = [];
 
+console.log(`Using hitbtc prices: ${spreadOrders.useExternalPrice}`);
 // ========================================TRADING CYCLE ===============================================
 const tradingCycle = async () => {
   // TODO: Use best-prices endpoint
@@ -37,6 +38,7 @@ const tradingCycle = async () => {
   if (_myOrders.length > 0) {
     _myOrders = await updateOrders(_myOrders);
     const openOrders = _myOrders.filter(order => order.status === 'OPEN' || order.status === 'PARTIALLY_FILLED');
+    console.log(`Open orders ${openOrders.length}`);
     console.log('Cancelling open orders...');
     const cancelledOrders = await cancelOrders(openOrders);
     console.log(`Canceled ${cancelledOrders.length} orders`)
@@ -53,7 +55,7 @@ const tradingCycle = async () => {
   const responseOrders = await postMany(cexOrders);
   // Save successfully posted orders in registry
   console.log(`Posted ${responseOrders.length} orders`);
-  _myOrders = responseOrders;
+  _myOrders.push(...responseOrders);
 }
 
 // =============================================================================================
