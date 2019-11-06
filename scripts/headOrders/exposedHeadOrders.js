@@ -113,31 +113,23 @@ const compareAsk = (dydxAsk, hitbtcAsk) => {
 };
 
 const calculatePrice = async (side = 'sell') => {
-  const hitbtc = await doGetRequest({ uri: HITBTC_ETHDAI_TICKER });
-
   if (side === 'buy') {
-    const { bid: dydxBid } = await doGetRequest({ uri: GET_BID_URI });
-    const bid = compareBid(dydxBid, Number(hitbtc.bid));
+    const { bid } = await doGetRequest({ uri: GET_BID_URI });
     const percentage = Math.abs(
       calculatePercentage(bid, DIFFERENCE_IN_PERCENTAGE)
     );
-    console.log(`---- dYdX bid: ${dydxBid} ----`);
-    console.log(`---- HitBTC bid: ${hitbtc.bid} ----`);
-    console.log(`**** Calculated BID: ${bid} ****`);
+    console.log(`---- dYdX bid: ${bid} ----`);
 
     const price = EXPOSURE === 'high' ? bid + percentage : bid - percentage;
 
     return price;
   }
 
-  const { ask: dydxAsk } = await doGetRequest({ uri: GET_ASK_URI });
-  const ask = compareAsk(dydxAsk, Number(hitbtc.ask));
+  const { ask } = await doGetRequest({ uri: GET_ASK_URI });
   const percentage = Math.abs(
     calculatePercentage(ask, DIFFERENCE_IN_PERCENTAGE)
   );
-  console.log(`---- dYdX ask: ${dydxAsk} ----`);
-  console.log(`---- HitBTC ask: ${hitbtc.ask} ----`);
-  console.log(`**** Calculated ASK: ${ask} ****`);
+  console.log(`---- dYdX ask: ${ask} ----`);
 
   const price = EXPOSURE === 'high' ? ask - percentage : ask + percentage;
 
@@ -156,7 +148,7 @@ const isFillOrPartiallyFill = async orderId => {
 };
 
 const tradingCycle = async () => {
-  console.log('My orders', myOrders.map((order, OrderId) => order.id));
+  console.log('My orders', myOrders.map((order) => order.id));
 
   if (myOrders.length > 0) {
     // get status
