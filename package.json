@@ -12,7 +12,8 @@
     "head-orders-buy": "cross-env ORDER_SIDE=buy npm run head-orders",
     "head-orders-sell": "cross-env ORDER_SIDE=sell npm run head-orders",
     "support-orders": "node -r dotenv/config ./scripts/supportOrders/supportOrders.js dotenv_config_path=./scripts/scripts.env",
-    "spread-orders": "node -r dotenv/config ./scripts/spreadOrders/index.js dotenv_config_path=./scripts/scripts.env"
+    "spread-orders": "node -r dotenv/config ./scripts/spreadOrders/index.js dotenv_config_path=./scripts/scripts.env",
+    "exposed-head-orders": "node -r dotenv/config ./scripts/headOrders/exposedHeadOrders.js dotenv_config_path=./scripts/scripts.env"
   },
   "_moduleAliases": {
     "@entities": "dist/entities",
