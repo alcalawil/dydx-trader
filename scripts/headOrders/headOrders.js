@@ -17,7 +17,9 @@ const CANCEL_URI = BASE_URI + '/api/orders/cancel';
 const HITBTC_BASE_URI = process.env.HITBTC_BASE_URI;
 const HITBTC_ETHDAI_TICKER = HITBTC_BASE_URI + '/ticker/ethdai';
 
-const DEFAULT_AMOUNT = parseFloat(process.env.DEFAULT_AMOUNT) || 0.1;
+const DEFAULT_AMOUNT_BUY = parseFloat(process.env.DEFAULT_AMOUNT_BUY) || 0.1;
+const DEFAULT_AMOUNT_SELL = parseFloat(process.env.DEFAULT_AMOUNT_SELL) || 0.1;
+
 const EXPOSURE = process.env.EXPOSURE || 'low'; // low or high
 
 const DIFFERENCE_IN_PERCENTAGE =
@@ -80,14 +82,14 @@ const postOrder = async ({ side = 'sell', price }) => {
           uri: BUY_ORDER_URI,
           body: {
             price,
-            amount: DEFAULT_AMOUNT
+            amount: DEFAULT_AMOUNT_BUY
           }
         })
       : await doPostRequest({
           uri: SELL_ORDER_URI,
           body: {
             price,
-            amount: DEFAULT_AMOUNT
+            amount: DEFAULT_AMOUNT_SELL
           }
         });
 
@@ -130,7 +132,7 @@ const compareAsk = (dydxAsk, hitbtcAsk, midPrice) => {
     }
     return dydxAsk - getPriceDiff(hitbtcAsk, dydxAsk) * DIFFERENCE_BETWEEN_ASK;
   }
-  
+
   return hitbtcAsk;
 };
 
@@ -225,14 +227,14 @@ const tradingCycle = async () => {
 };
 
 
-// main 
+// main
 
 console.log(`[${new Date().toISOString()}] - Starting program...`);
-console.log(` 
+console.log(`
   *** Orders side: ${ORDER_SIDE}
   *** Exposure (risk): ${EXPOSURE}
-  *** Bid/Ask distance: ${DIFFERENCE_IN_PERCENTAGE}% 
-  *** Orders Amount: ${DEFAULT_AMOUNT}
+  *** Bid/Ask distance: ${DIFFERENCE_IN_PERCENTAGE}%
+  *** Orders Amount: ${ORDER_SIDE === 'buy' ? DEFAULT_AMOUNT_BUY : DEFAULT_AMOUNT_SELL}
   --------------------------------------------------
 `);
 
