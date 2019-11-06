@@ -14,26 +14,30 @@ const DEFAULT_AMOUNT = parseFloat(process.env.DEFAULT_AMOUNT) || 0.1;
 const DEFAULT_PAIR = process.env.DEFAULT_PAIR || 'WETH-DAI';
 const ORDER_SIDE = process.env.ORDER_SIDE || 'sell';
 
+const USE_EXTERNAL_PRICE = process.env.USE_EXTERNAL_PRICE === 'TRUE'
+  ? true
+  : false;
+
 const _range = [
   {
     spread: 0.25,
-    amount: 1
+    amount: 0.1
   },
   {
     spread: 0.5,
-    amount: 2
+    amount: 0.2
   },
   {
     spread: 0.6,
-    amount: 3
+    amount: 0.3
   },
   {
     spread: 0.75,
-    amount: 4
+    amount: 0.4
   },
   {
     spread: 1,
-    amount: 5
+    amount: 0.5
   }
 ];
 
@@ -51,5 +55,6 @@ module.exports = {
   DEFAULT_PAIR,
   ORDER_SIDE,
   SECONDS_INTERVAL_SPREAD,
-  GET_ORDER_URI
+  GET_ORDER_URI,
+  USE_EXTERNAL_PRICE
 };

@@ -13,11 +13,12 @@ const {
   HITBTC_ETHDAI_TICKER,
   SECONDS_INTERVAL_SPREAD,
   DEFAULT_PAIR,
-  GET_ORDER_URI
+  GET_ORDER_URI,
+  USE_EXTERNAL_PRICE
 } = require('./constants');
 
 
-const spreadOrders = new SpreadOrders(_range, DEFAULT_PAIR);
+const spreadOrders = new SpreadOrders(_range, DEFAULT_PAIR, { useExternalPrice: USE_EXTERNAL_PRICE });
 let _myOrders = [];
 
 // ========================================TRADING CYCLE ===============================================

@@ -1,7 +1,8 @@
 class SpreadOrders {
-  constructor(range, pair) {
+  constructor(range, pair, { useExternalPrice }) {
     this.range = range;
     this.pair = pair;
+    this.useExternalPrice = useExternalPrice
   }
 
   outputOrders(marketData) {
@@ -9,7 +10,10 @@ class SpreadOrders {
     const cexOrders = [];
 
     this.range.map(({ spread, amount }) => {
-      const { ask, bid } = this.calculatePrices(internalPrice, externalPrice, (spread / 100));
+      const { ask, bid } = this.useExternalPrice 
+      ? this.calculatePrices(internalPrice, externalPrice, spread)
+      : this.calculatePricesOnlyInternal(internalPrice, spread);
+
       cexOrders.push({
         price: ask,
         amount,
@@ -28,7 +32,8 @@ class SpreadOrders {
     return cexOrders;
   }
 
-  calculatePrices(internalPrice, externalPrice, spread) {
+  calculatePrices(internalPrice, externalPrice, spreadInPercent) {
+    const spread = spreadInPercent / 100;
     if (externalPrice.mid > internalPrice.mid) {
       let bidSpreadPrice = externalPrice.mid * (1 - spread / 2);
 
@@ -57,6 +62,14 @@ class SpreadOrders {
         ask: askSpreadPrice,
         bid: externalPrice.mid * (1 - spread / 2)
       }
+    }
+  }
+
+  calculatePricesOnlyInternal(internalPrice, spreadInPercent) {
+    const spread = spreadInPercent / 100;
+    return {
+      ask: internalPrice.mid * (1 + spread / 2),
+      bid: internalPrice.mid * (1 - spread / 2)
     }
   }
 
