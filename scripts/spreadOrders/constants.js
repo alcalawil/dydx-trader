@@ -20,24 +20,34 @@ const USE_EXTERNAL_PRICE = process.env.USE_EXTERNAL_PRICE === 'TRUE'
 
 const _range = [
   {
-    spread: 0.25,
-    amount: 0.1
+    bid: {
+      spread: 0.125,
+      amount: 0.111
+    },
+    ask: {
+      spread: 0.125,
+      amount: 0.101
+    }
   },
   {
-    spread: 0.5,
-    amount: 0.2
+    bid: {
+      spread: 0.25,
+      amount: 0.112
+    },
+    ask: {
+      spread: 0.25,
+      amount: 0.102
+    }
   },
   {
-    spread: 0.6,
-    amount: 0.3
-  },
-  {
-    spread: 0.75,
-    amount: 0.4
-  },
-  {
-    spread: 1,
-    amount: 0.5
+    bid: {
+      spread: 0.3,
+      amount: 0.113
+    },
+    ask: {
+      spread: 0.3,
+      amount: 0.103
+    }
   }
 ];
 

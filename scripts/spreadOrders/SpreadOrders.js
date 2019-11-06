@@ -9,21 +9,21 @@ class SpreadOrders {
     const { internalPrice, externalPrice } = marketData;
     const cexOrders = [];
 
-    this.range.map(({ spread, amount }) => {
+    this.range.map((options) => {
       const { ask, bid } = this.useExternalPrice 
-      ? this.calculatePrices(internalPrice, externalPrice, spread)
-      : this.calculatePricesOnlyInternal(internalPrice, spread);
+      ? this.calculatePrices(internalPrice, externalPrice, options.ask, options.bid)
+      : this.calculatePricesOnlyInternal(internalPrice, option.ask, option.bid);
 
       cexOrders.push({
         price: ask,
-        amount,
+        amount: options.ask.amount,
         side: 'sell',
         pair: this.pair
       });
 
       cexOrders.push({
         price: bid,
-        amount,
+        amount: options.bid.amount,
         side: 'buy',
         pair: this.pair
       });
@@ -32,46 +32,48 @@ class SpreadOrders {
     return cexOrders;
   }
 
-  calculatePrices(internalPrice, externalPrice, spreadInPercent) {
-    const spread = spreadInPercent / 100;
+  calculatePrices(internalPrice, externalPrice, askOptions, bidOptions) {
+    const askSpread = askOptions.spread / 100;
+    const bidSpread = bidOptions.spread / 100;
+
     if (externalPrice.mid > internalPrice.mid) {
-      let bidSpreadPrice = externalPrice.mid * (1 - spread / 2);
+      let bidSpreadPrice = externalPrice.mid * (1 - bidSpread / 2);
 
       if (bidSpreadPrice > internalPrice.mid) {
         return {
-          ask: internalPrice.mid * (1 + spread / 2),
-          bid: internalPrice.mid * (1 - spread / 2)
+          ask: internalPrice.mid * (1 + askSpread / 2),
+          bid: internalPrice.mid * (1 - bidSpread / 2)
         }
       }
 
       return {
-        ask: externalPrice.mid * (1 + spread / 2),
+        ask: externalPrice.mid * (1 + askSpread / 2),
         bid: bidSpreadPrice
       }
     } else {
-      let askSpreadPrice = externalPrice.mid * (1 + spread / 2);
+      let askSpreadPrice = externalPrice.mid * (1 + askSpread / 2);
 
       if (askSpreadPrice < internalPrice.mid) {
         return {
-          ask: internalPrice.mid * (1 + spread / 2),
-          bid: internalPrice.mid * (1 - spread / 2)
+          ask: internalPrice.mid * (1 + askSpread / 2),
+          bid: internalPrice.mid * (1 - bidSpread / 2)
         }
       }
 
       return {
         ask: askSpreadPrice,
-        bid: externalPrice.mid * (1 - spread / 2)
+        bid: externalPrice.mid * (1 - bidSpread / 2)
       }
     }
   }
 
-  calculatePricesOnlyInternal(internalPrice, spreadInPercent) {
-    const spread = spreadInPercent / 100;
-
+  calculatePricesOnlyInternal(internalPrice, askOptions, bidOptions) {
+    const askSpread = askOptions.spread / 100;
+    const bidSpread = bidOptions.spread / 100;
     console.log(`Internal price: ${internalPrice.mid}`);
     return {
-      ask: internalPrice.mid * (1 + spread / 2),
-      bid: internalPrice.mid * (1 - spread / 2)
+      ask: internalPrice.mid * (1 + askSpread / 2),
+      bid: internalPrice.mid * (1 - bidSpread / 2)
     }
   }
 
