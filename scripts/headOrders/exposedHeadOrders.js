@@ -122,11 +122,14 @@ const calculatePrice = async (side = 'sell') => {
   return price;
 };
 
-const isFillOrPartiallyFill = async orderId => {
+const wasFilled = async orderId => {
   const { fills } = await doGetRequest({ uri: MY_FILLS_URI });
-  const orderFilled = fills.find(fill => fill.orderId === orderId);
+  const orderFilled = fills.find(fill => 
+     fill.orderId === orderId && fill.orderStatus === 'FILLED'
+  );
 
   if (orderFilled) {
+    console.log(`An order was filled, orderId: ${orderId}`);
     return true;
   }
 
@@ -137,15 +140,11 @@ const tradingCycle = async () => {
   console.log('My orders', myOrders.map((order) => order.id));
 
   if (myOrders.length > 0) {
-    // get status
-    // if open --> cancel
-    // re post
     await Promise.all(
       myOrders.map(async order => {
-        const filled = await isFillOrPartiallyFill(order.id);
+        const filled = await wasFilled(order.id);
         if (filled) {
-          // stop return
-          console.log('Filleada baby');
+          console.log(`An order was filled, orderId:`, order.id);
           myOrders = myOrders.filter(myOrder => myOrder.id !== order.id);
           return;
         }
