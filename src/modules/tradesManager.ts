@@ -5,9 +5,11 @@ import {
 } from '@dydxprotocol/solo';
 import {
   calculatePrice,
+  getTokens,
+  convertToCexOrder
 } from '../shared/utils';
 import {
-  IResponseTrade
+  IResponseTrade, MarketSideString
 } from '../entities/types';
 
 const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
@@ -22,24 +24,26 @@ class TradesManager {
     account,
     limit = 10,
     startingBefore = new Date(),
-    pairs = ['WETH-DAI', 'DAI-WETH']
+    pair = 'WETH-DAI'
   }: {
     account?: string;
     limit?: number;
     startingBefore?: Date;
-    pairs?: string[]
+    pair?: string
   }) {
+    const [assetToken, baseToken] = getTokens(pair);
+
     const { trades } = await this.solo.api.getTrades({
       startingBefore,
       limit,
       makerAccountOwner: account,
-      pairs
+      pairs: [`${assetToken.shortName}-${baseToken.shortName}`, `${baseToken.shortName}-${assetToken.shortName}`]
     });
     return trades;
   }
 
-  public async getOwnTrades(limit: number, startingBefore: Date) {
-    const trades: any = await this.getTrades({ account: DEFAULT_ADDRESS, limit, startingBefore });
+  public async getOwnTrades(limit: number, pair: string, startingBefore: Date = new Date()) {
+    const trades: any = await this.getTrades({ account: DEFAULT_ADDRESS, limit, startingBefore, pair });
     const parsedTrades: any = trades.map((trade: any) => {
       return this.parseApiTrade(trade);
     });
@@ -53,35 +57,23 @@ class TradesManager {
       createdAt,
       makerAmount,
       takerAmount,
-      status
+      status,
     } = tradeApi;
 
-    const makerMarket = makerOrder.pair.makerCurrency.soloMarket;
-    const price = calculatePrice({
+    const { price, amount, side } = convertToCexOrder({
       makerMarket: makerOrder.pair.makerCurrency.soloMarket,
       takerMarket: makerOrder.pair.takerCurrency.soloMarket,
       makerAmount,
       takerAmount
     });
 
-    let side: string;
-    let amount: string;
-
-    if (makerMarket === MarketId.WETH.toNumber()) {
-      side = 'SELL'; // Si estoy ofreciendo WETH, significa que estoy vendiendo
-      amount = this.solo.web3.utils.fromWei(makerAmount, 'ether');
-    } else {
-      side = 'BUY';
-      amount = this.solo.web3.utils.fromWei(takerAmount, 'ether');
-    }
-
     const responseTrade: IResponseTrade = {
       transactionHash,
-      pair: 'ETH-DAI',
-      side,
+      pair: makerOrder.pair.name,
+      side: MarketSideString[side],
       createdAt,
       price,
-      amount: parseFloat(amount),
+      amount,
       status
     };
 

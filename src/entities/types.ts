@@ -24,6 +24,11 @@ export const MarketSide = {
   buy: 1
 };
 
+export const MarketSideString = [
+  'sell',
+  'buy'
+];
+
 export interface IResponseOrder {
   id: string;
   pair: string;
@@ -37,12 +42,11 @@ export interface IResponseOrder {
   amountRemaining?: number;
 }
 
-export interface IError {
-  status?: number;
-  message?: string;
+export interface IHTTPError {
+  status: number;
+  message: string;
 }
 
-// TODO: Add a USDC property to the interface
 export interface IBalances {
   eth: string;
   dai: string;
@@ -72,7 +76,22 @@ export interface IResponseFill {
   updatedAt: string;
   price: number;
   amount: number;
-  fillAmount: number;
   fillStatus: string;
   orderStatus: string;
+  amountRemaining: number;
+  amountFilled: number;
+}
+
+export interface IMarket {
+  internalSymbol: string;
+  dexMarketBuy: string;
+  dexMarketSell: string;
+  exponential: string;
+}
+
+export interface IToken {
+  id: number;
+  shortName: string;
+  weiUnit: string;
+  isBase: boolean;
 }

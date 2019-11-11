@@ -1,13 +1,13 @@
-import { logger } from '@shared';
-import { Request, Response, Router } from 'express';
-import { BAD_REQUEST, CREATED, OK } from 'http-status-codes';
-import BigNumber from 'bignumber.js';
+import { Request, Response, Router, NextFunction } from 'express';
+import { CREATED, OK, INTERNAL_SERVER_ERROR } from 'http-status-codes';
 import { solo } from '../modules/solo';
-import { ISimpleOrder, IResponseFill } from '../entities/types';
+import { IResponseFill, MarketSide, ICexOrder } from '../entities/types';
 // tslint:disable-next-line: no-var-requires
 import ordersManagerFactory from '../modules/ordersManager';
+import { logger } from '@shared';
 import awsManager from '../modules/awsManager';
-import { isDate } from 'util';
+import errors from '../shared/errorsConstants';
+import HTTPError from '../entities/HTTPError';
 
 const ordersManager = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
 const router = Router();
@@ -16,16 +16,19 @@ const router = Router();
  *                      Get order by id - "GET /api/orders/order"
  ******************************************************************************/
 
-router.get('/order', async (req: Request, res: Response) => {
+router.get('/order', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orderId: string = req.query.id;
+    if (!orderId) {
+      return next(errors.BAD_PARAMS);
+    }
+
     const order = await ordersManager.getOrderById(orderId);
-    return res.status(OK).json(order);
+    res.status(OK).json(order);
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
 
@@ -33,29 +36,20 @@ router.get('/order', async (req: Request, res: Response) => {
  *                      Get my orders - "GET /api/orders/myorders"
  ******************************************************************************/
 
-router.get('/myorders', async (req: Request, res: Response) => {
+router.get('/myorders', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const myOrders = await ordersManager.getOwnOrders();
-    const msg = {
-      Message: myOrders,
-      MessageAttributes: {
-        operation: {
-          DataType: 'String',
-          StringValue: 'myOrders'
-        }
-      }
-    };
+    // FIXME: Temporary default market
+    const pair = req.query.pair || 'WETH-DAI';
+    const myOrders = await ordersManager.getOwnOrders(pair);
 
-    awsManager.publish(msg);
-    return res.status(OK).json({
+    res.status(OK).json({
       count: myOrders.length,
       orders: myOrders
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
 
@@ -63,11 +57,12 @@ router.get('/myorders', async (req: Request, res: Response) => {
  *                      Get orderbook - "GET /api/orders/orderbook"
  ******************************************************************************/
 
-router.get('/orderbook', async (req: Request, res: Response) => {
+router.get('/orderbook', async (req: Request, res: Response, next: NextFunction) => {
   const { limit = 10, side = 'both' }: { limit: number; side: string; } = req.query;
+  const pair = req.query.pair || 'WETH-DAI';
 
   try {
-    const orders = await ordersManager.getOrderbook({ limit });
+    const orders = await ordersManager.getOrderbook({ limit }, pair);
 
     if (side === 'sell') {
       return res.status(OK).json({
@@ -89,41 +84,44 @@ router.get('/orderbook', async (req: Request, res: Response) => {
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
 
-/******************************************************************************
+/****** ************************************************************************
  *                       Place Order - "POST /api/orders/place"
  ******************************************************************************/
 
-router.post('/place', async (req: Request, res: Response) => {
+router.post('/place/:side', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
-      makerMarket,
-      takerMarket,
-      makerAmount,
-      takerAmount
-    }: ISimpleOrder = req.body;
+      price,
+      amount
+    }: ICexOrder = req.body;
+
+    const side = req.params.side === 'buy' ? MarketSide.buy : MarketSide.sell;
+
+    const { pair = 'ETH-DAI' } = req.body;
+
+    if (!price || !amount) {
+      return next(errors.BAD_PARAMS);
+    }
 
     const order = await ordersManager.placeOrder({
-      makerMarket,
-      takerMarket,
-      makerAmount,
-      takerAmount
-    });
+      amount,
+      price,
+      side
+    }, pair);
 
-    return res.status(CREATED).json({
+    res.status(CREATED).json({
       message: 'Order successfully created',
       order
     });
   } catch (err) {
-    logger.error(err.message, err);
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    logger.error(err.message, JSON.stringify(err));
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
 
@@ -131,43 +129,26 @@ router.post('/place', async (req: Request, res: Response) => {
  *                       Buy Order - "POST /api/orders/buy"
  ******************************************************************************/
 
-router.post('/buy', async (req: Request, res: Response) => {
+router.post('/buy', async (req: Request, res: Response, next: NextFunction) => {
+  // BREAKING CHANGE: In future versions symbol will be required
+  const { pair = 'ETH-DAI' } = req.body;
+  const { price, amount }: any = req.body;
   try {
-    const {
-      price,
-      amount
-    }: any = req.body;
+    if (!price || !amount) {
+      return next(errors.BAD_PARAMS);
+    }
 
-    const takerAmount = amount;
-    const makerAmount = price * amount;
-
-    const order = await ordersManager.placeOrder({
-      makerMarket: new BigNumber(1),
-      takerMarket: new BigNumber(0),
-      makerAmount: `${makerAmount}e18`,
-      takerAmount: `${takerAmount}e18`
-    });
-
-    const msg = {
-      Message: order,
-      MessageAttributes: {
-        operation: {
-          DataType: 'String',
-          StringValue: 'placeBuyOrder'
-        }
-      }
-    };
-    awsManager.publish(msg);
+    const order = await ordersManager.buy(price, amount, pair);
+    awsManager.publishToSNS('buy route', JSON.stringify(order));
 
     return res.status(CREATED).json({
       message: 'Order successfully created',
       order
     });
   } catch (err) {
-    logger.error(err.message, err);
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    logger.error(err.message, JSON.stringify(err));
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
 
@@ -175,43 +156,31 @@ router.post('/buy', async (req: Request, res: Response) => {
  *                       Sell Order - "POST /api/orders/sell"
  ******************************************************************************/
 
-router.post('/sell', async (req: Request, res: Response) => {
+router.post('/sell', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const {
-      price,
-      amount
-    }: any = req.body;
+    const { price, amount }: any = req.body;
+    // BREAKING CHANGE: In future versions symbol will be required
+    const { pair = 'WETH-DAI' } = req.body;
 
-    const makerAmount = amount;
-    const takerAmount = price * amount;
+    // if (!isSymbolEnabled(pair)) {
+    //   return next(errors.BAD_PARAMS);
+    // }
 
-    const order = await ordersManager.placeOrder({
-      makerMarket: new BigNumber(0),
-      takerMarket: new BigNumber(1),
-      makerAmount: `${makerAmount}e18`,
-      takerAmount: `${takerAmount}e18`
-    });
+    if (!price || !amount) {
+      return next(errors.BAD_PARAMS);
+    }
 
-    const msg = {
-      Message: order,
-      MessageAttributes: {
-        operation: {
-          DataType: 'String',
-          StringValue: 'placeSellOrder'
-        }
-      }
-    };
-    awsManager.publish(msg);
+    const order = await ordersManager.sell(price, amount, pair);
 
+    awsManager.publishToSNS('sell route', JSON.stringify(order));
     return res.status(CREATED).json({
       message: 'Order successfully created',
       order
     });
   } catch (err) {
-    logger.error(err.message, err);
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    logger.error(err.message, JSON.stringify(err));
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
 
@@ -219,31 +188,23 @@ router.post('/sell', async (req: Request, res: Response) => {
  *                       Cancel Order - "POST /api/orders/cancel"
  ******************************************************************************/
 
-router.post('/cancel', async (req: Request, res: Response) => {
-  const orderId: string = req.body.orderId;
+router.post('/cancel', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const orderId: string = req.body.orderId;
+
+    if (!orderId) {
+      return next(errors.BAD_PARAMS);
+    }
+
     const result = await ordersManager.cancelOrder(orderId);
-    const msg = {
-      Message: result,
-      MessageAttributes: {
-        operation: {
-          DataType: 'String',
-          StringValue: 'cancelOrder'
-        }
-      }
-    };
-
-    awsManager.publish(msg);
-
-    return res.status(CREATED).json({
+    res.status(CREATED).json({
       message: 'Order canceled',
       result
     });
   } catch (err) {
-    logger.error(err.message, err);
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    logger.error(err.message, JSON.stringify(err));
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
 
@@ -251,17 +212,17 @@ router.post('/cancel', async (req: Request, res: Response) => {
  *                       Get Bid - "GET /api/orders/bid"
  ******************************************************************************/
 
-router.get('/bid', async (req: Request, res: Response) => {
+router.get('/bid', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const bid = await ordersManager.getBid();
+    const pair = req.query.pair || 'WETH-DAI';
+    const bid = await ordersManager.getBid(pair);
     return res.status(OK).json({
       bid
     });
   } catch (err) {
-    logger.error(err.message, err);
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    logger.error(err.message, JSON.stringify(err));
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
 
@@ -269,17 +230,39 @@ router.get('/bid', async (req: Request, res: Response) => {
  *                       Get Ask - "GET /api/orders/ask"
  ******************************************************************************/
 
-router.get('/ask', async (req: Request, res: Response) => {
+router.get('/ask', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const ask = await ordersManager.getAsk();
+    const pair = req.query.pair || 'WETH-DAI';
+    const ask = await ordersManager.getAsk(pair);
     return res.status(OK).json({
       ask
     });
   } catch (err) {
-    logger.error(err.message, err);
-    return res.status(BAD_REQUEST).json({
-      error: err.message
+    logger.error(err.message, JSON.stringify(err));
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
+  }
+});
+
+/******************************************************************************
+ *                       Get Best Dydx Prices - "GET /api/orders/best-prices"
+ ******************************************************************************/
+
+router.get('/best-prices', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const pair = req.query.pair || 'WETH-DAI';
+    const bestPrices = await Promise.all([
+      ordersManager.getAsk(pair),
+      ordersManager.getBid(pair)
+    ]);
+    return res.status(OK).json({
+      ask: bestPrices[0],
+      bid: bestPrices[1]
     });
+  } catch (err) {
+    logger.error(err.message, JSON.stringify(err));
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
 
@@ -287,65 +270,41 @@ router.get('/ask', async (req: Request, res: Response) => {
  *                      Cancel all my orders - "POST /api/orders/cancel-all"
  ******************************************************************************/
 
-router.post('/cancel-all', async (req: Request, res: Response) => {
+router.post('/cancel-all', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const ordersCanceled = await ordersManager.cancelAllOwnOrder();
-    const msg = {
-      Message: ordersCanceled,
-      MessageAttributes: {
-        operation: {
-          DataType: 'String',
-          StringValue: 'cancelAll'
-        }
-      }
-    };
-
-    awsManager.publish(msg);
+    const { pair = 'WETH-DAI' } = req.body;
+    const ordersCanceled = await ordersManager.cancelMyOrders(pair);
 
     return res.status(OK).json({
       count: ordersCanceled.length,
       orders: ordersCanceled
     });
   } catch (err) {
-    logger.error(err.message, err);
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    logger.error(err.message, JSON.stringify(err));
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
 
 /******************************************************************************
  *                      Buy Many  - "POST /api/orders/buy-many"
  ******************************************************************************/
-
-router.post('/buy-many', async (req: Request, res: Response) => {
-  const { amount, adjust } = req.body;
+/**
+ * @deprecated Will be deleted future versions. This is a strategy module concern
+ */
+router.post('/buy-many', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { amount, adjust, pair = 'WETH-DAI' } = req.body;
     if (!amount) {
-      return res.status(BAD_REQUEST).json({
-        message: 'Please remember to enter amount'
-      });
+      return next(errors.BAD_PARAMS);
     }
-    const result = await ordersManager.buyMany(amount, adjust);
 
-    // TODO: Add data types
-    const msg = {
-      Message: result,
-      MessageAttributes: {
-        operation: {
-          DataType: 'String',
-          StringValue: 'buyMany'
-        }
-      }
-    };
-
-    awsManager.publish(msg);
+    const result = await ordersManager.postMany(amount, adjust, 'buy', pair);
     return res.status(OK).json(result);
   } catch (err) {
-    logger.error(err.message, err);
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    logger.error(err.message, JSON.stringify(err));
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
 
@@ -353,33 +312,22 @@ router.post('/buy-many', async (req: Request, res: Response) => {
  *                      Sell Many - "POST /api/orders/sell-many"
  ******************************************************************************/
 
-router.post('/sell-many', async (req: Request, res: Response) => {
-  const { amount, adjust } = req.body;
+/**
+ * @deprecated Will be deleted future versions. This is a strategy module concern
+ */
+router.post('/sell-many', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { amount, adjust, pair = 'WETH-DAI' } = req.body;
     if (!amount) {
-      return res.status(BAD_REQUEST).json({
-        message: 'Please remember to enter amount'
-      });
+      return next(errors.BAD_PARAMS);
     }
-    const result = await ordersManager.sellMany(amount, adjust);
-    // TODO: Wrap this msg
-    const msg = {
-      Message: result,
-      MessageAttributes: {
-        operation: {
-          DataType: 'String',
-          StringValue: 'sellMany'
-        }
-      }
-    };
-    awsManager.publish(msg);
 
+    const result = await ordersManager.postMany(amount, adjust, 'sell', pair);
     return res.status(OK).json(result);
   } catch (err) {
-    logger.error(err.message, err);
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    logger.error(err.message, JSON.stringify(err));
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
 
@@ -387,62 +335,38 @@ router.post('/sell-many', async (req: Request, res: Response) => {
  *                      Get my fills - "GET /api/orders/myfills"
  ******************************************************************************/
 
-router.get('/myfills', async (req: Request, res: Response) => {
+router.get('/myfills', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let {
-      limit = 100,
-      startingBefore = new Date()
-    }:
-      {
-        limit: number;
-        startingBefore: Date;
-      } = req.query;
-    if (!isDate(startingBefore)) {
+    const { limit = 100, pair = 'WETH-DAI' } = req.query;
+    let { startingBefore } = req.query;
+
+    if (startingBefore) {
       startingBefore = new Date(startingBefore);
     }
-    const myFills = await ordersManager.getMyFills(limit, startingBefore);
-    const msg = {
-      Message: myFills,
-      MessageAttributes: {
-        operation: {
-          DataType: 'String',
-          StringValue: 'myFills'
-        }
-      }
-    };
-
-    awsManager.publish(msg);
+    const myFills = await ordersManager.getMyFills(limit, pair, startingBefore);
     return res.status(OK).json({
       fills: myFills
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
-
 
 /******************************************************************************
  *                      Get Csv of my fills - "GET /api/orders/myfillsCsv"
  ******************************************************************************/
 
-
-router.get('/myfillsCsv', async (req: Request, res: Response) => {
+router.get('/myfillsCsv', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let {
-      limit = 100,
-      startingBefore = new Date()
-    }:
-      {
-        limit: number;
-        startingBefore: Date;
-      } = req.query;
-    if (!isDate(startingBefore)) {
+    const { limit = 100, pair = 'WETH-DAI' } = req.query;
+    let { startingBefore = new Date() } = req.query;
+
+    if (startingBefore) {
       startingBefore = new Date(startingBefore);
     }
-    const myFills = await ordersManager.getMyFills(limit, startingBefore);
+    const myFills = await ordersManager.getMyFills(limit, pair, startingBefore);
     const csvHeader = [
       'transactionHash',
       'orderId',
@@ -451,22 +375,14 @@ router.get('/myfillsCsv', async (req: Request, res: Response) => {
       'createdAt',
       'updatedAt',
       'price',
-      'fillAmount',
+      'amountFilled',
+      'amountRemaining',
       'amount',
       'fillStatus',
       'orderStatus'
     ];
-    const msg = {
-      Message: myFills,
-      MessageAttributes: {
-        operation: {
-          DataType: 'String',
-          StringValue: 'myFillsCsv'
-        }
-      }
-    };
 
-    awsManager.publish(msg);
+    // TODO: Use a helper to create this csv
     res.setHeader('Content-Type', 'text/csv');
     res.attachment(`myFills-${new Date().toISOString()}.csv`);
     res.status(OK);
@@ -482,7 +398,8 @@ router.get('/myfillsCsv', async (req: Request, res: Response) => {
       res.write('"' + fill.createdAt.toString().replace(/\"/g, '""') + '"' + ',');
       res.write('"' + fill.updatedAt.toString().replace(/\"/g, '""') + '"' + ',');
       res.write('"' + fill.price.toString().replace(/\"/g, '""') + '"' + ',');
-      res.write('"' + fill.fillAmount.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + fill.amountFilled.toString().replace(/\"/g, '""') + '"' + ',');
+      res.write('"' + fill.amountRemaining.toString().replace(/\"/g, '""') + '"' + ',');
       res.write('"' + fill.amount.toString().replace(/\"/g, '""') + '"' + ',');
       res.write('"' + fill.fillStatus.toString().replace(/\"/g, '""') + '"' + ',');
       res.write('"' + fill.orderStatus.toString().replace(/\"/g, '""') + '"' + '\r\n');
@@ -490,10 +407,9 @@ router.get('/myfillsCsv', async (req: Request, res: Response) => {
     res.end();
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
-})
+});
 
 export default router;

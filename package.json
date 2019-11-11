@@ -23,7 +23,7 @@
     "@server": "dist/Server"
   },
   "dependencies": {
-    "@dydxprotocol/solo": "^0.15.1",
+    "@dydxprotocol/solo": "^0.23.0",
     "aes256": "^1.0.4",
     "aws-sdk": "^2.525.0",
     "cookie-parser": "^1.4.4",

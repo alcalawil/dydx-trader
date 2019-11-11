@@ -8,6 +8,8 @@ const MY_FILLS_URI = BASE_URI + '/api/orders/myfills';
 const CANCEL_URI = BASE_URI + '/api/orders/cancel';
 const HITBTC_BASE_URI = process.env.HITBTC_BASE_URI;
 const HITBTC_ETHDAI_TICKER = HITBTC_BASE_URI + '/ticker/ethdai';
+const HITBTC_ETHUSDC_TICKER = HITBTC_BASE_URI + '/ticker/ethusdc';
+
 const GET_ORDER_URI = BASE_URI + '/api/orders/order';
 
 const DEFAULT_AMOUNT = parseFloat(process.env.DEFAULT_AMOUNT) || 0.1;
@@ -66,5 +68,6 @@ module.exports = {
   ORDER_SIDE,
   SECONDS_INTERVAL_SPREAD,
   GET_ORDER_URI,
-  USE_EXTERNAL_PRICE
+  USE_EXTERNAL_PRICE,
+  HITBTC_ETHUSDC_TICKER
 };

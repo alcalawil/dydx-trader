@@ -49,12 +49,17 @@ class AwsManager {
     });
   }
 
-  public publish(msg: any) {
-    return new Promise(async (resolve, reject) => {
+  public publishToSNS(operation: string, message: string) {
+    return new Promise((resolve, reject) => {
       const publishParams: AWS.SNS.PublishInput = {
-        TopicArn: process.env.SNS_ARN,
-        Message: JSON.stringify(msg.Message),
-        MessageAttributes: msg.MessageAttributes
+        TopicArn: process.env.SNS_ARN || 'none',
+        Message: message,
+        MessageAttributes: {
+          operation: {
+            DataType: 'String',
+            StringValue: operation
+          }
+        }
       };
 
       sns.publish(publishParams, (err, data) => {

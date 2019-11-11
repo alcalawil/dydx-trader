@@ -1,8 +1,13 @@
 {
   "cSpell.words": [
+    "IHTTP",
+    "Icex",
     "WETH",
+    "bignumber",
     "dydx",
     "dydxprotocol",
+    "myfills",
+    "myorders",
     "orderbook",
     "quotemark",
     "usdc"

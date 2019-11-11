@@ -13,13 +13,15 @@ const CANCEL_ALL_URI = BASE_URI + '/api/orders/cancel-all';
 // Buy Many params
 const BUY_MANY_BODY = {
   "amount": parseFloat(process.env.BUY_AMOUNT),
-  "adjust": parseFloat(process.env.BUY_SEPARATION)
+  "adjust": parseFloat(process.env.BUY_SEPARATION),
+  "pair": process.env.DEFAULT_PAIR
 };
 
 // Sell Many params
 const SELL_MANY_BODY = {
   "amount": parseFloat(process.env.SELL_AMOUNT),
-  "adjust": parseFloat(process.env.SELL_SEPARATION)
+  "adjust": parseFloat(process.env.SELL_SEPARATION),
+  "pair": process.env.DEFAULT_PAIR
 };
 
 /* ---------------------------------------------------------------------------------- */

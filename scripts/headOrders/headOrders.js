@@ -16,11 +16,10 @@ const MY_FILLS_URI = BASE_URI + '/api/orders/myfills';
 const CANCEL_URI = BASE_URI + '/api/orders/cancel';
 const HITBTC_BASE_URI = process.env.HITBTC_BASE_URI;
 const HITBTC_ETHDAI_TICKER = HITBTC_BASE_URI + '/ticker/ethdai';
+const HITBTC_ETHUSDC_TICKER = HITBTC_BASE_URI + '/ticker/ethusdc';
 
 const DEFAULT_AMOUNT_BUY = parseFloat(process.env.DEFAULT_AMOUNT_BUY) || 0.1;
 const DEFAULT_AMOUNT_SELL = parseFloat(process.env.DEFAULT_AMOUNT_SELL) || 0.1;
-
-const EXPOSURE = process.env.EXPOSURE || 'low'; // low or high
 
 const DIFFERENCE_IN_PERCENTAGE =
   parseFloat(process.env.DIFFERENCE_IN_PERCENTAGE) || 0.01;
@@ -28,6 +27,8 @@ const ORDER_SIDE = process.env.ORDER_SIDE || 'sell';
 
 const DIFFERENCE_BETWEEN_BID = process.env.DIFFERENCE_BETWEEN_BID;
 const DIFFERENCE_BETWEEN_ASK = process.env.DIFFERENCE_BETWEEN_ASK;
+const DEFAULT_PAIR = process.env.DEFAULT_PAIR;
+
 let cycle;
 let myOrders = [];
 
@@ -75,21 +76,23 @@ const doGetRequest = async ({ uri }) => {
   return response;
 };
 
-const postOrder = async ({ side = 'sell', price }) => {
+const postOrder = async ({ side = 'sell', price, pair }) => {
   const response =
     side === 'buy'
       ? await doPostRequest({
           uri: BUY_ORDER_URI,
           body: {
             price,
-            amount: DEFAULT_AMOUNT_BUY
+            amount: DEFAULT_AMOUNT_BUY,
+            pair
           }
         })
       : await doPostRequest({
           uri: SELL_ORDER_URI,
           body: {
             price,
-            amount: DEFAULT_AMOUNT_SELL
+            amount: DEFAULT_AMOUNT_SELL,
+            pair
           }
         });
 
@@ -103,8 +106,8 @@ const calculatePercentage = (inputVale, percentageNumber) => {
 };
 
 const getMidPrice = async () => {
-  const { ask } = await doGetRequest({ uri: GET_ASK_URI });
-  const { bid } = await doGetRequest({ uri: GET_BID_URI });
+  const { ask } = await doGetRequest({ uri: `${GET_ASK_URI}?pair=${DEFAULT_PAIR}` });
+  const { bid } = await doGetRequest({ uri: `${GET_BID_URI}?pair=${DEFAULT_PAIR}` });
 
   if (!ask || !bid) {
     return null;
@@ -140,34 +143,31 @@ const getPriceDiff = (price1, price2) => {
   return Math.abs(price1 - price2);
 };
 
-const calculatePrice = async (side = 'sell') => {
-  const hitbtc = await doGetRequest({ uri: HITBTC_ETHDAI_TICKER });
+const calculatePrice = async (side = 'sell', externalPrice) => {
   const midPrice = await getMidPrice();
   console.log('---------------------------------- Mid Price = ', midPrice);
 
   if (side === 'buy') {
-    const { bid: dydxBid } = await doGetRequest({ uri: GET_BID_URI });
-    const price = compareBid(dydxBid, Number(hitbtc.bid), midPrice);
+    const { bid: dydxBid } = await doGetRequest({ uri: `${GET_BID_URI}?pair=${DEFAULT_PAIR}` });
+    const price = compareBid(dydxBid, Number(externalPrice.bid), midPrice);
 
     console.log(`---- dYdX bid: ${dydxBid} ----`);
-    console.log(`---- HitBTC bid: ${hitbtc.bid} ----`);
-    console.log(`**** Calculated Price: ${price} ****`);
+    console.log(`---- External bid: ${externalPrice.bid} ----`);
 
     return price;
   }
 
-  const { ask: dydxAsk } = await doGetRequest({ uri: GET_ASK_URI });
-  const price = compareAsk(dydxAsk, Number(hitbtc.ask), midPrice);
+  const { ask: dydxAsk } = await doGetRequest({ uri: `${GET_ASK_URI}?pair=${DEFAULT_PAIR}` });
+  const price = compareAsk(dydxAsk, Number(externalPrice.ask), midPrice);
 
   console.log(`---- dYdX ask: ${dydxAsk} ----`);
-  console.log(`---- HitBTC ask: ${hitbtc.ask} ----`);
-  console.log(`**** Calculated Price: ${price} ****`);
+  console.log(`---- External ask: ${externalPrice.ask} ----`);
 
   return price;
 };
 
 const wasFilled = async orderId => {
-  const { fills } = await doGetRequest({ uri: MY_FILLS_URI });
+  const { fills } = await doGetRequest({ uri: `${MY_FILLS_URI}?pair=${DEFAULT_PAIR}` });
   const orderFilled = fills.find(fill => 
      fill.orderId === orderId && fill.orderStatus === 'FILLED'
   );
@@ -184,7 +184,7 @@ const wasFilled = async orderId => {
 // =============================================================================================
 
 const tradingCycle = async () => {
-  console.log('My orders', myOrders.map((order, OrderId) => order.id));
+  console.log('My orders', myOrders.map((order) => order.id));
 
   if (myOrders.length > 0) {
     // get status
@@ -216,9 +216,17 @@ const tradingCycle = async () => {
   }
 
   // No orders case
+  let externalPriceUri = HITBTC_ETHDAI_TICKER;
+  if (DEFAULT_PAIR === 'WETH-USDC') {
+    externalPriceUri = HITBTC_ETHUSDC_TICKER;
+  }
 
-  const price = await calculatePrice(ORDER_SIDE);
-  const order = await postOrder({ side: ORDER_SIDE, price });
+  const externalPrice = await doGetRequest({ uri: externalPriceUri });
+  const price = await calculatePrice(ORDER_SIDE, externalPrice);
+  
+  console.log(`**** Calculated Price: ${price} ****`);
+
+  const order = await postOrder({ side: ORDER_SIDE, price, pair: DEFAULT_PAIR });
 
   if (!order) {
     console.log('Error posting order...');
@@ -235,7 +243,7 @@ const tradingCycle = async () => {
 console.log(`[${new Date().toISOString()}] - Starting program...`);
 console.log(`
   *** Orders side: ${ORDER_SIDE}
-  *** Exposure (risk): ${EXPOSURE}
+  *** Pair: ${DEFAULT_PAIR}
   *** Bid/Ask distance: ${DIFFERENCE_IN_PERCENTAGE}%
   *** Orders Amount: ${ORDER_SIDE === 'buy' ? DEFAULT_AMOUNT_BUY : DEFAULT_AMOUNT_SELL}
   --------------------------------------------------

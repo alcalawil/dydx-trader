@@ -14,7 +14,8 @@ const {
   SECONDS_INTERVAL_SPREAD,
   DEFAULT_PAIR,
   GET_ORDER_URI,
-  USE_EXTERNAL_PRICE
+  USE_EXTERNAL_PRICE,
+  HITBTC_ETHUSDC_TICKER
 } = require('./constants');
 
 
@@ -25,9 +26,16 @@ console.log(`Using hitbtc prices: ${spreadOrders.useExternalPrice}`);
 // ========================================TRADING CYCLE ===============================================
 const tradingCycle = async () => {
   // TODO: Use best-prices endpoint
+  // TODO: Use Promise.all
   const { ask: dydxAsk } = await doGetRequest({ uri: GET_ASK_URI });
   const { bid: dydxBid } = await doGetRequest({ uri: GET_BID_URI });
-  const hitbtcPrice = await doGetRequest({ uri: HITBTC_ETHDAI_TICKER });
+
+  let externalPriceUri = HITBTC_ETHDAI_TICKER;
+  if (DEFAULT_PAIR === 'WETH-USDC') {
+    externalPriceUri = HITBTC_ETHUSDC_TICKER;
+  }
+
+  const hitbtcPrice = await doGetRequest({ uri: externalPriceUri });
   
   const internalPrice = new PriceDetail(dydxAsk, dydxBid);
   const externalPrice = new PriceDetail(parseFloat(hitbtcPrice.ask), parseFloat(hitbtcPrice.bid));

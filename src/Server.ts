@@ -4,9 +4,10 @@ import { Request, Response, NextFunction } from 'express';
 import logger from 'morgan';
 import BaseRouter from './routes';
 import cors from 'cors';
-import { IError } from './entities/types';
+import { IHTTPError } from './entities/types';
 import { authKey } from './middlewares/authKey';
-
+import errorHandler from './middlewares/errorHandler';
+import errorsConstants from './shared/errorsConstants';
 const app = express();
 
 // Add middleware/settings/routes to express.
@@ -17,18 +18,17 @@ app.use(cors());
 app.use(cookieParser());
 app.use(authKey);
 app.use('/api', BaseRouter);
+app.use(errorHandler);
 
 // Errors handling
+// FIXME: Is this really needed?
 app.use((req: Request, res: Response, next: NextFunction) => {
-  const err: IError = new Error('Route not found');
-  err.status = 404;
-  res.status(err.status);
-  res.json({
+  const err: IHTTPError = errorsConstants.ROUTE_NOT_FOUND;
+  res.status(err.status).json({
     error: {
       message: err.message
     }
   });
 });
-
 
 export default app;

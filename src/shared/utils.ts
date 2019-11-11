@@ -1,15 +1,10 @@
-import { IDexOrder, ICexOrder } from '../entities/types';
-import BigNumber from 'bignumber.js';
-import web3 from 'web3';
-import { logger } from './Logger';
 // tslint:disable-next-line: no-var-requires
 const aes256 = require('aes256'); // TODO: Convert to ES6 module
-
-// TODO: Use enum from types
-const MarketSide = {
-  sell: 0,
-  buy: 1
-};
+import BigNumber from 'bignumber.js';
+import { IDexOrder, ICexOrder, MarketSide, IMarket, IToken } from '../entities/types';
+import { logger } from './Logger';
+import { DYDX_TOKENS } from '../constants/Tokens';
+import { INVALID_TOKEN_ERROR } from 'src/constants/Errors';
 
 export const calculatePrice = ({
   makerMarket,
@@ -27,59 +22,63 @@ export const calculatePrice = ({
   return parseFloat(makerAmount) / parseFloat(takerAmount);
 };
 
-export const convertToCexOrder = ({
-  makerMarket,
-  takerMarket,
-  makerAmount,
-  takerAmount
-}: IDexOrder): ICexOrder => {
-  // Sell side
-  const makerAmountBG = new BigNumber(makerAmount);
-  const takerAmountBG = new BigNumber(takerAmount);
+export const convertToCexOrder = (dexOrder: IDexOrder): ICexOrder => {
+  let cexOrder: ICexOrder;
 
-  // TODO: Use MarketId
+  const makerAmount = new BigNumber(dexOrder.makerAmount);
+  const takerAmount = new BigNumber(dexOrder.takerAmount);
 
-  if (Number(makerMarket) === 0) {
-    const sellAmount = Number(web3.utils.fromWei(makerAmountBG.toString(), 'ether'));
-    const sellPrice = parseFloat(takerAmount) / parseFloat(makerAmount);
+  const takerToken = getTokenById(Number(dexOrder.takerMarket));
+  const makerToken = getTokenById(Number(dexOrder.makerMarket));
 
-    return {
-      price: sellPrice,
-      amount: sellAmount,
+  if (!takerToken || !makerToken) {
+    throw new Error(INVALID_TOKEN_ERROR);
+  }
+
+  if (makerToken.isBase) {
+    // it's buying
+    cexOrder = {
+      amount: convertFromWei(takerAmount, Number(dexOrder.takerMarket)),
+      price: parseFloat(dexOrder.makerAmount) / parseFloat(dexOrder.takerAmount),
+      side: MarketSide.buy
+    };
+  } else {
+  // it's selling
+    cexOrder = {
+      amount: convertFromWei(makerAmount, Number(dexOrder.makerMarket)),
+      price: parseFloat(dexOrder.takerAmount) / parseFloat(dexOrder.makerAmount),
       side: MarketSide.sell
     };
   }
 
-  // Buy side
-  const buyAmount = Number(web3.utils.fromWei(takerAmountBG.toString(), 'ether'));
-  const buyPrice = parseFloat(makerAmount) / parseFloat(takerAmount);
+  if (takerToken.shortName === 'USDC' || makerToken.shortName === 'USDC') {
+    cexOrder.price = cexOrder.price * Number('1e12');
+  }
 
-  return {
-    price: buyPrice,
-    amount: buyAmount,
-    side: MarketSide.buy
-  };
+  return cexOrder;
 };
 
-export const convertToDexOrder = ({ price, amount, side }: ICexOrder): IDexOrder => {
+export const convertToDexOrder = ({ price, amount, side }: ICexOrder, pair: string): IDexOrder => {
+  const [ assetToken, baseToken ] = getTokens(pair);
+
   // Sell side
-  if (side === 0) {
+  if (side === MarketSide.sell) {
     const takerAmount = price * amount;
     return {
-      makerMarket: new BigNumber(0),
-      takerMarket: new BigNumber(1),
-      takerAmount: `${takerAmount}e18`,
-      makerAmount: `${amount}e18`
+      makerMarket: new BigNumber(assetToken.id),
+      takerMarket: new BigNumber(baseToken.id),
+      makerAmount: `${amount}${assetToken.weiUnit}`,
+      takerAmount: `${takerAmount}${baseToken.weiUnit}`
     };
   }
 
   // buy side
   const makerAmount = price * amount;
   return {
-    makerMarket: new BigNumber(1),
-    takerMarket: new BigNumber(0),
-    takerAmount: `${amount}e18`,
-    makerAmount: `${makerAmount}e18`
+    makerMarket: new BigNumber(baseToken.id),
+    takerMarket: new BigNumber(assetToken.id),
+    makerAmount: `${makerAmount}${baseToken.weiUnit}`,
+    takerAmount: `${amount}${assetToken.weiUnit}`
   };
 };
 
@@ -92,8 +91,8 @@ export const createPriceRange = (price: number, adjust = 1, side = 'sell'): numb
   for (let i = 1; i <= 4; i += 1) {
     const adjustedPercentage = i * adjust;
     const adjustedPrice = side === 'sell'
-    ? price + calculatePercentage(price, adjustedPercentage)
-    : price - calculatePercentage(price, adjustedPercentage);
+      ? price + calculatePercentage(price, adjustedPercentage)
+      : price - calculatePercentage(price, adjustedPercentage);
     prices.push(adjustedPrice);
   }
   logger.debug(`Price: ${price}, adjust: ${adjust}, side: ${side}`);
@@ -111,4 +110,43 @@ export const decrypt = (key: string, dataEncrypted: string) => {
 
 export const encrypt = (key: string, data: string) => {
   return aes256.decrypt(key, data);
+};
+
+export const convertToWei = (amount: number, tokenId: number): BigNumber => {
+  const amountBG = new BigNumber(amount);
+  const tokenFound = DYDX_TOKENS.find((token) => token.id === tokenId);
+  if (!tokenFound) {
+    throw new Error('Invalid or disabled token');
+  }
+
+  return amountBG.multipliedBy(`1${tokenFound.weiUnit}`);
+};
+
+export const convertFromWei = (wei: BigNumber, tokenId: number): number => {
+  const token = getTokenById(tokenId);
+  if (!token) {
+    throw new Error(INVALID_TOKEN_ERROR);
+  }
+
+  return wei.dividedBy(`1${token.weiUnit}`).toNumber();
+};
+
+export const getTokens = (pair: string) => {
+  const tokenNames = pair.split('-');
+
+  const assetToken = DYDX_TOKENS.find((token) => token.shortName === tokenNames[0]);
+  const baseToken = DYDX_TOKENS.find((token) => token.shortName === tokenNames[1]);
+
+  if (!assetToken || !baseToken) {
+    throw new Error('Invalid pair');
+  }
+
+  return [
+    assetToken,
+    baseToken
+  ];
+};
+
+export const getTokenById = (tokenId: number) => {
+  return DYDX_TOKENS.find((token) => token.id === tokenId);
 };

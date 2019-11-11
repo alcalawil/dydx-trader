@@ -32,4 +32,4 @@ curl --request GET \
 
 ### TODO
 
- - Return bid/ask on a single endpoint
+ - Add prettier to fix linter problems

@@ -23,6 +23,7 @@ const EXPOSURE = process.env.EXPOSED_EXPOSURE || 'low'; // low or high
 const DIFFERENCE_IN_PERCENTAGE =
   parseFloat(process.env.EXPOSED_DIFFERENCE_IN_PERCENTAGE) || 0.01;
 const ORDER_SIDE = process.env.ORDER_SIDE || 'sell';
+const DEFAULT_PAIR = process.env.DEFAULT_PAIR;
 
 let cycle;
 let myOrders = [];
@@ -78,14 +79,16 @@ const postOrder = async ({ side = 'sell', price }) => {
         uri: BUY_ORDER_URI,
         body: {
           price,
-          amount: DEFAULT_AMOUNT_BUY
+          amount: DEFAULT_AMOUNT_BUY,
+          pair: DEFAULT_PAIR
         }
       })
       : await doPostRequest({
         uri: SELL_ORDER_URI,
         body: {
           price,
-          amount: DEFAULT_AMOUNT_SELL
+          amount: DEFAULT_AMOUNT_SELL,
+          pair: DEFAULT_PAIR
         }
       });
 
@@ -100,7 +103,7 @@ const calculatePercentage = (inputVale, percentageNumber) => {
 
 const calculatePrice = async (side = 'sell') => {
   if (side === 'buy') {
-    const { bid } = await doGetRequest({ uri: GET_BID_URI });
+    const { bid } = await doGetRequest({ uri: `${GET_BID_URI}?pair=${DEFAULT_PAIR}` });
     const percentage = Math.abs(
       calculatePercentage(bid, DIFFERENCE_IN_PERCENTAGE)
     );
@@ -111,7 +114,7 @@ const calculatePrice = async (side = 'sell') => {
     return price;
   }
 
-  const { ask } = await doGetRequest({ uri: GET_ASK_URI });
+  const { ask } = await doGetRequest({ uri: `${GET_ASK_URI}?pair=${DEFAULT_PAIR}` });
   const percentage = Math.abs(
     calculatePercentage(ask, DIFFERENCE_IN_PERCENTAGE)
   );
@@ -123,7 +126,7 @@ const calculatePrice = async (side = 'sell') => {
 };
 
 const wasFilled = async orderId => {
-  const { fills } = await doGetRequest({ uri: MY_FILLS_URI });
+  const { fills } = await doGetRequest({ uri: `${MY_FILLS_URI}?pair=${DEFAULT_PAIR}` });
   const orderFilled = fills.find(fill => 
      fill.orderId === orderId && fill.orderStatus === 'FILLED'
   );

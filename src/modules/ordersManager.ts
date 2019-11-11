@@ -8,22 +8,26 @@ import {
   ApiOrder,
   ApiFill
 } from '@dydxprotocol/solo';
-import _ from 'lodash';
 
 import {
-  ISimpleOrder,
   IResponseOrder,
   MarketSide,
   IOrderbook,
-  IResponseFill
+  IResponseFill,
+  ICexOrder,
+  IDexOrder,
+  MarketSideString
 } from '../entities/types';
 import {
-  calculatePrice,
   createPriceRange,
   convertToDexOrder,
-  decrypt
+  decrypt,
+  getTokens,
+  convertToCexOrder
 } from '../shared/utils';
 import awsManager from './awsManager';
+import errorsConstants from '../shared/errorsConstants';
+import _ from 'lodash';
 
 // Config
 const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
@@ -32,6 +36,7 @@ const DEFAULT_EXPIRATION = parseInt(
 );
 const ENCRYPTED_PRIVATE_KEY = process.env.ENCRYPTED_PRIVATE_KEY || '';
 const DATA_KEY = process.env.DATA_KEY || '';
+const TAKER_ACCOUNT_OWNER = process.env.TAKER_ACCOUNT || '0x0000000000000000000000000000000000000000';
 
 class OrdersManager {
   public solo: Solo;
@@ -54,12 +59,12 @@ class OrdersManager {
     });
   }
 
-  private _createOrder({
+  private _createLimitOrder({
     makerAmount,
     takerAmount,
     makerMarket,
     takerMarket
-  }: ISimpleOrder): LimitOrder {
+  }: IDexOrder): LimitOrder {
     const order: LimitOrder = {
       makerMarket: new BigNumber(makerMarket),
       takerMarket: new BigNumber(takerMarket),
@@ -67,7 +72,7 @@ class OrdersManager {
       takerAmount: new BigNumber(takerAmount),
       makerAccountOwner: DEFAULT_ADDRESS,
       makerAccountNumber: new BigNumber(0),
-      takerAccountOwner: '0xf809e07870dca762B9536d61A4fBEF1a17178092', // TODO: Is this related to the taker market?
+      takerAccountOwner: TAKER_ACCOUNT_OWNER,
       takerAccountNumber: new BigNumber(0),
       expiration: new BigNumber(DEFAULT_EXPIRATION),
       salt: new BigNumber(Date.now())
@@ -77,44 +82,27 @@ class OrdersManager {
   }
 
   private async _signOrder(order: LimitOrder): Promise<SignedLimitOrder> {
-    const typedSignature = await this.solo.limitOrders.signOrder(
-      order,
-      SigningMethod.Hash
-    );
+    return new Promise(async (resolve, reject) => {
+      const typedSignature = await this.solo.limitOrders.signOrder(
+        order,
+        SigningMethod.Hash
+      );
 
-    const signedOrder: SignedLimitOrder = {
-      ...order,
-      typedSignature
-    };
+      const signedOrder: SignedLimitOrder = {
+        ...order,
+        typedSignature
+      };
 
-    if (!this.solo.limitOrders.orderHasValidSignature(signedOrder)) {
-      throw new Error('Invalid signature!'); // TODO: Export errors from a module
-    }
-
-    return signedOrder;
-  }
-
-  public async placeOrder(orderParams: ISimpleOrder) {
-    const limitOrder = this._createOrder(orderParams);
-    const signedOrder = await this._signOrder(limitOrder);
-    const order = {
-      ...signedOrder,
-      fillOrKill: false
-    };
-
-    const { order: resultOrder } = await this.solo.api.placeOrder(order);
-    const parsedOrder = this.parseApiOrder(resultOrder);
-
-    return parsedOrder;
-  }
-
-  public async buy(makerAmount: string, takerAmount: string) {
-    const limitOrder = this._createOrder({
-      makerAmount,
-      takerAmount,
-      makerMarket: MarketId.DAI,
-      takerMarket: MarketId.WETH
+      if (!this.solo.limitOrders.orderHasValidSignature(signedOrder)) {
+        reject(errorsConstants.INVALID_SIGNATURE);
+      }
+      resolve(signedOrder);
     });
+  }
+
+  public async placeOrder(cexOrder: ICexOrder, pair: string): Promise<IResponseOrder> {
+    const dexOrder = convertToDexOrder(cexOrder, pair);
+    const limitOrder = this._createLimitOrder(dexOrder);
 
     const signedOrder = await this._signOrder(limitOrder);
     const order = {
@@ -128,24 +116,14 @@ class OrdersManager {
     return parsedOrder;
   }
 
-  public async sell(makerAmount: string, takerAmount: string) {
-    const limitOrder = this._createOrder({
-      makerAmount,
-      takerAmount,
-      makerMarket: MarketId.WETH,
-      takerMarket: MarketId.DAI
-    });
+  public async buy(price: number, amount: number, pair: string): Promise<IResponseOrder> {
+    const cexOrder = { price, amount, side: MarketSide.buy };
+    return this.placeOrder(cexOrder, pair);
+  }
 
-    const signedOrder = await this._signOrder(limitOrder);
-    const order = {
-      ...signedOrder,
-      fillOrKill: false
-    };
-
-    const { order: responseOrder } = await this.solo.api.placeOrder(order);
-    const parsedOrder = this.parseApiOrder(responseOrder);
-
-    return parsedOrder;
+  public async sell(price: number, amount: number, pair: string): Promise<IResponseOrder> {
+    const cexOrder = { price, amount, side: MarketSide.sell };
+    return this.placeOrder(cexOrder, pair);
   }
 
   public async cancelOrder(orderId: string) {
@@ -162,7 +140,7 @@ class OrdersManager {
   public async getOrders({
     account,
     limit = 100,
-    pairs = ['WETH-DAI', 'DAI-WETH']
+    pairs
   }: {
     account?: string;
     limit?: number;
@@ -177,8 +155,16 @@ class OrdersManager {
     return orders;
   }
 
-  public async getOwnOrders(account = DEFAULT_ADDRESS) {
-    const apiOrders = await this.getOrders({ account });
+  public async getOwnOrders(pair: string) {
+    const [assetToken, baseToken] = getTokens(pair);
+
+    const apiOrders = await this.getOrders({
+      account: DEFAULT_ADDRESS,
+      pairs: [
+        `${assetToken.shortName}-${baseToken.shortName}`,
+        `${baseToken.shortName}-${assetToken.shortName}`
+      ]
+    });
     const parsedOrders = apiOrders.map((apiOrder) =>
       this.parseApiOrder(apiOrder)
     );
@@ -192,18 +178,39 @@ class OrdersManager {
     return responseOrder;
   }
 
-  public async getOrderbook({ limit = 100 }): Promise<IOrderbook> {
-    const apiOrders = await this.getOrders({ limit });
-    const parsedOrders = apiOrders.map((apiOrder) =>
-      this.parseApiOrder(apiOrder)
-    );
+  public async getOrderbook({ limit = 100 }, pair: string): Promise<IOrderbook> {
+    const [assetToken, baseToken] = getTokens(pair);
+
+    const apiOrders = await Promise.all([
+      await this.getOrders({
+        limit,
+        pairs: [
+          `${baseToken.shortName}-${assetToken.shortName}`
+        ]
+      }),
+      await this.getOrders({
+        limit,
+        pairs: [
+          `${assetToken.shortName}-${baseToken.shortName}`
+        ]
+      })
+    ]);
+    const parsedOrders = await Promise.all([
+      apiOrders[1].map((apiOrder) =>
+        this.parseApiOrder(apiOrder)
+      ),
+      apiOrders[0].map((apiOrder) =>
+        this.parseApiOrder(apiOrder)
+      )
+    ]);
+
     const sellOrders = _.orderBy(
-      parsedOrders.filter((order) => order.side === 'SELL'),
+      parsedOrders[0],
       ['price'],
       ['asc']
     );
     const buyOrders = _.orderBy(
-      parsedOrders.filter((order) => order.side === 'BUY'),
+      parsedOrders[1],
       ['price'],
       ['desc']
     );
@@ -214,11 +221,13 @@ class OrdersManager {
     };
   }
 
-  public async getMyFills(limit: number, startingBefore: Date) {
+  public async getMyFills(limit: number, pair: string, startingBefore: Date = new Date()) {
+    const [assetToken, baseToken] = getTokens(pair);
     const { fills } = await this.solo.api.getFills({
       makerAccountOwner: DEFAULT_ADDRESS,
       startingBefore,
-      limit
+      limit,
+      pairs: [`${assetToken.shortName}-${baseToken.shortName}`, `${baseToken.shortName}-${assetToken.shortName}`]
     });
     const fillsList: any = fills;
     const parsedFills = fillsList.map((fill: ApiFill) => {
@@ -228,20 +237,20 @@ class OrdersManager {
     return parsedFills;
   }
 
-  public async getAsk() {
-    const orderbook = await this.getOrderbook({ limit: 100 });
+  public async getAsk(pair: string) {
+    const orderbook = await this.getOrderbook({ limit: 100 }, pair);
     const askPrice = orderbook.sellOrders[0].price;
     return askPrice;
   }
 
-  public async getBid() {
-    const orderbook = await this.getOrderbook({ limit: 100 });
+  public async getBid(pair: string) {
+    const orderbook = await this.getOrderbook({ limit: 100 }, pair);
     const buyPrice = orderbook.buyOrders[0].price;
     return buyPrice;
   }
 
-  private async cancelAllOrder(account: string) {
-    const orders = await this.getOwnOrders(account);
+  public async cancelMyOrders(pair: string) {
+    const orders = await this.getOwnOrders(pair);
     const ordersCanceled = Array<IResponseOrder>();
     await orders.forEach(async (order) => {
       ordersCanceled.push(await this.cancelOrder(order.id));
@@ -250,74 +259,22 @@ class OrdersManager {
     return orders;
   }
 
-  public async cancelAllOwnOrder(account = DEFAULT_ADDRESS) {
-    const orders = await this.cancelAllOrder(account);
-    return orders;
-  }
+  /**
+   * @deprecated Will be deleted future versions. This is a strategy module concern
+   */
+  public async postMany(amount: number, adjust: number = 1, side: string, pair: string) {
+    const bidPrice = await this.getBid(pair);
+    const prices = createPriceRange(bidPrice, adjust, side);
 
-  public async buyMany(amount: number, adjust: number = 1) {
-    const bidPrice = await this.getBid();
-    const prices = createPriceRange(bidPrice, adjust, 'buy');
-
-    const responseOrders = await Promise.all(
-      prices.map(async (price) => {
-        const { makerAmount, takerAmount } = convertToDexOrder({
-          price,
-          amount,
-          side: MarketSide.buy
-        });
-
-        const order = await this.buy(makerAmount, takerAmount);
-
-        return order;
-      })
-    );
-    // TODO: Return price reference
-    return responseOrders;
-  }
-
-  public async sellMany(
-    amount: number,
-    adjust: number = 1
-  ): Promise<IResponseOrder[]> {
-    const askPrice = await this.getAsk();
-    const prices = createPriceRange(askPrice, adjust, 'sell');
-
-    const responseOrders = await Promise.all(
-      prices.map(async (price) => {
-        const { makerAmount, takerAmount } = convertToDexOrder({
-          price,
-          amount,
-          side: MarketSide.sell
-        });
-
-        const order = await this.sell(makerAmount, takerAmount);
-
-        return order;
-      })
-    );
-
-    return responseOrders;
-  }
-
-  private calcAmount(
-    price: number,
-    amount: number,
-    percentage: number,
-    type: string
-  ) {
-    let result = 0;
-    let newPrice = 0;
-
-    if (type.includes('buy')) {
-      newPrice = price - price * (percentage / 100);
-      result = amount / newPrice;
-    } else if (type.includes('sell')) {
-      newPrice = price + price * (percentage / 100);
-      result = newPrice * amount;
+    if (side === 'buy') {
+      return Promise.all(
+        prices.map((price: number) => this.buy(price, amount, pair))
+      );
     }
 
-    return result;
+    return Promise.all(
+      prices.map((price: number) => this.sell(price, amount, pair))
+    );
   }
 
   private parseApiOrder(orderApi: ApiOrder): IResponseOrder {
@@ -333,32 +290,24 @@ class OrdersManager {
       takerAmountRemaining
     } = orderApi;
 
-    const makerMarket = pair.makerCurrency.soloMarket;
-    const price = calculatePrice({
+    const { price, amount, side } = convertToCexOrder({
       makerMarket: pair.makerCurrency.soloMarket,
       takerMarket: pair.takerCurrency.soloMarket,
       makerAmount,
       takerAmount
     });
 
-    let side: string;
-    let amount: number;
-    let amountRemaining: number;
-
-    if (makerMarket === MarketId.WETH.toNumber()) {
-      side = 'SELL'; // Si estoy ofreciendo WETH, significa que estoy vendiendo
-      amount = parseFloat(this.solo.web3.utils.fromWei(makerAmount, 'ether'));
-      amountRemaining = parseFloat(this.solo.web3.utils.fromWei(makerAmountRemaining, 'ether'));
-    } else {
-      side = 'BUY';
-      amount = parseFloat(this.solo.web3.utils.fromWei(takerAmount, 'ether'));
-      amountRemaining = parseFloat(this.solo.web3.utils.fromWei(takerAmountRemaining, 'ether'));
-    }
+    const { amount: amountRemaining } = convertToCexOrder({
+      makerMarket: pair.makerCurrency.soloMarket,
+      takerMarket: pair.takerCurrency.soloMarket,
+      makerAmount: makerAmountRemaining,
+      takerAmount: takerAmountRemaining
+    });
 
     const responseOrder: IResponseOrder = {
       id,
-      pair: 'ETH-DAI',
-      side,
+      pair: pair.name,
+      side: MarketSideString[side],
       createdAt,
       expiresAt,
       price,
@@ -381,38 +330,35 @@ class OrdersManager {
       fillAmount,
       status
     } = fillApi;
-    const { makerAmount, takerAmount, pair } = order;
-    const makerMarket = pair.makerCurrency.soloMarket;
-    const price = calculatePrice({
+    const { makerAmount, takerAmount, pair, makerAmountRemaining, takerAmountRemaining } = order;
+
+    const { price, side, amount } = convertToCexOrder({
       makerMarket: pair.makerCurrency.soloMarket,
       takerMarket: pair.takerCurrency.soloMarket,
       makerAmount,
       takerAmount
     });
 
-    let side: string;
-    let amount: string;
-
-    if (makerMarket === MarketId.WETH.toNumber()) {
-      side = 'SELL'; // Si estoy ofreciendo WETH, significa que estoy vendiendo
-      amount = this.solo.web3.utils.fromWei(makerAmount, 'ether');
-    } else {
-      side = 'BUY';
-      amount = this.solo.web3.utils.fromWei(takerAmount, 'ether');
-    }
+    const { amount: amountRemaining } = convertToCexOrder({
+      makerMarket: pair.makerCurrency.soloMarket,
+      takerMarket: pair.takerCurrency.soloMarket,
+      makerAmount: makerAmountRemaining,
+      takerAmount: takerAmountRemaining
+    });
 
     const responseOrder: IResponseFill = {
       transactionHash,
       orderId,
-      pair: 'ETH-DAI',
-      side,
+      pair: pair.name,
+      side: MarketSideString[side],
       createdAt,
       updatedAt,
       price,
-      fillAmount: parseFloat(this.solo.web3.utils.fromWei(fillAmount, 'ether')),
-      amount: parseFloat(amount),
+      amount,
       fillStatus: status,
-      orderStatus: order.status
+      orderStatus: order.status,
+      amountFilled: (amount - amountRemaining),
+      amountRemaining
     };
 
     return responseOrder;

@@ -1,12 +1,11 @@
 import { logger } from '@shared';
-import { Request, Response, Router } from 'express';
-import { BAD_REQUEST, CREATED, OK } from 'http-status-codes';
+import { Request, Response, Router, NextFunction } from 'express';
+import { OK, INTERNAL_SERVER_ERROR } from 'http-status-codes';
 import { solo } from '../modules/solo';
-
 import tradesManagerFactory from '../modules/tradesManager';
-import awsManager from '../modules/awsManager';
 import { IResponseTrade } from '@entities';
-import { isDate } from 'util';
+import HTTPError from '../entities/HTTPError';
+import awsManager from '../modules/awsManager';
 
 const tradesManager = tradesManagerFactory(solo);
 const router = Router();
@@ -15,70 +14,39 @@ const router = Router();
  *                       Get Trades - "GET /api/trades/mytrades"
  ******************************************************************************/
 
-router.get('/mytrades', async (req: Request, res: Response) => {
+router.get('/mytrades', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let {
-      limit = 100,
-      startingBefore = new Date()
-    }:
-      {
-        limit: number;
-        startingBefore: Date;
-      } = req.query;
-    if (!isDate(startingBefore)) {
+    const { limit = 100, pair = 'WETH-DAI' } = req.query;
+    let { startingBefore } = req.query;
+
+    if (startingBefore) {
       startingBefore = new Date(startingBefore);
     }
-    const trades = await tradesManager.getOwnTrades(limit, startingBefore);
-    const msg = {
-      Message: trades,
-      MessageAttributes: {
-        operation: {
-          DataType: 'String',
-          StringValue: 'myTrades'
-        }
-      }
-    };
-    awsManager.publish(msg);
+
+    const trades = await tradesManager.getOwnTrades(limit, pair, startingBefore);
     return res.status(OK).json({ trades });
   } catch (err) {
-    logger.error(err.message, err);
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    logger.error(err.message, JSON.stringify(err));
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
-
 
 /******************************************************************************
  *                      Get CSV of my trades - "GET /api/trade/mytradesCsv"
  ******************************************************************************/
 
-
-router.get('/mytradesCsv', async (req: Request, res: Response) => {
+router.get('/mytradesCsv', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let {
-      limit = 100,
-      startingBefore = new Date()
-    }:
-      {
-        limit: number;
-        startingBefore: Date;
-      } = req.query;
-    if (!isDate(startingBefore)) {
+    const { limit = 100, pair = 'WETH-DAI' } = req.query;
+    let { startingBefore } = req.query;
+
+    if (startingBefore) {
       startingBefore = new Date(startingBefore);
     }
-    const trades = await tradesManager.getOwnTrades(limit, startingBefore);
+
+    const trades = await tradesManager.getOwnTrades(limit, pair, startingBefore);
     const csvHeader = ['transactionHash', 'pair', 'side', 'createdAt', 'price', 'amount', 'status'];
-    const msg = {
-      Message: trades,
-      MessageAttributes: {
-        operation: {
-          DataType: 'String',
-          StringValue: 'myTradesCsv'
-        }
-      }
-    };
-    awsManager.publish(msg);
     res.setHeader('Content-Type', 'text/csv');
     res.attachment(`myTrades-${new Date().toISOString()}.csv`);
     res.status(OK);
@@ -97,10 +65,9 @@ router.get('/mytradesCsv', async (req: Request, res: Response) => {
     });
     res.end();
   } catch (err) {
-    logger.error(err.message, err);
-    return res.status(BAD_REQUEST).json({
-      error: err.message
-    });
+    logger.error(err.message, JSON.stringify(err));
+    awsManager.publishToSNS('ERROR', JSON.stringify(err));
+    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
 
