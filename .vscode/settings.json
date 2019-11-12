@@ -11,5 +11,8 @@
     "orderbook",
     "quotemark",
     "usdc"
-  ]
+  ],
+  "editor.rulers": [90],
+  "editor.formatOnSave": false,
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
 }

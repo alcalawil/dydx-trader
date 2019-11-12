@@ -4,6 +4,8 @@
   "description": "Market making bot for dydx exchange",
   "scripts": {
     "build": "node ./util/build.js",
+    "format:check": "prettier --check \"./src/**/*.+(ts|js|json)\"",
+    "format:apply": "prettier --write \"./src/**/*.+(ts|js|json)\"",
     "lint": "tslint --project \"tsconfig.json\"",
     "start-prod": "ENV_FILE=development node -r ./env -r module-alias/register ./dist/start.js",
     "start": "nodemon --config \"./util/nodemon.json\"",
@@ -52,11 +54,14 @@
     "cross-env": "^5.2.0",
     "fs-extra": "^8.1.0",
     "nodemon": "^1.19.1",
+    "prettier": "^1.18.2",
     "request": "^2.88.0",
     "request-promise": "^4.2.4",
     "ts-node": "^8.3.0",
     "tsconfig-paths": "^3.8.0",
-    "tslint": "^5.19.0",
+    "tslint": "^5.20.0",
+    "tslint-config-prettier": "^1.18.0",
+    "tslint-plugin-prettier": "^2.0.1",
     "typescript": "^3.6.2"
   },
   "repository": {
@@ -71,5 +76,16 @@
   ],
   "author": "CTF",
   "license": "ISC",
-  "homepage": "https://bitbucket.org/zaregoclients/ctf-dydx-market-making-bot#readme"
+  "homepage": "https://bitbucket.org/zaregoclients/ctf-dydx-market-making-bot#readme",
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{ts, js, json}": [
+      "prettier --write",
+      "git add"
+    ]
+  }
 }
