@@ -12,7 +12,6 @@ export const calculatePrice = ({
   makerAmount,
   takerAmount
 }: IDexOrder) => {
-
   // Sell side
   if (makerMarket === 0) {
     return parseFloat(takerAmount) / parseFloat(makerAmount);
@@ -43,7 +42,7 @@ export const convertToCexOrder = (dexOrder: IDexOrder): ICexOrder => {
       side: MarketSide.buy
     };
   } else {
-  // it's selling
+    // it's selling
     cexOrder = {
       amount: convertFromWei(makerAmount, Number(dexOrder.makerMarket)),
       price: parseFloat(dexOrder.takerAmount) / parseFloat(dexOrder.makerAmount),
@@ -58,8 +57,11 @@ export const convertToCexOrder = (dexOrder: IDexOrder): ICexOrder => {
   return cexOrder;
 };
 
-export const convertToDexOrder = ({ price, amount, side }: ICexOrder, pair: string): IDexOrder => {
-  const [ assetToken, baseToken ] = getTokens(pair);
+export const convertToDexOrder = (
+  { price, amount, side }: ICexOrder,
+  pair: string
+): IDexOrder => {
+  const [assetToken, baseToken] = getTokens(pair);
 
   // Sell side
   if (side === MarketSide.sell) {
@@ -90,9 +92,10 @@ export const createPriceRange = (price: number, adjust = 1, side = 'sell'): numb
   const prices: number[] = [];
   for (let i = 1; i <= 4; i += 1) {
     const adjustedPercentage = i * adjust;
-    const adjustedPrice = side === 'sell'
-      ? price + calculatePercentage(price, adjustedPercentage)
-      : price - calculatePercentage(price, adjustedPercentage);
+    const adjustedPrice =
+      side === 'sell'
+        ? price + calculatePercentage(price, adjustedPercentage)
+        : price - calculatePercentage(price, adjustedPercentage);
     prices.push(adjustedPrice);
   }
   logger.debug(`Price: ${price}, adjust: ${adjust}, side: ${side}`);
@@ -100,8 +103,11 @@ export const createPriceRange = (price: number, adjust = 1, side = 'sell'): numb
   return prices;
 };
 
-export const calculatePercentage = (inputVale: number, percentageNumber: number): number => {
-  return (inputVale * (percentageNumber / 100));
+export const calculatePercentage = (
+  inputVale: number,
+  percentageNumber: number
+): number => {
+  return inputVale * (percentageNumber / 100);
 };
 
 export const decrypt = (key: string, dataEncrypted: string) => {
@@ -141,10 +147,7 @@ export const getTokens = (pair: string) => {
     throw new Error('Invalid pair');
   }
 
-  return [
-    assetToken,
-    baseToken
-  ];
+  return [assetToken, baseToken];
 };
 
 export const getTokenById = (tokenId: number) => {

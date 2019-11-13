@@ -1,23 +1,22 @@
-import {
-  Solo,
-  MarketId,
-  ApiTrade
-} from '@dydxprotocol/solo';
-import {
-  calculatePrice,
-  getTokens,
-  convertToCexOrder
-} from '../shared/utils';
-import {
-  IResponseTrade, MarketSideString
-} from '../entities/types';
+import { Solo } from '@dydxprotocol/solo';
+import { getTokens, convertToCexOrder } from '../shared/utils';
+import { IResponseTrade, MarketSideString } from '../entities/types';
+import awsManager from './awsManager';
 
-const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
+let DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
+const ENCRYPTED_DEFAULT_ADDRESS = process.env.ENCRYPTED_DEFAULT_ADDRESS || '';
 
 class TradesManager {
   public solo: Solo;
   constructor(solo: Solo) {
     this.solo = solo;
+    if (!DEFAULT_ADDRESS) {
+      this.loadAddress(ENCRYPTED_DEFAULT_ADDRESS);
+    }
+  }
+
+  private async loadAddress(address: string) {
+    DEFAULT_ADDRESS = await awsManager.decryptSecretName(address);
   }
 
   public async getTrades({
@@ -29,7 +28,7 @@ class TradesManager {
     account?: string;
     limit?: number;
     startingBefore?: Date;
-    pair?: string
+    pair?: string;
   }) {
     const [assetToken, baseToken] = getTokens(pair);
 
@@ -37,13 +36,25 @@ class TradesManager {
       startingBefore,
       limit,
       makerAccountOwner: account,
-      pairs: [`${assetToken.shortName}-${baseToken.shortName}`, `${baseToken.shortName}-${assetToken.shortName}`]
+      pairs: [
+        `${assetToken.shortName}-${baseToken.shortName}`,
+        `${baseToken.shortName}-${assetToken.shortName}`
+      ]
     });
     return trades;
   }
 
-  public async getOwnTrades(limit: number, pair: string, startingBefore: Date = new Date()) {
-    const trades: any = await this.getTrades({ account: DEFAULT_ADDRESS, limit, startingBefore, pair });
+  public async getOwnTrades(
+    limit: number,
+    pair: string,
+    startingBefore: Date = new Date()
+  ) {
+    const trades: any = await this.getTrades({
+      account: DEFAULT_ADDRESS,
+      limit,
+      startingBefore,
+      pair
+    });
     const parsedTrades: any = trades.map((trade: any) => {
       return this.parseApiTrade(trade);
     });
@@ -57,7 +68,7 @@ class TradesManager {
       createdAt,
       makerAmount,
       takerAmount,
-      status,
+      status
     } = tradeApi;
 
     const { price, amount, side } = convertToCexOrder({

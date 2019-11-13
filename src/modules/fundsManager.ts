@@ -1,13 +1,22 @@
 import { Solo, BigNumber } from '@dydxprotocol/solo';
 import { IBalances } from '../entities/types';
+import awsManager from './awsManager';
 
-const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
+let DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
+const ENCRYPTED_DEFAULT_ADDRESS = process.env.ENCRYPTED_DEFAULT_ADDRESS || '';
 
 class FundsManager {
   public solo: Solo;
 
   constructor(solo: Solo) {
     this.solo = solo;
+    if (!DEFAULT_ADDRESS) {
+      this.loadAddress(ENCRYPTED_DEFAULT_ADDRESS);
+    }
+  }
+
+  private async loadAddress(address: string) {
+    DEFAULT_ADDRESS = await awsManager.decryptSecretName(address);
   }
 
   public async getBalances(accountOwner = DEFAULT_ADDRESS): Promise<IBalances> {

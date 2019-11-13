@@ -1,4 +1,5 @@
 import AWS from 'aws-sdk';
+import { decrypt } from '../shared/utils';
 
 AWS.config.update({
   accessKeyId: process.env.ACCESS_KEY_ID,
@@ -11,6 +12,10 @@ const kms = new AWS.KMS({
 
 const sns = new AWS.SNS({
   region: process.env.SNS_REGION
+});
+
+const sm = new AWS.SecretsManager({
+  region: process.env.SM_REGION
 });
 
 class AwsManager {
@@ -69,6 +74,26 @@ class AwsManager {
         resolve(data);
       });
     });
+  }
+
+  public getSecretValue(secretName: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const params = {
+        SecretId: secretName
+      };
+      sm.getSecretValue(params, (err, data) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(JSON.parse(data.SecretString || '{}'));
+      });
+    });
+  }
+
+  public async decryptSecretName(privateKey: string) {
+    const encryptedData = await this.getSecretValue(privateKey);
+    const decryptedDataKey: any = await this.decrypt(encryptedData.DATA_KEY);
+    return decrypt(decryptedDataKey, encryptedData.DATA);
   }
 }
 

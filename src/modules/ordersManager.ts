@@ -1,7 +1,6 @@
 import {
   BigNumber,
   SigningMethod,
-  MarketId,
   Solo,
   SignedLimitOrder,
   LimitOrder,
@@ -21,7 +20,6 @@ import {
 import {
   createPriceRange,
   convertToDexOrder,
-  decrypt,
   getTokens,
   convertToCexOrder
 } from '../shared/utils';
@@ -30,13 +28,12 @@ import errorsConstants from '../shared/errorsConstants';
 import _ from 'lodash';
 
 // Config
-const DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
-const DEFAULT_EXPIRATION = parseInt(
-  process.env.DEFAULT_EXPIRATION_IN_SECONDS || '610'
-);
+let DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
+const DEFAULT_EXPIRATION = parseInt(process.env.DEFAULT_EXPIRATION_IN_SECONDS || '610');
 const ENCRYPTED_PRIVATE_KEY = process.env.ENCRYPTED_PRIVATE_KEY || '';
-const DATA_KEY = process.env.DATA_KEY || '';
-const TAKER_ACCOUNT_OWNER = process.env.TAKER_ACCOUNT || '0x0000000000000000000000000000000000000000';
+const ENCRYPTED_DEFAULT_ADDRESS = process.env.ENCRYPTED_DEFAULT_ADDRESS || '';
+const TAKER_ACCOUNT_OWNER =
+  process.env.TAKER_ACCOUNT || '0x0000000000000000000000000000000000000000';
 
 class OrdersManager {
   public solo: Solo;
@@ -47,12 +44,12 @@ class OrdersManager {
 
   private async loadAccount() {
     let privateKey = process.env.PRIVATE_KEY || '';
-
     if (ENCRYPTED_PRIVATE_KEY) {
-      const decryptedDataKey: any = await awsManager.decrypt(DATA_KEY);
-      privateKey = decrypt(decryptedDataKey, ENCRYPTED_PRIVATE_KEY);
+      privateKey = await awsManager.decryptSecretName(ENCRYPTED_PRIVATE_KEY);
     }
-
+    if (ENCRYPTED_DEFAULT_ADDRESS) {
+      DEFAULT_ADDRESS = await awsManager.decryptSecretName(ENCRYPTED_DEFAULT_ADDRESS);
+    }
     this.solo.loadAccount({
       address: DEFAULT_ADDRESS,
       privateKey
@@ -121,7 +118,11 @@ class OrdersManager {
     return this.placeOrder(cexOrder, pair);
   }
 
-  public async sell(price: number, amount: number, pair: string): Promise<IResponseOrder> {
+  public async sell(
+    price: number,
+    amount: number,
+    pair: string
+  ): Promise<IResponseOrder> {
     const cexOrder = { price, amount, side: MarketSide.sell };
     return this.placeOrder(cexOrder, pair);
   }
@@ -165,9 +166,7 @@ class OrdersManager {
         `${baseToken.shortName}-${assetToken.shortName}`
       ]
     });
-    const parsedOrders = apiOrders.map((apiOrder) =>
-      this.parseApiOrder(apiOrder)
-    );
+    const parsedOrders = apiOrders.map((apiOrder) => this.parseApiOrder(apiOrder));
     return parsedOrders;
   }
 
@@ -184,36 +183,20 @@ class OrdersManager {
     const apiOrders = await Promise.all([
       await this.getOrders({
         limit,
-        pairs: [
-          `${baseToken.shortName}-${assetToken.shortName}`
-        ]
+        pairs: [`${baseToken.shortName}-${assetToken.shortName}`]
       }),
       await this.getOrders({
         limit,
-        pairs: [
-          `${assetToken.shortName}-${baseToken.shortName}`
-        ]
+        pairs: [`${assetToken.shortName}-${baseToken.shortName}`]
       })
     ]);
     const parsedOrders = await Promise.all([
-      apiOrders[1].map((apiOrder) =>
-        this.parseApiOrder(apiOrder)
-      ),
-      apiOrders[0].map((apiOrder) =>
-        this.parseApiOrder(apiOrder)
-      )
+      apiOrders[1].map((apiOrder) => this.parseApiOrder(apiOrder)),
+      apiOrders[0].map((apiOrder) => this.parseApiOrder(apiOrder))
     ]);
 
-    const sellOrders = _.orderBy(
-      parsedOrders[0],
-      ['price'],
-      ['asc']
-    );
-    const buyOrders = _.orderBy(
-      parsedOrders[1],
-      ['price'],
-      ['desc']
-    );
+    const sellOrders = _.orderBy(parsedOrders[0], ['price'], ['asc']);
+    const buyOrders = _.orderBy(parsedOrders[1], ['price'], ['desc']);
 
     return {
       sellOrders,
@@ -221,13 +204,20 @@ class OrdersManager {
     };
   }
 
-  public async getMyFills(limit: number, pair: string, startingBefore: Date = new Date()) {
+  public async getMyFills(
+    limit: number,
+    pair: string,
+    startingBefore: Date = new Date()
+  ) {
     const [assetToken, baseToken] = getTokens(pair);
     const { fills } = await this.solo.api.getFills({
       makerAccountOwner: DEFAULT_ADDRESS,
       startingBefore,
       limit,
-      pairs: [`${assetToken.shortName}-${baseToken.shortName}`, `${baseToken.shortName}-${assetToken.shortName}`]
+      pairs: [
+        `${assetToken.shortName}-${baseToken.shortName}`,
+        `${baseToken.shortName}-${assetToken.shortName}`
+      ]
     });
     const fillsList: any = fills;
     const parsedFills = fillsList.map((fill: ApiFill) => {
@@ -267,14 +257,10 @@ class OrdersManager {
     const prices = createPriceRange(bidPrice, adjust, side);
 
     if (side === 'buy') {
-      return Promise.all(
-        prices.map((price: number) => this.buy(price, amount, pair))
-      );
+      return Promise.all(prices.map((price: number) => this.buy(price, amount, pair)));
     }
 
-    return Promise.all(
-      prices.map((price: number) => this.sell(price, amount, pair))
-    );
+    return Promise.all(prices.map((price: number) => this.sell(price, amount, pair)));
   }
 
   private parseApiOrder(orderApi: ApiOrder): IResponseOrder {
@@ -313,7 +299,7 @@ class OrdersManager {
       price,
       amount,
       status,
-      amountFilled: (amount - amountRemaining),
+      amountFilled: amount - amountRemaining,
       amountRemaining
     };
 
@@ -330,7 +316,13 @@ class OrdersManager {
       fillAmount,
       status
     } = fillApi;
-    const { makerAmount, takerAmount, pair, makerAmountRemaining, takerAmountRemaining } = order;
+    const {
+      makerAmount,
+      takerAmount,
+      pair,
+      makerAmountRemaining,
+      takerAmountRemaining
+    } = order;
 
     const { price, side, amount } = convertToCexOrder({
       makerMarket: pair.makerCurrency.soloMarket,
@@ -357,7 +349,7 @@ class OrdersManager {
       amount,
       fillStatus: status,
       orderStatus: order.status,
-      amountFilled: (amount - amountRemaining),
+      amountFilled: amount - amountRemaining,
       amountRemaining
     };
 
