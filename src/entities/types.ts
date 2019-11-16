@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js';
+import { EventEmitter } from 'events';
 
 export interface ISimpleOrder extends IDexOrder {
   id?: number;
@@ -24,10 +25,7 @@ export const MarketSide = {
   buy: 1
 };
 
-export const MarketSideString = [
-  'sell',
-  'buy'
-];
+export const MarketSideString = ['sell', 'buy'];
 
 export interface IResponseOrder {
   id: string;
@@ -94,4 +92,15 @@ export interface IToken {
   shortName: string;
   weiUnit: string;
   isBase: boolean;
+}
+
+export interface ISQSConsumer {
+  start: () => void;
+  stop: () => void;
+  isRunning: boolean;
+}
+
+export interface ISQSRoute {
+  topic: string;
+  handler: (body: any) => Promise<any>;
 }
