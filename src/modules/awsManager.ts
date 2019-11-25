@@ -6,6 +6,7 @@ AWS.config.update({
   secretAccessKey: process.env.SECRET_ACCESS_KEY
 });
 
+// FIXME: This may throw an unhanled exception
 const kms = new AWS.KMS({
   region: process.env.KMS_REGION
 });
@@ -19,6 +20,8 @@ const sm = new AWS.SecretsManager({
 });
 
 class AwsManager {
+  // TODO: rename to kmsDecrypt
+  // TODO: Return a static data type, a string maybe?
   public decrypt(encryptedData: string) {
     return new Promise((resolve, reject) => {
       const params = {
@@ -27,6 +30,7 @@ class AwsManager {
 
       kms.decrypt(params, (err, data) => {
         if (err) {
+          // TODO: return reject
           reject(err);
         } else {
           const result: any = data.Plaintext;
@@ -36,6 +40,8 @@ class AwsManager {
     });
   }
 
+  // TODO: rename to kmsEncrypt
+  // TODO: Return a static data type, a string maybe?
   public encrypt(plainText: string) {
     return new Promise((resolve: any, reject: any) => {
       const key: any = process.env.KEY_ID;
@@ -95,6 +101,8 @@ class AwsManager {
     const decryptedDataKey: any = await this.decrypt(encryptedData.DATA_KEY);
     return decrypt(decryptedDataKey, encryptedData.DATA);
   }
+
+  // TODO: Add publishTOSQS function (There is a branch with that)
 }
 
 export default new AwsManager();
