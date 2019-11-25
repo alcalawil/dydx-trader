@@ -1,6 +1,7 @@
 import { IToken } from '@entities';
 import { MarketId } from '@dydxprotocol/solo';
 
+// TODO: redefine name and behavior of the isBase attribute to function as tri-state
 export const DYDX_TOKENS: IToken[] = [
   {
     id: MarketId.WETH.toNumber(),

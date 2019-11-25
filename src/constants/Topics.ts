@@ -11,3 +11,5 @@ export const ORDERS_CANCELL_ALL = 'ORDERS_CANCELL_ALL';
 export const ORDERS_BUY_MANY = 'ORDERS_BUY_MANY';
 
 export const ORDERS_SELL_MANY = 'ORDERS_SELL_MANY';
+
+// TODO: need to add "GET_ORDER" and "GET_MY_FILLS"

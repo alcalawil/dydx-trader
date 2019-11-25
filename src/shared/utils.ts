@@ -4,7 +4,7 @@ import BigNumber from 'bignumber.js';
 import { IDexOrder, ICexOrder, MarketSide, IMarket, IToken } from '../entities/types';
 import { logger } from './Logger';
 import { DYDX_TOKENS } from '../constants/Tokens';
-import { INVALID_TOKEN_ERROR } from 'src/constants/Errors';
+import { INVALID_TOKEN_ERROR } from '../constants/Errors';
 
 export const calculatePrice = ({
   makerMarket,
@@ -13,9 +13,8 @@ export const calculatePrice = ({
   takerAmount
 }: IDexOrder) => {
   // Sell side
-  if (makerMarket === 0) {
+  if (makerMarket === MarketSide.sell)
     return parseFloat(takerAmount) / parseFloat(makerAmount);
-  }
 
   // Buy side
   return parseFloat(makerAmount) / parseFloat(takerAmount);
@@ -37,14 +36,14 @@ export const convertToCexOrder = (dexOrder: IDexOrder): ICexOrder => {
   if (makerToken.isBase) {
     // it's buying
     cexOrder = {
-      amount: convertFromWei(takerAmount, Number(dexOrder.takerMarket)),
+      amount: convertFromWei(takerAmount, takerToken),
       price: parseFloat(dexOrder.makerAmount) / parseFloat(dexOrder.takerAmount),
       side: MarketSide.buy
     };
   } else {
     // it's selling
     cexOrder = {
-      amount: convertFromWei(makerAmount, Number(dexOrder.makerMarket)),
+      amount: convertFromWei(makerAmount, makerToken),
       price: parseFloat(dexOrder.takerAmount) / parseFloat(dexOrder.makerAmount),
       side: MarketSide.sell
     };
@@ -128,26 +127,28 @@ export const convertToWei = (amount: number, tokenId: number): BigNumber => {
   return amountBG.multipliedBy(`1${tokenFound.weiUnit}`);
 };
 
-export const convertFromWei = (wei: BigNumber, tokenId: number): number => {
-  const token = getTokenById(tokenId);
-  if (!token) {
-    throw new Error(INVALID_TOKEN_ERROR);
-  }
-
+export const convertFromWei = (wei: BigNumber, token: IToken): number => {
   return wei.dividedBy(`1${token.weiUnit}`).toNumber();
 };
 
 export const getTokens = (pair: string) => {
   const tokenNames = pair.split('-');
 
-  const assetToken = DYDX_TOKENS.find((token) => token.shortName === tokenNames[0]);
-  const baseToken = DYDX_TOKENS.find((token) => token.shortName === tokenNames[1]);
+  let assetToken: IToken | undefined;
+  let baseToken: IToken | undefined;
 
-  if (!assetToken || !baseToken) {
-    throw new Error('Invalid pair');
-  }
+  // TODO: implement use case for the pair "SAI-USDC"
+  DYDX_TOKENS.map((token: IToken) => {
+    tokenNames.map((tokenName: string) => {
+      if (token.shortName === tokenName) {
+        if (token.isBase) baseToken = token;
+        else assetToken = token;
+      }
+    });
+  });
 
-  return [assetToken, baseToken];
+  if (!assetToken || !baseToken) throw new Error('Invalid pair');
+  else return [assetToken, baseToken];
 };
 
 export const getTokenById = (tokenId: number) => {
