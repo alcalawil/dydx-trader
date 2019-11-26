@@ -1,11 +1,13 @@
-import AWS, { SQS, SNS, KMS, SecretsManager } from 'aws-sdk';
+import AWS, { SQS, SNS, KMS, SecretsManager, AWSError } from 'aws-sdk';
 import { decrypt } from '../shared/utils';
+import { PromiseResult } from 'aws-sdk/lib/request';
 
 AWS.config.update({
   accessKeyId: process.env.ACCESS_KEY_ID,
   secretAccessKey: process.env.SECRET_ACCESS_KEY
 });
 
+// FIXME: This may throw an unhanled exception
 const kms = new KMS({
   region: process.env.KMS_REGION
 });
@@ -23,18 +25,15 @@ const sqs = new SQS({
 });
 
 class AwsManager {
-  // TODO: rename to kmsDecrypt
-  // TODO: Return a static data type, a string maybe?
-  public decrypt(encryptedData: string) {
-    return new Promise((resolve, reject) => {
+  public kmsDecrypt(encryptedData: string) {
+    return new Promise<string>((resolve: any, reject: any) => {
       const params = {
         CiphertextBlob: Buffer.from(encryptedData, 'base64')
       };
 
       kms.decrypt(params, (err, data) => {
         if (err) {
-          // TODO: return reject
-          reject(err);
+          return reject(err);
         } else {
           const result: any = data.Plaintext;
           resolve(Buffer.from(result).toString('base64'));
@@ -43,10 +42,8 @@ class AwsManager {
     });
   }
 
-  // TODO: rename to kmsEncrypt
-  // TODO: Return a static data type, a string maybe?
-  public encrypt(plainText: string) {
-    return new Promise((resolve: any, reject: any) => {
+  public kmsEncrypt(plainText: string) {
+    return new Promise<string>((resolve: any, reject: any) => {
       const key: any = process.env.KEY_ID;
       const params = {
         Plaintext: plainText,
@@ -64,8 +61,8 @@ class AwsManager {
   }
 
   public publishToSNS(operation: string, message: string) {
-    return new Promise((resolve, reject) => {
-      const publishParams: AWS.SNS.PublishInput = {
+    return new Promise<any>((resolve, reject) => {
+      const publishParams: SNS.PublishInput = {
         TopicArn: process.env.SNS_ARN || 'none',
         Message: message,
         MessageAttributes: {
@@ -85,8 +82,8 @@ class AwsManager {
     });
   }
 
-  public getSecretValue(secretName: string): Promise<any> {
-    return new Promise((resolve, reject) => {
+  public getSecretValue(secretName: string) {
+    return new Promise<any>((resolve, reject) => {
       const params = {
         SecretId: secretName
       };
@@ -101,12 +98,12 @@ class AwsManager {
 
   public async decryptSecretName(privateKey: string) {
     const encryptedData = await this.getSecretValue(privateKey);
-    const decryptedDataKey: any = await this.decrypt(encryptedData.DATA_KEY);
+    const decryptedDataKey: any = await this.kmsDecrypt(encryptedData.DATA_KEY);
     return decrypt(decryptedDataKey, encryptedData.DATA);
   }
 
   public publishToSQS(groupId: string, msg: any, attributes: any = {}) {
-    return new Promise(async (resolve, reject) => {
+    return new Promise<SQS.SendMessageResult>(async (resolve: any, reject: any) => {
       const publishParams: SQS.SendMessageRequest = {
         MessageBody: JSON.stringify(msg),
         QueueUrl: process.env.SQS_URL || 'none',
