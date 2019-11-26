@@ -1,6 +1,5 @@
 import AWS, { SQS, SNS, KMS, SecretsManager, AWSError } from 'aws-sdk';
 import { decrypt } from '../shared/utils';
-import { PromiseResult } from 'aws-sdk/lib/request';
 
 AWS.config.update({
   accessKeyId: process.env.ACCESS_KEY_ID,
