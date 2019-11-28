@@ -5,7 +5,9 @@ import {
   SignedLimitOrder,
   LimitOrder,
   ApiOrder,
-  ApiFill
+  ApiFill,
+  ApiMarketName,
+  ApiOrderOnOrderbook
 } from '@dydxprotocol/solo';
 
 import {
@@ -15,13 +17,16 @@ import {
   IResponseFill,
   ICexOrder,
   IDexOrder,
-  MarketSideString
+  MarketSideString,
+  IParsedOrderbook,
+  IToken
 } from '../entities/types';
 import {
   createPriceRange,
   convertToDexOrder,
   getTokens,
-  convertToCexOrder
+  convertToCexOrder,
+  convertFromWei
 } from '../shared/utils';
 import awsManager from './awsManager';
 import errorsConstants from '../shared/errorsConstants';
@@ -180,25 +185,25 @@ class OrdersManager {
 
   public async getOrderbook({ limit = 100 }, pair: string): Promise<IOrderbook> {
     const [assetToken, baseToken] = getTokens(pair);
+    const marketName: string = `${assetToken.shortName}-${baseToken.shortName}`;
 
-    const apiOrders = await Promise.all([
-      await this.getOrders({
-        limit,
-        pairs: [`${baseToken.shortName}-${assetToken.shortName}`]
-      }),
-      await this.getOrders({
-        limit,
-        pairs: [`${assetToken.shortName}-${baseToken.shortName}`]
-      })
+    const { bids, asks } = await this.solo.api.getOrderbookV2({
+      market: ApiMarketName.WETH_DAI.includes(marketName)
+        ? ApiMarketName.WETH_DAI
+        : ApiMarketName.WETH_USDC
+    });
+
+    const parsedOrderbook = await Promise.all([
+      asks.map((order: ApiOrderOnOrderbook) =>
+        this.parseApiOrderbook(order, assetToken, baseToken)
+      ),
+      bids.map((order: ApiOrderOnOrderbook) =>
+        this.parseApiOrderbook(order, assetToken, baseToken)
+      )
     ]);
-    const parsedOrders = await Promise.all([
-      apiOrders[1].map((apiOrder) => this.parseApiOrder(apiOrder)),
-      apiOrders[0].map((apiOrder) => this.parseApiOrder(apiOrder))
-    ]);
 
-    const sellOrders = _.orderBy(parsedOrders[0], ['price'], ['asc']);
-    const buyOrders = _.orderBy(parsedOrders[1], ['price'], ['desc']);
-
+    const sellOrders = parsedOrderbook[0].slice(0, limit / 2);
+    const buyOrders = parsedOrderbook[1].slice(0, limit / 2);
     return {
       sellOrders,
       buyOrders
@@ -357,6 +362,18 @@ class OrdersManager {
     };
 
     return responseOrder;
+  }
+
+  private parseApiOrderbook(
+    apiOrderbook: ApiOrderOnOrderbook,
+    assetToken: IToken,
+    baseToken: IToken
+  ): IParsedOrderbook {
+    const { price, amount } = apiOrderbook;
+    return {
+      price: parseFloat(price) * Number(`1${baseToken.priceUnit}`),
+      amount: convertFromWei(new BigNumber(amount), assetToken)
+    };
   }
 }
 

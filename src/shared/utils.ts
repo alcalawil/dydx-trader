@@ -37,21 +37,20 @@ export const convertToCexOrder = (dexOrder: IDexOrder): ICexOrder => {
     // it's buying
     cexOrder = {
       amount: convertFromWei(takerAmount, takerToken),
-      price: parseFloat(dexOrder.makerAmount) / parseFloat(dexOrder.takerAmount),
+      price:
+        (parseFloat(dexOrder.makerAmount) / parseFloat(dexOrder.takerAmount)) *
+        Number(`1${makerToken.priceUnit}`),
       side: MarketSide.buy
     };
   } else {
     // it's selling
     cexOrder = {
       amount: convertFromWei(makerAmount, makerToken),
-      price: parseFloat(dexOrder.takerAmount) / parseFloat(dexOrder.makerAmount),
+      price:
+        (parseFloat(dexOrder.takerAmount) / parseFloat(dexOrder.makerAmount)) *
+        Number(`1${takerToken.priceUnit}`),
       side: MarketSide.sell
     };
-  }
-
-  // TODO: Find a better way to do this
-  if (takerToken.shortName === 'USDC' || makerToken.shortName === 'USDC') {
-    cexOrder.price = cexOrder.price * Number('1e12'); // Special case: USDC (1e6 * 1e12 = 1e18)
   }
 
   return cexOrder;

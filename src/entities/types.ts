@@ -53,8 +53,8 @@ export interface IBalances {
 }
 
 export interface IOrderbook {
-  sellOrders: IResponseOrder[];
-  buyOrders: IResponseOrder[];
+  sellOrders: IParsedOrderbook[];
+  buyOrders: IParsedOrderbook[];
 }
 
 export interface IResponseTrade {
@@ -93,6 +93,7 @@ export interface IToken {
   shortName: string;
   weiUnit: string;
   isBase: boolean;
+  priceUnit: string;
 }
 
 export interface ISQSConsumer {
@@ -118,4 +119,9 @@ export interface IOrderChange {
   id: string;
   status: string;
   timestamp: string;
+}
+
+export interface IParsedOrderbook {
+  amount: number;
+  price: number;
 }

@@ -7,18 +7,21 @@ export const DYDX_TOKENS: IToken[] = [
     id: MarketId.WETH.toNumber(),
     shortName: 'WETH',
     weiUnit: 'e18',
-    isBase: false
-  },
-  {
-    id: MarketId.DAI.toNumber(),
-    shortName: 'DAI',
-    weiUnit: 'e18',
-    isBase: true
+    isBase: false,
+    priceUnit: 'e0'
   },
   {
     id: MarketId.USDC.toNumber(),
     shortName: 'USDC',
     weiUnit: 'e6',
-    isBase: true
+    isBase: true,
+    priceUnit: 'e12'
+  },
+  {
+    id: MarketId.DAI.toNumber(),
+    shortName: 'DAI',
+    weiUnit: 'e18',
+    isBase: true,
+    priceUnit: 'e0'
   }
 ];
