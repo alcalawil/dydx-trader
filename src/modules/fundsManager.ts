@@ -36,10 +36,15 @@ class FundsManager {
     const usdcInWei = new BigNumber(balances.balances['2'].wei).toNumber();
     const usdc = (usdcInWei / Number('1e6')).toString();
 
+    const sai = this.solo.web3.utils.fromWei(
+      new BigNumber(balances.balances['3'].wei).toFixed(0)
+    );
+
     return {
       eth,
       dai,
-      usdc
+      usdc,
+      sai
     };
   }
 }
