@@ -49,8 +49,9 @@ export const convertToCexOrder = (dexOrder: IDexOrder): ICexOrder => {
     };
   }
 
+  // TODO: Find a better way to do this
   if (takerToken.shortName === 'USDC' || makerToken.shortName === 'USDC') {
-    cexOrder.price = cexOrder.price * Number('1e12');
+    cexOrder.price = cexOrder.price * Number('1e12'); // Special case: USDC (1e6 * 1e12 = 1e18)
   }
 
   return cexOrder;
