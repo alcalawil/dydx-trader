@@ -24,6 +24,8 @@ const sqs = new SQS({
 });
 
 class AwsManager {
+  static SENDER = process.env.SENDER_NAME;
+
   public kmsDecrypt(encryptedData: string) {
     return new Promise<string>((resolve: any, reject: any) => {
       const params = {
@@ -109,12 +111,15 @@ class AwsManager {
     return decrypt(decryptedDataKey, encryptedData.DATA);
   }
 
-  public publishToSQS(groupId: string, msg: any, attributes: any = {}) {
+  public publishToSQS(groupId: string, msg: any, extraAttributes: any = {}) {
     return new Promise<SQS.SendMessageResult>(async (resolve: any, reject: any) => {
       const publishParams: SQS.SendMessageRequest = {
         MessageBody: JSON.stringify(msg),
         QueueUrl: process.env.SQS_URL || 'none',
-        MessageAttributes: attributes,
+        MessageAttributes: {
+          sender: AwsManager.SENDER,
+          ...extraAttributes
+        },
         MessageDeduplicationId: Date.now().toString(),
         MessageGroupId: groupId
       };
