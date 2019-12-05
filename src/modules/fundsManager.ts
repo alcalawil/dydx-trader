@@ -30,17 +30,17 @@ class FundsManager {
       new BigNumber(balances.balances['0'].wei).toFixed(0)
     );
 
-    const dai = this.solo.web3.utils.fromWei(
-      new BigNumber(balances.balances['1'].wei).toFixed(0)
-    );
-
     const usdcInWei = new BigNumber(balances.balances['2'].wei).toNumber();
     const usdc = (usdcInWei / Number(`1${DYDX_TOKENS[0].weiUnit}`)).toString();
 
+    const dai = this.solo.web3.utils.fromWei(
+      new BigNumber(balances.balances['3'].wei).toFixed(0)
+    );
+
     return {
       eth,
-      dai,
-      usdc
+      usdc,
+      dai
     };
   }
 }

@@ -48,8 +48,8 @@ export interface IHTTPError {
 
 export interface IBalances {
   eth: string;
-  dai: string;
   usdc: string;
+  dai: string;
 }
 
 export interface IOrderbook {
@@ -110,8 +110,8 @@ export interface ISQSRoute {
 export interface IFundsBalances {
   account: string;
   eth: number;
-  dai: number;
   usdc: number;
+  dai: number;
 }
 
 export interface IOrderChange {

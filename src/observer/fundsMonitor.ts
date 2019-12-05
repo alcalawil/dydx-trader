@@ -35,8 +35,8 @@ class FundsController {
     const newBalance: IFundsBalances = {
       account: order.account,
       eth: parseFloat(amounts.eth),
-      dai: parseFloat(amounts.dai),
-      usdc: parseFloat(amounts.usdc)
+      usdc: parseFloat(amounts.usdc),
+      dai: parseFloat(amounts.dai)
     };
     const balanceIndex = BALANCES.findIndex(
       (item: IFundsBalances) => item.account === newBalance.account
