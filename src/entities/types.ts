@@ -50,7 +50,6 @@ export interface IBalances {
   eth: string;
   dai: string;
   usdc: string;
-  sai: string;
 }
 
 export interface IOrderbook {

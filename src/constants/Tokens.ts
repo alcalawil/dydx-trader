@@ -20,11 +20,5 @@ export const DYDX_TOKENS: IToken[] = [
     shortName: 'USDC',
     weiUnit: 'e6',
     isBase: true
-  },
-  {
-    id: MarketId.SAI.toNumber(),
-    shortName: 'SAI',
-    weiUnit: 'e18',
-    isBase: true
   }
 ];

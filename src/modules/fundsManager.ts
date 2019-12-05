@@ -1,6 +1,7 @@
 import { Solo, BigNumber } from '@dydxprotocol/solo';
-import { IBalances } from '../entities/types';
+import { IBalances } from '@entities';
 import awsManager from './awsManager';
+import { DYDX_TOKENS } from "../constants/Tokens";
 
 let DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
 const ENCRYPTED_DEFAULT_ADDRESS = process.env.ENCRYPTED_DEFAULT_ADDRESS || '';
@@ -34,17 +35,12 @@ class FundsManager {
     );
 
     const usdcInWei = new BigNumber(balances.balances['2'].wei).toNumber();
-    const usdc = (usdcInWei / Number('1e6')).toString();
-
-    const sai = this.solo.web3.utils.fromWei(
-      new BigNumber(balances.balances['3'].wei).toFixed(0)
-    );
+    const usdc = (usdcInWei / Number(`1${DYDX_TOKENS[0].weiUnit}`)).toString();
 
     return {
       eth,
       dai,
-      usdc,
-      sai
+      usdc
     };
   }
 }
