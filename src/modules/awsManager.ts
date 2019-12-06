@@ -23,9 +23,10 @@ const sqs = new SQS({
   region: process.env.SQS_REGION
 });
 
-class AwsManager {
-  static SENDER = process.env.SENDER_NAME;
+const SENDER: string = process.env.SENDER_NAME || '';
 
+class AwsManager {
+  
   public kmsDecrypt(encryptedData: string) {
     return new Promise<string>((resolve: any, reject: any) => {
       const params = {
@@ -117,7 +118,10 @@ class AwsManager {
         MessageBody: JSON.stringify(msg),
         QueueUrl: process.env.SQS_URL || 'none',
         MessageAttributes: {
-          sender: AwsManager.SENDER,
+          sender: {
+            DataType: 'String',
+            StringValue: SENDER
+          },
           ...extraAttributes
         },
         MessageDeduplicationId: Date.now().toString(),
