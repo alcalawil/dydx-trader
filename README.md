@@ -32,4 +32,4 @@ curl --request GET \
 
 ### TODO
 
- - Add prettier to fix linter problems
+ - Move a API code to ./src/API

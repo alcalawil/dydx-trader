@@ -10,7 +10,7 @@ const { File, Console } = transports;
 
 // Init Logger
 const winstonLogger = createLogger({
-  level: 'info'
+  level: process.env.LOG_LEVEL === 'debug' ? 'debug' : 'info'
 });
 
 /**
@@ -32,7 +32,7 @@ if (process.env.NODE_ENV === 'production') {
   winstonLogger.add(errTransport);
   winstonLogger.add(infoTransport);
 } else {
-  const errorStackFormat = format(info => {
+  const errorStackFormat = format((info) => {
     if (info.stack) {
       // tslint:disable-next-line:no-console
       console.log(info.stack);
@@ -41,11 +41,7 @@ if (process.env.NODE_ENV === 'production') {
     return info;
   });
   const consoleTransport = new Console({
-    format: format.combine(
-      format.colorize(),
-      format.simple(),
-      errorStackFormat()
-    )
+    format: format.combine(format.colorize(), format.simple(), errorStackFormat())
   });
   winstonLogger.add(consoleTransport);
 }
