@@ -26,7 +26,6 @@ const sqs = new SQS({
 const SENDER: string = process.env.SENDER_NAME || '';
 
 class AwsManager {
-  
   public kmsDecrypt(encryptedData: string) {
     return new Promise<string>((resolve: any, reject: any) => {
       const params = {

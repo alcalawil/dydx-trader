@@ -1,21 +1,31 @@
-import fundsFactory from '../modules/fundsManager';
-import { solo } from '../modules/solo';
 import { EventEmitter } from 'events';
-import { IBalances, IFundsBalances, IResponseOrder } from '@entities';
-import { updateBalance, setBalance, getBalances } from '../cache/redisManager';
+import {
+  IBalances,
+  IFundsBalances,
+  IResponseOrder,
+  IRedisManager,
+  IAwsManager
+} from '@entities';
 import { logger } from '@shared';
 import { ApiOrderStatus } from '@dydxprotocol/solo';
-import awsManager from '../modules/awsManager';
+import config from '../config';
 
-const fundsManager = fundsFactory(solo);
-const MAX_QTY_ETH = parseFloat(process.env.MAX_QTY_ETH || '1');
 let BALANCES: IFundsBalances[];
 
 class FundsController {
   private observerEvents: EventEmitter;
-  constructor(event: EventEmitter) {
+  private redisManager: IRedisManager;
+  private awsManager: IAwsManager;
+  private fundsManager: any;
+
+  constructor(
+    event: EventEmitter,
+    redisManager: IRedisManager,
+    awsManager: IAwsManager,
+    fundsManager: any
+  ) {
     this.observerEvents = event;
-    this.initialize();
+    this.redisManager = redisManager;
     this.observerEvents.on('orderChanges', (order: IResponseOrder) => {
       if (
         order.status.includes(ApiOrderStatus.FILLED) ||
@@ -24,14 +34,17 @@ class FundsController {
         this.updateBalance(order);
       }
     });
+    this.awsManager = awsManager;
+    this.fundsManager = fundsManager;
+    this.initialize();
   }
 
   private async initialize() {
-    BALANCES = await getBalances();
+    BALANCES = await this.redisManager.getBalances();
   }
 
   public async updateBalance(order: IResponseOrder) {
-    const amounts: IBalances = await fundsManager.getBalances(order.account);
+    const amounts: IBalances = await this.fundsManager.getBalances(order.account);
     const newBalance: IFundsBalances = {
       account: order.account,
       eth: parseFloat(amounts.eth),
@@ -42,27 +55,27 @@ class FundsController {
       (item: IFundsBalances) => item.account === newBalance.account
     );
     if (balanceIndex !== -1) {
-      updateBalance(newBalance, balanceIndex);
+      this.redisManager.updateBalance(newBalance, balanceIndex);
       logger.info(`The Balance was updated for account: ${newBalance.account}`);
-      awsManager.publishToSQS('updateBalance', newBalance);
+      this.awsManager.publishToSQS('updateBalance', newBalance);
     } else {
       BALANCES.push(newBalance);
-      setBalance(newBalance);
-      awsManager.publishToSQS('updateBalance', newBalance);
+      this.redisManager.setBalance(newBalance);
+      this.awsManager.publishToSQS('updateBalance', newBalance);
       logger.info(`The Balance was created for account: ${newBalance.account}`);
     }
-    if (newBalance.eth >= MAX_QTY_ETH) {
-      this.stopHeadOrders(newBalance);
+    if (newBalance.eth >= config.fundsMonitor.maxEthQty) {
+      this.stopOrders(newBalance);
     }
   }
 
-  private stopHeadOrders(balance: IFundsBalances) {
+  private stopOrders(balance: IFundsBalances) {
     const msg = {
       message: 'maximum amount of eth reached',
       ...balance
     };
-    awsManager.publishToSQS('stopOps', msg);
-    awsManager.publishLogToSNS('stopOps', msg);
+    this.awsManager.publishToSQS('stopOps', msg);
+    this.awsManager.publishLogToSNS('stopOps', msg);
   }
 }
 

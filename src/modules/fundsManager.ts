@@ -1,7 +1,7 @@
 import { Solo, BigNumber } from '@dydxprotocol/solo';
 import { IBalances } from '@entities';
 import awsManager from './awsManager';
-import { DYDX_TOKENS } from "../constants/Tokens";
+import { DYDX_TOKENS } from '../constants/Tokens';
 
 let DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
 const ENCRYPTED_DEFAULT_ADDRESS = process.env.ENCRYPTED_DEFAULT_ADDRESS || '';

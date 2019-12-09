@@ -1,19 +1,42 @@
 import ordersMonitorFactory from './ordersMonitor';
 import fundsMonitorFactory from './fundsMonitor';
+import ordersFactory from '../modules/ordersManager';
+import fundsFactory from '../modules/fundsManager';
+import awsManager from '../modules/awsManager';
+import { solo } from '../modules/solo';
 import { EventEmitter } from 'events';
+import { IRedisManager } from '@entities';
 
-const OBSERVER_INTERVAL = parseInt(process.env.OBSERVER_INTERVAL || '1');
 let observerInterval: NodeJS.Timeout;
 const observerEvents = new EventEmitter();
+const ordersManager = ordersFactory(solo);
+const fundsManager = fundsFactory(solo);
 
 class Observer {
-  private ordersMonitor = new ordersMonitorFactory(observerEvents);
-  private fundsMonitor = new fundsMonitorFactory(observerEvents);
+  private ordersMonitor: any;
+  private fundsMonitor: any;
+  private interval: number;
+
+  constructor(interval: number, redisManager: IRedisManager) {
+    this.ordersMonitor = new ordersMonitorFactory(
+      observerEvents,
+      ordersManager,
+      redisManager,
+      awsManager
+    );
+    this.fundsMonitor = new fundsMonitorFactory(
+      observerEvents,
+      redisManager,
+      awsManager,
+      fundsManager
+    );
+    this.interval = interval;
+  }
 
   public startInterval() {
     observerInterval = setInterval(() => {
       this.ordersMonitor.checkOrdersStatus();
-    }, OBSERVER_INTERVAL * 1000);
+    }, this.interval * 1000);
   }
 
   public stopInterval() {
@@ -21,4 +44,4 @@ class Observer {
   }
 }
 
-export default new Observer();
+export default Observer;

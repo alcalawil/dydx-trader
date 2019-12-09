@@ -31,7 +31,6 @@ import {
 import awsManager from './awsManager';
 import errorsConstants from '../shared/errorsConstants';
 import _ from 'lodash';
-import { setOpenOrderInCache } from '../cache/redisManager';
 // Config
 let DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
 const DEFAULT_EXPIRATION = parseInt(process.env.DEFAULT_EXPIRATION_IN_SECONDS || '610');
@@ -114,7 +113,6 @@ class OrdersManager {
 
     const { order: responseOrder } = await this.solo.api.placeOrder(order);
     const parsedOrder = this.parseApiOrder(responseOrder);
-    setOpenOrderInCache(parsedOrder);
 
     return parsedOrder;
   }

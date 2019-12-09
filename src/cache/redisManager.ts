@@ -1,89 +1,100 @@
-import redis from 'redis';
+import redis, { RedisClient } from 'redis';
 import { IResponseOrder, IFundsBalances } from '../entities';
 import { EventEmitter } from 'events';
 import { logger } from '../shared/Logger';
 
-const HOST = process.env.REDIS_HOST || '192.168.99.100';
-const PORT = parseInt(process.env.REDIS_PORT || '6379');
-const client = redis.createClient(PORT, HOST);
-const emitter = new EventEmitter();
+class RedisManager {
+  private client: RedisClient;
+  private emitter: EventEmitter;
 
-client.on('connect', () => logger.info(`Connected to redis through ${HOST}:${PORT}`));
-
-export const setOpenOrderInCache = (order: IResponseOrder) => {
-  client.rpush('openOrders', JSON.stringify(order));
-  emitter.emit('pushedOrder', order);
-};
-
-export const setOrderInCache = (order: IResponseOrder) => {
-  client.rpush('orders', JSON.stringify(order));
-};
-
-export const setBalance = (balance: IFundsBalances) => {
-  client.rpush('balances', JSON.stringify(balance));
-};
-
-export const getCachedOpenOrders = (): Promise<IResponseOrder[]> =>
-  new Promise((resolve, reject) => {
-    client.lrange('openOrders', 0, -1, (err, values) => {
-      if (err) {
-        return reject(err);
-      }
-      const data: IResponseOrder[] = values.map((item: string) => JSON.parse(item));
-      resolve(data);
+  constructor(host: string, port: number) {
+    this.client = redis.createClient(port, host);
+    this.emitter = new EventEmitter();
+    this.client.on('connect', () =>
+      logger.info(`Connected to redis through ${host}:${port}`)
+    );
+    this.client.on('error', (err) => {
+      logger.error('Error ' + err);
     });
-  });
+  }
 
-export const getCachedOrders = (): Promise<IResponseOrder[]> =>
-  new Promise((resolve, reject) => {
-    client.lrange('orders', 0, -1, (err, values) => {
-      if (err) {
-        return reject(err);
-      }
-      const data: IResponseOrder[] = values.map((item: string) => JSON.parse(item));
-      resolve(data);
-    });
-  });
+  public setOpenOrderInCache = (order: IResponseOrder) => {
+    this.client.rpush('openOrders', JSON.stringify(order));
+    this.emitter.emit('pushedOrder', order);
+  };
 
-export const getBalances = (): Promise<IFundsBalances[]> =>
-  new Promise((resolve, reject) => {
-    client.lrange('balances', 0, -1, (err, values) => {
-      if (err) {
-        return reject(err);
-      }
-      const data: IFundsBalances[] = values.map((item: string) => JSON.parse(item));
-      resolve(data);
-    });
-  });
+  public setOrderInCache = (order: IResponseOrder) => {
+    return this.client.rpush('orders', JSON.stringify(order));
+  };
 
-export const getBalance = (account: string): Promise<IFundsBalances> =>
-  new Promise((resolve, reject) => {
-    client.lrange('balances', 0, -1, (err, values) => {
-      if (err) {
-        return reject(err);
-      }
-      values.map((item: string) => {
-        const balance: IFundsBalances = JSON.parse(item);
-        if (balance.account.includes(account)) {
-          resolve(balance);
+  public setBalance = (balance: IFundsBalances) => {
+    this.client.rpush('balances', JSON.stringify(balance));
+  };
+
+  public getCachedOpenOrders = (): Promise<IResponseOrder[]> =>
+    new Promise((resolve, reject) => {
+      this.client.lrange('openOrders', 0, -1, (err, values) => {
+        if (err) {
+          return reject(err);
         }
+        const data: IResponseOrder[] = values.map((item: string) => JSON.parse(item));
+        resolve(data);
       });
-      resolve();
     });
-  });
 
-export const deleteCachedOpenOrder = (order: IResponseOrder) => {
-  client.lrem('openOrders', 1, JSON.stringify(order));
-};
+  public getCachedOrders = (): Promise<IResponseOrder[]> =>
+    new Promise((resolve, reject) => {
+      this.client.lrange('orders', 0, -1, (err, values) => {
+        if (err) {
+          return reject(err);
+        }
+        const data: IResponseOrder[] = values.map((item: string) => JSON.parse(item));
+        resolve(data);
+      });
+    });
 
-export const updateCachedOpenOrder = (order: IResponseOrder, index: number) => {
-  client.lset('openOrders', index, JSON.stringify(order));
-};
+  public getBalances = (): Promise<IFundsBalances[]> =>
+    new Promise((resolve, reject) => {
+      this.client.lrange('balances', 0, -1, (err, values) => {
+        if (err) {
+          return reject(err);
+        }
+        const data: IFundsBalances[] = values.map((item: string) => JSON.parse(item));
+        resolve(data);
+      });
+    });
 
-export const updateBalance = (balance: IFundsBalances, index: number) => {
-  client.lset('balances', index, JSON.stringify(balance));
-};
+  public getBalance = (account: string): Promise<IFundsBalances> =>
+    new Promise((resolve, reject) => {
+      this.client.lrange('balances', 0, -1, (err, values) => {
+        if (err) {
+          return reject(err);
+        }
+        values.map((item: string) => {
+          const balance: IFundsBalances = JSON.parse(item);
+          if (balance.account.includes(account)) {
+            resolve(balance);
+          }
+        });
+        resolve();
+      });
+    });
 
-export const getEmitter = () => {
-  return emitter;
-};
+  public deleteCachedOpenOrder = (order: IResponseOrder) => {
+    return this.client.lrem('openOrders', 1, JSON.stringify(order));
+  };
+
+  public updateCachedOpenOrder = (order: IResponseOrder, index: number) => {
+    return this.client.lset('openOrders', index, JSON.stringify(order));
+  };
+
+  public updateBalance = (balance: IFundsBalances, index: number) => {
+    return this.client.lset('balances', index, JSON.stringify(balance));
+  };
+
+  public getEmitter = () => {
+    return this.emitter;
+  };
+}
+
+export default (host: string, port: number) => new RedisManager(host, port);

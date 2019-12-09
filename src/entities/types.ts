@@ -125,3 +125,26 @@ export interface IParsedOrderbook {
   amount: number;
   price: number;
 }
+
+export interface IRedisManager {
+  setOpenOrderInCache: (order: IResponseOrder) => void;
+  setOrderInCache: (order: IResponseOrder) => void;
+  setBalance: (balance: IFundsBalances) => void;
+  getCachedOpenOrders: () => Promise<IResponseOrder[]>;
+  getCachedOrders: () => Promise<IResponseOrder[]>;
+  getBalances: () => Promise<IFundsBalances[]>;
+  getBalance: (account: string) => Promise<IFundsBalances>;
+  deleteCachedOpenOrder: (order: IResponseOrder) => boolean;
+  updateCachedOpenOrder: (order: IResponseOrder, index: number) => boolean;
+  updateBalance: (balance: IFundsBalances, index: number) => boolean;
+  getEmitter: () => EventEmitter;
+}
+
+export interface IAwsManager {
+  kmsDecrypt: (encryptedData: string) => Promise<string>;
+  kmsEncrypt: (plainText: string) => Promise<string>;
+  publishLogToSNS: (operation: string, message: any, level?: string) => Promise<any>;
+  getSecretValue: (secretName: string) => Promise<any>;
+  decryptSecretName: (privateKey: string) => Promise<any>;
+  publishToSQS: (groupId: string, msg: any, extraAttributes?: any) => Promise<any>;
+}
