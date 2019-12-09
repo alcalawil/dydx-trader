@@ -6,7 +6,7 @@ export const ORDERS_BUY = 'ORDERS_BUY';
 
 export const ORDERS_SELL = 'ORDERS_SELL';
 
-export const ORDERS_CANCELL_ALL = 'ORDERS_CANCELL_ALL';
+export const ORDERS_CANCEL_ALL = 'ORDERS_CANCEL_ALL';
 
 export const ORDERS_BUY_MANY = 'ORDERS_BUY_MANY';
 

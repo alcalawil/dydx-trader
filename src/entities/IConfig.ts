@@ -1,6 +1,8 @@
 export default interface IConfig {
   sqs: {
     consumerQueueUrl: string;
+    region: string;
+    strategyQueueUrl: string;
   };
   redis: {
     port: number;
