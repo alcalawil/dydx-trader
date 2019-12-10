@@ -1,4 +1,3 @@
-import { ISQSRoute } from '@entities';
 import { solo } from '../../modules/solo';
 import ordersManagerFactory from '../../modules/ordersManager';
 import { logger } from '@shared';
@@ -17,33 +16,18 @@ import { SQS } from 'aws-sdk';
 
 import SQSRouter from '../SQSRouter';
 
-const router = new SQSRouter(); 
+const router = new SQSRouter();
 
 let _sqsPublisher: SQSPublisher;
 
 const ordersManager = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
 
-
-router.createRoute(ORDERS_CANCEL, async (body: any) => {
-  const topic = ORDERS_CANCEL;
-  try {
-    const { orderId } = body;
-    const result = await ordersManager.cancelOrder(orderId);
-    // Here add result to the application state or/and publish to sqs
-
-    logger.info(`Topic ${topic} is working`);
-    return result;
-  } catch (err) {
-    logger.error(topic, err.message);
-    throw err;
-  }
-});
-
+/* PLACE ORDER ROUTE */
 router.createRoute(ORDERS_PLACE, async (body: any) => {
   const topic = ORDERS_PLACE;
   try {
-    const { side, amount, price, pair } = body;
-    const result = await ordersManager.placeOrder(
+    const { side, amount, price, pair, operationId } = body;
+    const response = await ordersManager.placeOrder(
       {
         side,
         amount,
@@ -51,78 +35,144 @@ router.createRoute(ORDERS_PLACE, async (body: any) => {
       },
       pair
     );
-    // Here add result to the application state or/and publish to sqs
-    awsManager.publishLogToSNS('place', result);
-    logger.info(`Topic ${topic} is working`);
-    return result;
+
+    logger.debug(`Topic ${topic} is working`);
+    awsManager.publishLogToSNS(topic, response);
+    publishResponseToSQS(topic, operationId, response);
+
+    return;
   } catch (err) {
     logger.error(topic, err.message);
     throw err;
   }
 });
 
+/* BUY ORDER ROUTE */
 router.createRoute(ORDERS_BUY, async (body: any) => {
   const topic = ORDERS_BUY;
   try {
-    const { price, amount, pair } = body;
-    const result = await ordersManager.buy(price, amount, pair);
-    // Here add result to the application state or/and publish to sqs
-    awsManager.publishLogToSNS('buy', result);
-    logger.info(`Topic ${topic} is working`);
-    return result;
+    const { operationId, price, amount, pair } = body;
+    const response = await ordersManager.buy(price, amount, pair);
+
+    logger.debug(`Topic ${topic} is working`);
+    awsManager.publishLogToSNS(topic, response);
+    publishResponseToSQS(topic, operationId, response);
+
+    return;
   } catch (err) {
     logger.error(topic, err.message);
     throw err;
   }
 });
 
+/* SELL ORDER ROUTE */
 router.createRoute(ORDERS_SELL, async (body: any) => {
   const topic = ORDERS_SELL;
   try {
-    const { price, amount, pair } = body;
-    const result = await ordersManager.sell(price, amount, pair);
-    // Here add result to the application state or/and publish to sqs
-    awsManager.publishLogToSNS('sell', result);
-    logger.info(`Topic ${topic} is working`);
-    return result;
+    const { operationId, price, amount, pair } = body;
+    const response = await ordersManager.sell(price, amount, pair);
+
+    logger.debug(`Topic ${topic} is working`);
+    awsManager.publishLogToSNS(topic, response);
+    publishResponseToSQS(topic, operationId, response);
+
+    return;
   } catch (err) {
     logger.error(topic, err.message);
     throw err;
   }
 });
 
-router.createRoute(ORDERS_CANCEL_ALL, async (body: any) => {
-  const topic = ORDERS_CANCEL_ALL;
+/* CANCEL ORDER ROUTE */
+router.createRoute(ORDERS_CANCEL, async (body: any) => {
+  const topic = ORDERS_CANCEL;
   try {
-    const { pair } = body;
-    const result = await ordersManager.cancelMyOrders(pair);
+    const { operationId, orderId } = body;
+    const response = await ordersManager.cancelOrder(orderId);
     // Here add result to the application state or/and publish to sqs
 
-    logger.info(`Topic ${topic} is working`);
-    return result;
+    logger.debug(`Topic ${topic} is working`);
+    awsManager.publishLogToSNS(topic, response);
+    publishResponseToSQS(topic, operationId, response);
+
+    return;
   } catch (err) {
     logger.error(topic, err.message);
     throw err;
   }
 });
 
+/* ORDERS BUY MANY ROUTE */
 router.createRoute(ORDERS_BUY_MANY, async (body: any) => {
   const topic = ORDERS_BUY_MANY;
   const side = 'buy';
   try {
-    const { amount, adjust, pair } = body;
-    const result = await ordersManager.postMany(amount, adjust, side, pair);
-    // Here add result to the application state or/and publish to sqs
-    awsManager.publishLogToSNS('buyMany', result);
-    logger.info(`Topic ${topic} is working`);
-    return result;
+    const { operationId, amount, adjust, pair } = body;
+    const response = await ordersManager.postMany(amount, adjust, side, pair);
+
+    logger.debug(`Topic ${topic} is working`);
+    awsManager.publishLogToSNS(topic, response);
+    publishResponseToSQS(topic, operationId, response);
+
+    return;
   } catch (err) {
     logger.error(topic, err.message);
     throw err;
   }
 });
 
+/* ORDERS SELL MANY ROUTE */
+router.createRoute(ORDERS_SELL_MANY, async (body: any) => {
+  const topic = ORDERS_SELL_MANY;
+  const side = 'sell';
+  try {
+    const { operationId, amount, adjust, pair } = body;
+    const response = await ordersManager.postMany(amount, adjust, side, pair);
+
+    logger.debug(`Topic ${topic} is working`);
+    awsManager.publishLogToSNS(topic, response);
+    publishResponseToSQS(topic, operationId, response);
+
+    return;
+  } catch (err) {
+    logger.error(topic, err.message);
+    throw err;
+  }
+});
+
+/* CANCEL ALL ORDER ROUTE */
+router.createRoute(ORDERS_CANCEL_ALL, async (body: any) => {
+  const topic = ORDERS_CANCEL_ALL;
+  try {
+    const { operationId, pair } = body;
+    const response = await ordersManager.cancelMyOrders(pair);
+
+    logger.debug(`Topic ${topic} is working`);
+    awsManager.publishLogToSNS(topic, response);
+    publishResponseToSQS(topic, operationId, response);
+
+    return;
+  } catch (err) {
+    logger.error(topic, err.message);
+    throw err;
+  }
+});
+
+const publishResponseToSQS = (topic: string, operationId: string, response: object) => {
+  const body = {
+    operationId,
+    ...response
+  };
+
+  _sqsPublisher.publishToSQS(topic, JSON.stringify(body), {
+    operationId: {
+      DataType: 'String',
+      StringValue: operationId
+    }
+  });
+}
+
 export default (sqsPublisher: SQSPublisher) => {
   _sqsPublisher = sqsPublisher;
   return router;
-}
+};

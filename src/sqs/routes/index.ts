@@ -1,6 +1,6 @@
 import { ISQSRoute } from '@entities';
 import Orders from './Orders';
-import SQSPublisher from 'src/sqs/SQSPublisher';
+import SQSPublisher from '../SQSPublisher';
 
 
 export default (sqsPublisher: SQSPublisher) => {
