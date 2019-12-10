@@ -4,8 +4,10 @@ const CONSUMER_QUEUE_URL =
   process.env.CONSUMER_QUEUE_URL ||
   'https://sqs.us-east-1.amazonaws.com/949045345033/test.fifo';
 
-  // TODO: Validate this
+// TODO: Validate this
 const STRATEGY_QUEUE_URL = process.env.STRATEGY_QUEUE_URL || '';
+const TRANSACTIONAL_LOGS_QUEUE_ARN =
+  process.env.TRANSACTIONAL_LOGS_QUEUE_ARN || 'arn:aws:sns:us-east-1:949045345033:test';
 
 const config: IConfig = {
   sqs: {
@@ -22,6 +24,9 @@ const config: IConfig = {
   },
   observer: {
     interval: Number(process.env.OBSERVER_INTERVAL || '1')
+  },
+  transactionalLog: {
+    queueArn: TRANSACTIONAL_LOGS_QUEUE_ARN
   }
 };
 

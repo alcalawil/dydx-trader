@@ -5,7 +5,7 @@ import fundsFactory from '../modules/fundsManager';
 import awsManager from '../modules/awsManager';
 import { solo } from '../modules/solo';
 import { EventEmitter } from 'events';
-import { IRedisManager } from '@entities';
+import { IRedisManager, ISQSPublisher } from '@entities';
 
 let observerInterval: NodeJS.Timeout;
 const observerEvents = new EventEmitter();
@@ -17,18 +17,24 @@ class Observer {
   private fundsMonitor: any;
   private interval: number;
 
-  constructor(interval: number, redisManager: IRedisManager) {
+  constructor(
+    interval: number,
+    redisManager: IRedisManager,
+    sqsPublisher: ISQSPublisher
+  ) {
     this.ordersMonitor = new ordersMonitorFactory(
       observerEvents,
       ordersManager,
       redisManager,
-      awsManager
+      awsManager,
+      sqsPublisher
     );
     this.fundsMonitor = new fundsMonitorFactory(
       observerEvents,
       redisManager,
       awsManager,
-      fundsManager
+      fundsManager,
+      sqsPublisher
     );
     this.interval = interval;
   }

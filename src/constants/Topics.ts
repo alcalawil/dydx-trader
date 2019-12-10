@@ -13,3 +13,9 @@ export const ORDERS_BUY_MANY = 'ORDERS_BUY_MANY';
 export const ORDERS_SELL_MANY = 'ORDERS_SELL_MANY';
 
 // TODO: need to add "GET_ORDER" and "GET_MY_FILLS"
+
+export const ORDERS_STATUS_CHANGES = 'ORDERS_STATUS_CHANGES';
+
+export const BALANCES_CHANGES = 'BALANCES_CHANGES';
+
+export const STOP_OPS = 'STOP_OPS';

@@ -23,9 +23,9 @@ const sqsRoutes = SQSRoutes(sqsPublisher);
 const sqsConsumer = SQSConsumer(sqs, config.sqs.consumerQueueUrl, sqsRoutes);
 sqsConsumer.start();
 
-// // Redis
-// const redisManager = RedisManager(config.redis.host, config.redis.port);
+// Redis
+const redisManager = RedisManager(config.redis.host, config.redis.port);
 
-// // Observer
-// const observer = new Observer(config.observer.interval, redisManager);
-// observer.startInterval();
+// Observer
+const observer = new Observer(config.observer.interval, redisManager, sqsPublisher);
+observer.startInterval();

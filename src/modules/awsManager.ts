@@ -1,5 +1,6 @@
 import AWS, { SQS, SNS, KMS, SecretsManager } from 'aws-sdk';
 import { decrypt } from '../shared/utils';
+import config from '../config';
 
 AWS.config.update({
   accessKeyId: process.env.ACCESS_KEY_ID,
@@ -64,7 +65,7 @@ class AwsManager {
   public publishLogToSNS(operation: string, message: any, level: string = 'debug') {
     return new Promise<any>((resolve, reject) => {
       const publishParams: SNS.PublishInput = {
-        TopicArn: process.env.SNS_ARN || 'none',
+        TopicArn: config.transactionalLog.queueArn || 'none',
         Message: JSON.stringify(message),
         MessageAttributes: {
           operation: {

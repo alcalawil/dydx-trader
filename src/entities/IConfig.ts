@@ -14,4 +14,7 @@ export default interface IConfig {
   observer: {
     interval: number;
   };
+  transactionalLog: {
+    queueArn: string;
+  };
 }

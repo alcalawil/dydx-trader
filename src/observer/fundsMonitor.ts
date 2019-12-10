@@ -4,11 +4,13 @@ import {
   IFundsBalances,
   IResponseOrder,
   IRedisManager,
-  IAwsManager
+  IAwsManager,
+  ISQSPublisher
 } from '@entities';
 import { logger } from '@shared';
 import { ApiOrderStatus } from '@dydxprotocol/solo';
 import config from '../config';
+import { BALANCES_CHANGES, ORDERS_STATUS_CHANGES, STOP_OPS } from '../constants/Topics';
 
 let BALANCES: IFundsBalances[];
 
@@ -17,16 +19,18 @@ class FundsController {
   private redisManager: IRedisManager;
   private awsManager: IAwsManager;
   private fundsManager: any;
+  private sqsPublisher: ISQSPublisher;
 
   constructor(
     event: EventEmitter,
     redisManager: IRedisManager,
     awsManager: IAwsManager,
-    fundsManager: any
+    fundsManager: any,
+    sqsPublisher: ISQSPublisher
   ) {
     this.observerEvents = event;
     this.redisManager = redisManager;
-    this.observerEvents.on('orderChanges', (order: IResponseOrder) => {
+    this.observerEvents.on(ORDERS_STATUS_CHANGES, (order: IResponseOrder) => {
       if (
         order.status.includes(ApiOrderStatus.FILLED) ||
         order.status.includes(ApiOrderStatus.PARTIALLY_FILLED)
@@ -36,6 +40,7 @@ class FundsController {
     });
     this.awsManager = awsManager;
     this.fundsManager = fundsManager;
+    this.sqsPublisher = sqsPublisher;
     this.initialize();
   }
 
@@ -56,13 +61,13 @@ class FundsController {
     );
     if (balanceIndex !== -1) {
       this.redisManager.updateBalance(newBalance, balanceIndex);
-      logger.info(`The Balance was updated for account: ${newBalance.account}`);
-      this.awsManager.publishToSQS('updateBalance', newBalance);
+      logger.debug(`The Balance was updated for account: ${newBalance.account}`);
+      this.sqsPublisher.publishToSQS(BALANCES_CHANGES, JSON.stringify(newBalance));
     } else {
       BALANCES.push(newBalance);
       this.redisManager.setBalance(newBalance);
-      this.awsManager.publishToSQS('updateBalance', newBalance);
-      logger.info(`The Balance was created for account: ${newBalance.account}`);
+      this.sqsPublisher.publishToSQS(BALANCES_CHANGES, JSON.stringify(newBalance));
+      logger.debug(`The Balance was created for account: ${newBalance.account}`);
     }
     if (newBalance.eth >= config.fundsMonitor.maxEthQty) {
       this.stopOrders(newBalance);
@@ -70,12 +75,8 @@ class FundsController {
   }
 
   private stopOrders(balance: IFundsBalances) {
-    const msg = {
-      message: 'maximum amount of eth reached',
-      ...balance
-    };
-    this.awsManager.publishToSQS('stopOps', msg);
-    this.awsManager.publishLogToSNS('stopOps', msg);
+    this.sqsPublisher.publishToSQS(STOP_OPS, JSON.stringify(balance));
+    this.awsManager.publishLogToSNS(STOP_OPS, balance);
   }
 }
 

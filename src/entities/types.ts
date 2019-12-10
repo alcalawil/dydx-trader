@@ -148,3 +148,12 @@ export interface IAwsManager {
   decryptSecretName: (privateKey: string) => Promise<any>;
   publishToSQS: (groupId: string, msg: any, extraAttributes?: any) => Promise<any>;
 }
+
+export interface ISQSPublisher {
+  publishToSQS: (topic: string, body: string, extraAttributes?: any) => Promise<any>;
+}
+
+export interface IOrderStatus {
+  orderId: string;
+  orderStatus: string;
+}
