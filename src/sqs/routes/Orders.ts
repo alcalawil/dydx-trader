@@ -8,11 +8,16 @@ import {
   ORDERS_SELL,
   ORDERS_CANCEL_ALL,
   ORDERS_BUY_MANY,
-  ORDERS_SELL_MANY
+  ORDERS_SELL_MANY,
+  ORDERS_PLACE_RESPONSE,
+  ORDERS_BUY_RESPONSE,
+  ORDERS_SELL_RESPONSE,
+  ORDERS_CANCEL_RESPONSE,
+  ORDERS_BUY_MANY_RESPONSE,
+  ORDERS_CANCEL_ALL_RESPONSE
 } from '../../constants/Topics';
 import awsManager from '../../modules/awsManager';
 import SQSPublisher from '../SQSPublisher';
-import { SQS } from 'aws-sdk';
 
 import SQSRouter from '../SQSRouter';
 import { IRedisManager } from '@entities';
@@ -29,7 +34,7 @@ router.createRoute(ORDERS_PLACE, async (body: any) => {
   const topic = ORDERS_PLACE;
   try {
     const { side, amount, price, pair, operationId } = body;
-    const response = await ordersManager.placeOrder(
+    const orderResponse = await ordersManager.placeOrder(
       {
         side,
         amount,
@@ -39,8 +44,8 @@ router.createRoute(ORDERS_PLACE, async (body: any) => {
     );
 
     logger.debug(`Topic ${topic} is working`);
-    awsManager.publishLogToSNS(topic, response);
-    publishResponseToSQS(topic, operationId, response);
+    awsManager.publishLogToSNS(topic, orderResponse);
+    publishResponseToSQS(ORDERS_PLACE_RESPONSE, operationId, orderResponse);
 
     return;
   } catch (err) {
@@ -52,14 +57,14 @@ router.createRoute(ORDERS_PLACE, async (body: any) => {
 /* BUY ORDER ROUTE */
 router.createRoute(ORDERS_BUY, async (body: any) => {
   const topic = ORDERS_BUY;
-  const responseTopic = 'ORDERS_BUY_RESPONSE';
+  const responseTopic = ORDERS_BUY_RESPONSE;
   try {
     const { operationId, price, amount, pair } = body;
-    const response = await ordersManager.buy(price, amount, pair);
+    const orderResponse = await ordersManager.buy(price, amount, pair);
 
     logger.debug(`Topic ${topic} is working`);
-    awsManager.publishLogToSNS(topic, response);
-    publishResponseToSQS(responseTopic, operationId, response);
+    awsManager.publishLogToSNS(topic, orderResponse);
+    publishResponseToSQS(responseTopic, operationId, orderResponse);
 
     return;
   } catch (err) {
@@ -73,11 +78,11 @@ router.createRoute(ORDERS_SELL, async (body: any) => {
   const topic = ORDERS_SELL;
   try {
     const { operationId, price, amount, pair } = body;
-    const response = await ordersManager.sell(price, amount, pair);
+    const orderResponse = await ordersManager.sell(price, amount, pair);
 
     logger.debug(`Topic ${topic} is working`);
-    awsManager.publishLogToSNS(topic, response);
-    publishResponseToSQS(topic, operationId, response);
+    awsManager.publishLogToSNS(topic, orderResponse);
+    publishResponseToSQS(ORDERS_SELL_RESPONSE, operationId, orderResponse);
 
     return;
   } catch (err) {
@@ -96,7 +101,7 @@ router.createRoute(ORDERS_CANCEL, async (body: any) => {
 
     logger.debug(`Topic ${topic} is working`);
     awsManager.publishLogToSNS(topic, response);
-    publishResponseToSQS(topic, operationId, response);
+    publishResponseToSQS(ORDERS_CANCEL_RESPONSE, operationId, response);
 
     return;
   } catch (err) {
@@ -115,7 +120,7 @@ router.createRoute(ORDERS_BUY_MANY, async (body: any) => {
 
     logger.debug(`Topic ${topic} is working`);
     awsManager.publishLogToSNS(topic, response);
-    publishResponseToSQS(topic, operationId, response);
+    publishResponseToSQS(ORDERS_BUY_MANY_RESPONSE, operationId, response);
 
     return;
   } catch (err) {
@@ -134,7 +139,7 @@ router.createRoute(ORDERS_SELL_MANY, async (body: any) => {
 
     logger.debug(`Topic ${topic} is working`);
     awsManager.publishLogToSNS(topic, response);
-    publishResponseToSQS(topic, operationId, response);
+    publishResponseToSQS(ORDERS_SELL_MANY, operationId, response);
 
     return;
   } catch (err) {
@@ -152,7 +157,7 @@ router.createRoute(ORDERS_CANCEL_ALL, async (body: any) => {
 
     logger.debug(`Topic ${topic} is working`);
     awsManager.publishLogToSNS(topic, response);
-    publishResponseToSQS(topic, operationId, response);
+    publishResponseToSQS(ORDERS_CANCEL_ALL_RESPONSE, operationId, response);
 
     return;
   } catch (err) {
@@ -164,7 +169,7 @@ router.createRoute(ORDERS_CANCEL_ALL, async (body: any) => {
 const publishResponseToSQS = (topic: string, operationId: string, response: object) => {
   const body = {
     operationId,
-    ...response
+    response
   };
 
   _sqsPublisher.publishToSQS(topic, JSON.stringify(body), {

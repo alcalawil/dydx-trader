@@ -22,6 +22,7 @@ class Observer {
     sqsPublisher: ISQSPublisher,
     redisManager?: IRedisManager
   ) {
+    // FIXME: Si es una factory no se usa new para instanciar
     this.ordersMonitor = new ordersMonitorFactory(
       observerEvents,
       ordersManager,
