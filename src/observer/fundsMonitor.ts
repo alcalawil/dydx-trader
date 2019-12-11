@@ -5,39 +5,43 @@ import {
   IResponseOrder,
   IRedisManager,
   IAwsManager,
-  ISQSPublisher
+  ISQSPublisher,
+  observerEvents
 } from '@entities';
 import { logger } from '@shared';
 import { ApiOrderStatus } from '@dydxprotocol/solo';
 import config from '../config';
-import { BALANCES_CHANGES, ORDERS_STATUS_CHANGES, STOP_OPS } from '../constants/Topics';
+import { BALANCES_CHANGES, STOP_OPS } from '../constants/Topics';
 
 let BALANCES: IFundsBalances[];
 
 class FundsController {
-  private observerEvents: EventEmitter;
-  private redisManager: IRedisManager;
+  private observerEmitter: EventEmitter;
+  // private redisManager: IRedisManager;
   private awsManager: IAwsManager;
   private fundsManager: any;
   private sqsPublisher: ISQSPublisher;
 
   constructor(
     event: EventEmitter,
-    redisManager: IRedisManager,
     awsManager: IAwsManager,
     fundsManager: any,
-    sqsPublisher: ISQSPublisher
+    sqsPublisher: ISQSPublisher,
+    redisManager?: IRedisManager
   ) {
-    this.observerEvents = event;
-    this.redisManager = redisManager;
-    this.observerEvents.on(ORDERS_STATUS_CHANGES, (order: IResponseOrder) => {
-      if (
-        order.status.includes(ApiOrderStatus.FILLED) ||
-        order.status.includes(ApiOrderStatus.PARTIALLY_FILLED)
-      ) {
-        this.updateBalance(order);
+    this.observerEmitter = event;
+    // this.redisManager = redisManager;
+    this.observerEmitter.on(
+      observerEvents.orderStatusChanges,
+      (order: IResponseOrder) => {
+        if (
+          order.status.includes(ApiOrderStatus.FILLED) ||
+          order.status.includes(ApiOrderStatus.PARTIALLY_FILLED)
+        ) {
+          this.updateBalance(order);
+        }
       }
-    });
+    );
     this.awsManager = awsManager;
     this.fundsManager = fundsManager;
     this.sqsPublisher = sqsPublisher;
@@ -45,7 +49,8 @@ class FundsController {
   }
 
   private async initialize() {
-    BALANCES = await this.redisManager.getBalances();
+    // BALANCES = await this.redisManager.getBalances();
+    BALANCES = [];
   }
 
   public async updateBalance(order: IResponseOrder) {
@@ -60,12 +65,12 @@ class FundsController {
       (item: IFundsBalances) => item.account === newBalance.account
     );
     if (balanceIndex !== -1) {
-      this.redisManager.updateBalance(newBalance, balanceIndex);
+      // this.redisManager.updateBalance(newBalance, balanceIndex);
       logger.debug(`The Balance was updated for account: ${newBalance.account}`);
       this.sqsPublisher.publishToSQS(BALANCES_CHANGES, JSON.stringify(newBalance));
     } else {
       BALANCES.push(newBalance);
-      this.redisManager.setBalance(newBalance);
+      // this.redisManager.setBalance(newBalance);
       this.sqsPublisher.publishToSQS(BALANCES_CHANGES, JSON.stringify(newBalance));
       logger.debug(`The Balance was created for account: ${newBalance.account}`);
     }

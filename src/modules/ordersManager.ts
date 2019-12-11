@@ -20,7 +20,8 @@ import {
   MarketSideString,
   IParsedOrderbook,
   IToken,
-  IRedisManager
+  IRedisManager,
+  observerEvents
 } from '../entities/types';
 import {
   createPriceRange,
@@ -32,6 +33,7 @@ import {
 import awsManager from './awsManager';
 import errorsConstants from '../shared/errorsConstants';
 import _ from 'lodash';
+import { EventEmitter } from 'events';
 
 // Config
 let DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
@@ -44,9 +46,12 @@ const TAKER_ACCOUNT_OWNER =
 class OrdersManager {
   public solo: Solo;
   private redisManager: any;
-  constructor(solo: Solo, redis?: IRedisManager) {
+  private observerEmitter: any;
+
+  constructor(solo: Solo, observerEmitter?: EventEmitter, redis?: IRedisManager) {
     this.solo = solo;
     this.redisManager = redis;
+    this.observerEmitter = observerEmitter;
     this.loadAccount();
   }
 
@@ -120,6 +125,11 @@ class OrdersManager {
     if (this.redisManager) {
       this.redisManager.setOpenOrderInCache(parsedOrder);
     }
+
+    if (this.observerEmitter) {
+      this.observerEmitter.emit(observerEvents.placeOrder, parsedOrder);
+    }
+
     return parsedOrder;
   }
 
@@ -381,4 +391,5 @@ class OrdersManager {
   }
 }
 
-export default (solo: Solo, redis?: IRedisManager) => new OrdersManager(solo, redis);
+export default (solo: Solo, observerEmitter?: EventEmitter, redis?: IRedisManager) =>
+  new OrdersManager(solo, observerEmitter, redis);

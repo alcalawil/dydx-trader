@@ -16,6 +16,7 @@ import { SQS } from 'aws-sdk';
 
 import SQSRouter from '../SQSRouter';
 import { IRedisManager } from '@entities';
+import { EventEmitter } from 'events';
 
 const router = new SQSRouter();
 
@@ -51,13 +52,14 @@ router.createRoute(ORDERS_PLACE, async (body: any) => {
 /* BUY ORDER ROUTE */
 router.createRoute(ORDERS_BUY, async (body: any) => {
   const topic = ORDERS_BUY;
+  const responseTopic = 'ORDERS_BUY_RESPONSE';
   try {
     const { operationId, price, amount, pair } = body;
     const response = await ordersManager.buy(price, amount, pair);
 
     logger.debug(`Topic ${topic} is working`);
     awsManager.publishLogToSNS(topic, response);
-    publishResponseToSQS(topic, operationId, response);
+    publishResponseToSQS(responseTopic, operationId, response);
 
     return;
   } catch (err) {
@@ -171,10 +173,14 @@ const publishResponseToSQS = (topic: string, operationId: string, response: obje
       StringValue: operationId
     }
   });
-}
+};
 
-export default (sqsPublisher: SQSPublisher, redisManger?: IRedisManager) => {
+export default (
+  sqsPublisher: SQSPublisher,
+  observerEmitter: EventEmitter,
+  redisManger?: IRedisManager
+) => {
   _sqsPublisher = sqsPublisher;
-  ordersManager = ordersManagerFactory(solo, redisManger);
+  ordersManager = ordersManagerFactory(solo, observerEmitter, redisManger);
   return router;
 };

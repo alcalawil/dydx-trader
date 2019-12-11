@@ -22,13 +22,13 @@ const sqs = new SQS({ region: config.sqs.region });
 const sqsPublisher = new SQSPublisher(sqs, config.sqs.strategyQueueUrl, {
   sender: 'dydx-operator'
 });
+
+// Observer
+const observer = new Observer(config.observer.interval, sqsPublisher);
+observer.startInterval();
+
 // sqsRoutes.loadRoutes
-const sqsRoutes = SQSRoutes(sqsPublisher);
-// const sqsRoutes = SQSRoutes(sqsPublisher, redisManager);
+const sqsRoutes = SQSRoutes(sqsPublisher, observer.observerEmitter);
 
 const sqsConsumer = SQSConsumer(sqs, config.sqs.consumerQueueUrl, sqsRoutes);
 sqsConsumer.start();
-
-// Observer
-// const observer = new Observer(config.observer.interval, redisManager, sqsPublisher);
-// observer.startInterval();

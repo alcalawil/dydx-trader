@@ -157,3 +157,8 @@ export interface IOrderStatus {
   orderId: string;
   orderStatus: string;
 }
+
+export const observerEvents = {
+  placeOrder: 'PLACE_ORDER',
+  orderStatusChanges: 'ORDER_STATUS_CHANGES',
+}

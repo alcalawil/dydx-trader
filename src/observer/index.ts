@@ -19,19 +19,17 @@ class Observer {
 
   constructor(
     interval: number,
-    redisManager: IRedisManager,
-    sqsPublisher: ISQSPublisher
+    sqsPublisher: ISQSPublisher,
+    redisManager?: IRedisManager
   ) {
     this.ordersMonitor = new ordersMonitorFactory(
       observerEvents,
       ordersManager,
-      redisManager,
       awsManager,
       sqsPublisher
     );
     this.fundsMonitor = new fundsMonitorFactory(
       observerEvents,
-      redisManager,
       awsManager,
       fundsManager,
       sqsPublisher
@@ -47,6 +45,10 @@ class Observer {
 
   public stopInterval() {
     clearInterval(observerInterval);
+  }
+
+  public get observerEmitter() {
+    return observerEvents;
   }
 }
 
