@@ -14,18 +14,21 @@ app.listen(port, () => {
   logger.info('Express server started on port: ' + port);
 });
 
+// Redis
+// const redisManager = RedisManager(config.redis.host, config.redis.port);
+
 // Initialize SQS Server
 const sqs = new SQS({ region: config.sqs.region });
-const sqsPublisher = new SQSPublisher(sqs, config.sqs.strategyQueueUrl, { sender: 'dydx-operator' });
+const sqsPublisher = new SQSPublisher(sqs, config.sqs.strategyQueueUrl, {
+  sender: 'dydx-operator'
+});
 // sqsRoutes.loadRoutes
 const sqsRoutes = SQSRoutes(sqsPublisher);
+// const sqsRoutes = SQSRoutes(sqsPublisher, redisManager);
 
 const sqsConsumer = SQSConsumer(sqs, config.sqs.consumerQueueUrl, sqsRoutes);
 sqsConsumer.start();
 
-// Redis
-const redisManager = RedisManager(config.redis.host, config.redis.port);
-
 // Observer
-const observer = new Observer(config.observer.interval, redisManager, sqsPublisher);
-observer.startInterval();
+// const observer = new Observer(config.observer.interval, redisManager, sqsPublisher);
+// observer.startInterval();

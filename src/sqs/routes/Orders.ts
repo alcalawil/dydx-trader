@@ -15,12 +15,13 @@ import SQSPublisher from '../SQSPublisher';
 import { SQS } from 'aws-sdk';
 
 import SQSRouter from '../SQSRouter';
+import { IRedisManager } from '@entities';
 
 const router = new SQSRouter();
 
 let _sqsPublisher: SQSPublisher;
 
-const ordersManager = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
+let ordersManager = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
 
 /* PLACE ORDER ROUTE */
 router.createRoute(ORDERS_PLACE, async (body: any) => {
@@ -172,7 +173,8 @@ const publishResponseToSQS = (topic: string, operationId: string, response: obje
   });
 }
 
-export default (sqsPublisher: SQSPublisher) => {
+export default (sqsPublisher: SQSPublisher, redisManger?: IRedisManager) => {
   _sqsPublisher = sqsPublisher;
+  ordersManager = ordersManagerFactory(solo, redisManger);
   return router;
 };
