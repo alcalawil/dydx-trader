@@ -12,7 +12,7 @@ import { BALANCES_CHANGES, STOP_OPS } from '../constants/Topics';
 
 let BALANCE: IFundsBalances;
 
-class FundsController {
+class FundsMonitor {
   // private redisManager: IRedisManager;
   private awsManager: IAwsManager;
   private fundsManager: any;
@@ -74,4 +74,4 @@ export default (
   fundsManager: any,
   sqsPublisher: ISQSPublisher,
   redisManager?: IRedisManager
-) => new FundsController(awsManager, fundsManager, sqsPublisher, redisManager);
+) => new FundsMonitor(awsManager, fundsManager, sqsPublisher, redisManager);
