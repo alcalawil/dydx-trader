@@ -95,4 +95,10 @@ class OrdersMonitor {
   }
 }
 
-export default OrdersMonitor;
+export default (
+  event: EventEmitter,
+  ordersManager: any,
+  awsManager: IAwsManager,
+  sqsPublisher: ISQSPublisher,
+  redisManager?: IRedisManager
+) => new OrdersMonitor(event, ordersManager, awsManager, sqsPublisher, redisManager);

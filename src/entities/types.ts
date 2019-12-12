@@ -108,7 +108,7 @@ export interface ISQSRoute {
 }
 
 export interface IFundsBalances {
-  account: string;
+  account?: string;
   eth: number;
   usdc: number;
   dai: number;
@@ -160,5 +160,13 @@ export interface IOrderStatus {
 
 export const observerEvents = {
   placeOrder: 'PLACE_ORDER',
-  orderStatusChanges: 'ORDER_STATUS_CHANGES',
+  orderStatusChanges: 'ORDER_STATUS_CHANGES'
+};
+
+export interface IFundsMonitor {
+  checkBalance: () => Promise<void>;
+}
+
+export interface IOrdersMonitor {
+  checkOrdersStatus: () => Promise<void>;
 }
