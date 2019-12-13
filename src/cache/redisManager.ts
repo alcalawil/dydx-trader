@@ -1,5 +1,5 @@
 import redis, { RedisClient } from 'redis';
-import { IResponseOrder, IFundsBalances } from '../entities';
+import { IResponseOrder, IFundsBalances, IBalances } from '../entities';
 import { EventEmitter } from 'events';
 import { logger } from '../shared/Logger';
 
@@ -27,7 +27,11 @@ class RedisManager {
     return this.client.rpush('orders', JSON.stringify(order));
   };
 
-  public setBalance = (balance: IFundsBalances) => {
+  public setBalance = (balance: IBalances) => {
+    return this.client.set('balance', JSON.stringify(balance));
+  };
+
+  public setBalanceToList = (balance: IFundsBalances) => {
     this.client.rpush('balances', JSON.stringify(balance));
   };
 
@@ -53,7 +57,7 @@ class RedisManager {
       });
     });
 
-  public getBalances = (): Promise<IFundsBalances[]> =>
+  public getBalancesFromList = (): Promise<IFundsBalances[]> =>
     new Promise((resolve, reject) => {
       this.client.lrange('balances', 0, -1, (err, values) => {
         if (err) {
@@ -64,7 +68,18 @@ class RedisManager {
       });
     });
 
-  public getBalance = (account: string): Promise<IFundsBalances> =>
+  public getBalance = (): Promise<IBalances> =>
+    new Promise((resolve, reject) => {
+      this.client.get('balance', (err, value) => {
+        if (err) {
+          return reject(err);
+        }
+        const balance: IBalances = JSON.parse(value);
+        resolve(balance);
+      });
+    });
+
+  public getBalanceByAccountFromList = (account: string): Promise<IFundsBalances> =>
     new Promise((resolve, reject) => {
       this.client.lrange('balances', 0, -1, (err, values) => {
         if (err) {

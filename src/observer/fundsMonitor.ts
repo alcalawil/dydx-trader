@@ -1,19 +1,11 @@
-import { EventEmitter } from 'events';
-import {
-  IBalances,
-  IFundsBalances,
-  IRedisManager,
-  IAwsManager,
-  ISQSPublisher
-} from '@entities';
+import { IBalances, IRedisManager, IAwsManager, ISQSPublisher } from '@entities';
 import { logger } from '@shared';
 import config from '../config';
 import { BALANCES_CHANGES, STOP_OPS } from '../constants/Topics';
 
-let BALANCE: IFundsBalances;
+let BALANCE: IBalances;
 
 class FundsMonitor {
-  // private redisManager: IRedisManager;
   private awsManager: IAwsManager;
   private fundsManager: any;
   private sqsPublisher: ISQSPublisher;
@@ -24,7 +16,6 @@ class FundsMonitor {
     sqsPublisher: ISQSPublisher,
     redisManager?: IRedisManager
   ) {
-    // this.redisManager = redisManager;
     this.awsManager = awsManager;
     this.fundsManager = fundsManager;
     this.sqsPublisher = sqsPublisher;
@@ -32,38 +23,28 @@ class FundsMonitor {
   }
 
   private async initialize() {
-    // BALANCES = await this.redisManager.getBalances();
-    const amounts: IBalances = await this.fundsManager.getBalances();
-    BALANCE = {
-      eth: parseFloat(amounts.eth),
-      usdc: parseFloat(amounts.usdc),
-      dai: parseFloat(amounts.dai)
-    };
+    BALANCE = await this.fundsManager.getBalances();
   }
 
   public async checkBalance() {
-    const amounts: IBalances = await this.fundsManager.getBalances();
-    const newBalance: IFundsBalances = {
-      eth: parseFloat(amounts.eth),
-      usdc: parseFloat(amounts.usdc),
-      dai: parseFloat(amounts.dai)
-    };
+    const newBalance: IBalances = await this.fundsManager.getBalances();
+    const ethQty = Number(newBalance.eth);
     if (
       newBalance.dai !== BALANCE.dai ||
       newBalance.usdc !== BALANCE.usdc ||
       newBalance.eth !== BALANCE.eth
     ) {
       logger.debug('the balance was changed');
-      this.sqsPublisher.publishToSQS(BALANCES_CHANGES, JSON.stringify(amounts));
+      this.sqsPublisher.publishToSQS(BALANCES_CHANGES, JSON.stringify(newBalance));
       BALANCE = newBalance;
-      if (newBalance.eth >= config.fundsMonitor.maxEthQty) {
+      if (ethQty >= config.fundsMonitor.maxEthQty) {
         logger.debug('stop ops');
         this.stopOrders(newBalance);
       }
     }
   }
 
-  private stopOrders(balance: IFundsBalances) {
+  private stopOrders(balance: IBalances) {
     this.sqsPublisher.publishToSQS(STOP_OPS, JSON.stringify(balance));
     this.awsManager.publishLogToSNS(STOP_OPS, balance);
   }

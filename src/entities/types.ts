@@ -108,7 +108,7 @@ export interface ISQSRoute {
 }
 
 export interface IFundsBalances {
-  account?: string;
+  account: string;
   eth: number;
   usdc: number;
   dai: number;
