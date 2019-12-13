@@ -33,17 +33,12 @@ export interface IResponseOrder {
   pair: string;
   side: string;
   createdAt: string;
-  expiresAt: string | undefined;
+  expiresAt?: string;
   price: number;
   amount: number;
   status: string;
   amountFilled?: number;
   amountRemaining?: number;
-}
-
-export interface IHTTPError {
-  status: number;
-  message: string;
 }
 
 export interface IBalances {
@@ -157,7 +152,7 @@ export interface IOrderStatus {
   orderId: string;
   orderStatus: string;
 }
-
+// TODO: mover a "/constants"
 export const observerEvents = {
   placeOrder: 'PLACE_ORDER',
   orderStatusChanges: 'ORDER_STATUS_CHANGES'

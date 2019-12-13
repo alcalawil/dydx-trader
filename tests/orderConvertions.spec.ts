@@ -3,26 +3,19 @@ import { expect } from 'chai';
 import BigNumber from 'bignumber.js';
 
 /* MODULES */
-import { MarketSide, ICexOrder, IDexOrder, IToken } from '../src/entities/types';
+import { MarketSide, ICexOrder, IDexOrder, IToken } from '../src/entities';
 import { DYDX_TOKENS } from '../src/constants/Tokens';
 import {
   getTokens,
   convertToDexOrder,
   convertToCexOrder,
   convertFromWei
-} from '../src/shared/utils';
+} from '../src/shared';
 
 /* CONSTANTS */
-const {
-  PRICE,
-  AMOUNT,
-  TAKER_AMOUNT,
-  MAKET_AMOUNT
-} = process.env as any;
-
+const { PRICE, AMOUNT, TAKER_AMOUNT, MAKET_AMOUNT } = process.env as any;
 const assetToken: IToken = DYDX_TOKENS[0];
 const baseToken: IToken = DYDX_TOKENS[1];
-
 const takerToken: IToken = assetToken;
 const makerToken: IToken = baseToken;
 

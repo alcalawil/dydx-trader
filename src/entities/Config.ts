@@ -1,4 +1,4 @@
-export default interface IConfig {
+export interface IConfig {
   sqs: {
     consumerQueueUrl: string;
     region: string;
@@ -17,4 +17,9 @@ export default interface IConfig {
   transactionalLog: {
     queueArn: string;
   };
+  solo: {
+    httpProvider: string;
+  };
 }
+
+// TODO: separar los types de config en "startegies" tambien

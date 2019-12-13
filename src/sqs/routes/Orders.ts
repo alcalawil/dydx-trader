@@ -1,5 +1,4 @@
-import { solo } from '../../modules/solo';
-import ordersManagerFactory from '../../modules/ordersManager';
+import { soloManager, awsManager, ordersFactory } from '@services';
 import { logger } from '@shared';
 import {
   ORDERS_CANCEL,
@@ -15,19 +14,17 @@ import {
   ORDERS_CANCEL_RESPONSE,
   ORDERS_BUY_MANY_RESPONSE,
   ORDERS_CANCEL_ALL_RESPONSE
-} from '../../constants/Topics';
-import awsManager from '../../modules/awsManager';
+} from '@topics';
 import SQSPublisher from '../SQSPublisher';
-
 import SQSRouter from '../SQSRouter';
 import { IRedisManager } from '@entities';
 import { EventEmitter } from 'events';
 
 const router = new SQSRouter();
-
 let _sqsPublisher: SQSPublisher;
 
-let ordersManager = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
+// FIXME: fundsManager class should be instanced once
+let ordersManager = ordersFactory(soloManager);
 
 /* PLACE ORDER ROUTE */
 router.createRoute(ORDERS_PLACE, async (body: any) => {
@@ -186,6 +183,7 @@ export default (
   redisManger?: IRedisManager
 ) => {
   _sqsPublisher = sqsPublisher;
-  ordersManager = ordersManagerFactory(solo, observerEmitter, redisManger);
+  // TODO: Porque no usar el "ordersManager" que esta declado al principio de este archivo?
+  ordersManager = ordersFactory(soloManager, observerEmitter, redisManger);
   return router;
 };

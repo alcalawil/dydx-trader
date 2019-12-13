@@ -1,14 +1,11 @@
 import { Request, Response, Router, NextFunction } from 'express';
 import { OK, INTERNAL_SERVER_ERROR } from 'http-status-codes';
-import { solo } from '../modules/solo';
+import { soloManager, awsManager, fundsFactory } from '@services';
 import { logger } from '@shared';
-import HTTPError from '../entities/HTTPError';
-import awsManager from '../modules/awsManager';
+import { HTTPError } from '@entities';
 
-// tslint:disable-next-line: no-var-requires
-import fundsManagerFactory from '../modules/fundsManager';
-const fundsManager = fundsManagerFactory(solo); // FIXME: fundsManager class should be instanced once
-
+// FIXME: fundsManager class should be instanced once
+const fundsManager = fundsFactory(soloManager);
 const router = Router();
 
 /******************************************************************************

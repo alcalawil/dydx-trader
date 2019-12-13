@@ -1,18 +1,13 @@
-import { logger } from '@shared';
 import { Request, Response, NextFunction } from 'express';
 import { BAD_REQUEST } from 'http-status-codes';
+import { logger } from '@shared';
 
-const clientApiKeyValidation = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+const API_KEY = process.env.API_KEY || '12345';
+
+const clientApiKeyValidation = (req: Request, res: Response, next: NextFunction) => {
   const clientApiKey: string =
-    req.get('api_key') ||
-    req.get('api-key') ||
-    req.get('Authentication') ||
-    'no-key';
-  const apiKey = process.env.API_KEY;
+    req.get('api_key') || req.get('api-key') || req.get('Authentication') || 'no-key';
+
   if (!clientApiKey) {
     logger.error('Missing Api Key');
     return res.status(BAD_REQUEST).json({
@@ -21,9 +16,8 @@ const clientApiKeyValidation = async (
     });
   }
 
-  if (clientApiKey === apiKey) {
-    next();
-  } else {
+  if (clientApiKey === API_KEY) next();
+  else {
     logger.error('Invalid Api Key');
     return res.status(400).send({
       status: false,

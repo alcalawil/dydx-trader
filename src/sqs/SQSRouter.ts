@@ -1,4 +1,4 @@
-import { ISQSRoute } from "@entities";
+import { ISQSRoute } from '@entities';
 
 class SQSRouter {
   private _routes: ISQSRoute[];
@@ -12,6 +12,7 @@ class SQSRouter {
       handler
     };
 
+    // TODO: Validar existencia de "topic" en las rutas
     // if (this._routes.find((route) => route.topic === topic)) {
     //   // if route exists -> override it
     //   this._routes[`${topic}`]

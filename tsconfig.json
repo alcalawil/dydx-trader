@@ -14,10 +14,13 @@
     "target": "es6",
     "moduleResolution": "node",
     "paths": {
-      "@daos": ["src/daos"],
+      "@src": ["src"],
+      "@server": ["src/API/server.ts"],
+      "@middlewares": ["src/API/middleware"],
       "@entities": ["src/entities"],
       "@shared": ["src/shared"],
-      "@server": ["src/Server"]
+      "@topics": ["src/constants/Topics.ts"],
+      "@services": ["src/services"]
     },
     "types": ["node"],
     "typeRoots": ["node_modules/@types"]

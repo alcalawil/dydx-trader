@@ -1,9 +1,7 @@
 import { SQS } from 'aws-sdk';
 import { Consumer } from 'sqs-consumer';
-import IConfig from '../entities/IConfig';
-import { logger } from '../shared';
+import { logger } from '@shared';
 import { ISQSConsumer, ISQSRoute } from '@entities';
-import { stringify } from 'querystring';
 
 class SQSConsumer implements ISQSConsumer {
   public isRunning = false;
@@ -18,6 +16,7 @@ class SQSConsumer implements ISQSConsumer {
       handleMessage: this.messageHandler,
       sqs
     });
+    // TODO: Create an err interface if needed
     this.app.on('error', (err: any) => {
       logger.error('SQS error', err);
     });
@@ -28,22 +27,26 @@ class SQSConsumer implements ISQSConsumer {
       logger.error('SQS timeout_error', err);
     });
   }
+
   public start() {
     this.app.start();
   }
+
   public stop() {
     this.app.stop();
   }
+
   private messageHandler = async (message: SQS.Message) => {
     logger.debug('Message received', message)
+
     if (!message.MessageAttributes || !message.MessageAttributes.topic) {
       logger.error('INVALID OR EMPTY TOPIC', JSON.stringify(message));
       throw new Error('INVALID OR EMPTY TOPIC');
     }
+
     const { topic } = message.MessageAttributes; // topic should map 1:1 with http endpoints
     const body = JSON.parse(message.Body || ''); // body or querystring params
     const topicString = topic.StringValue || '';
-
     const sqsRoute = this.sqsRoutes.find((route) => route.topic === topicString);
 
     if (!sqsRoute) {

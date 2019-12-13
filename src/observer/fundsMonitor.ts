@@ -1,7 +1,7 @@
 import { IBalances, IRedisManager, IAwsManager, ISQSPublisher } from '@entities';
 import { logger } from '@shared';
 import config from '../config';
-import { BALANCES_CHANGES, STOP_OPS } from '../constants/Topics';
+import { BALANCES_CHANGES, STOP_OPS } from '@topics';
 
 let BALANCE: IBalances;
 

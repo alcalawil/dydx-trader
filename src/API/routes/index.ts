@@ -10,7 +10,6 @@ const router = Router();
 router.use('/orders', OrdersRouter);
 router.use('/funds', FundsRouter);
 router.use('/trades', TradesRouter);
-
 router.use('/tests', TestsRouter);
 
 export default router;

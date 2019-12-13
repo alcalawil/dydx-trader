@@ -1,7 +1,7 @@
 import redis, { RedisClient } from 'redis';
 import { IResponseOrder, IFundsBalances, IBalances } from '../entities';
 import { EventEmitter } from 'events';
-import { logger } from '../shared/Logger';
+import { logger } from '@shared';
 
 class RedisManager {
   private client: RedisClient;

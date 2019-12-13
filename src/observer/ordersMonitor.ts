@@ -1,3 +1,4 @@
+import { ApiOrderStatus } from '@dydxprotocol/solo';
 import {
   IResponseOrder,
   IRedisManager,
@@ -5,11 +6,10 @@ import {
   IOrderStatus,
   ISQSPublisher,
   observerEvents
-} from '../entities';
-import { logger } from '../shared/Logger';
-import { ApiOrderStatus } from '@dydxprotocol/solo';
+} from '@entities';
+import { logger } from '@shared';
+import { ORDERS_STATUS_CHANGES } from '@topics';
 import { EventEmitter } from 'events';
-import { ORDERS_STATUS_CHANGES } from '../constants/Topics';
 
 const ORDERS: IResponseOrder[] = [];
 
@@ -37,6 +37,8 @@ class OrdersMonitor {
   }
 
   private async initialize() {
+    // TODO: Implementar redis
+
     // await this.redisManager
     //   .getCachedOpenOrders()
     //   .then((orders: IResponseOrder[]) => {

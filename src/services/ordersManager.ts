@@ -1,5 +1,4 @@
 import {
-  BigNumber,
   SigningMethod,
   Solo,
   SignedLimitOrder,
@@ -9,7 +8,7 @@ import {
   ApiMarketName,
   ApiOrderOnOrderbook
 } from '@dydxprotocol/solo';
-
+import BigNumber from "bignumber.js";
 import {
   IResponseOrder,
   MarketSide,
@@ -22,16 +21,16 @@ import {
   IToken,
   IRedisManager,
   observerEvents
-} from '../entities/types';
+} from '@entities';
 import {
   createPriceRange,
   convertToDexOrder,
   getTokens,
   convertToCexOrder,
   convertFromWei
-} from '../shared/utils';
-import awsManager from './awsManager';
-import errorsConstants from '../shared/errorsConstants';
+} from '@shared';
+import { awsManager } from '@services';
+import errorsConstants from '../constants/Errors';
 import _ from 'lodash';
 import { EventEmitter } from 'events';
 
@@ -269,9 +268,7 @@ class OrdersManager {
     return orders;
   }
 
-  /**
-   * @deprecated Will be deleted future versions. This is a strategy module concern
-   */
+  // TODO: Will be deleted future versions. This is a strategy module concern
   public async postMany(amount: number, adjust: number = 1, side: string, pair: string) {
     const bidPrice = await this.getBid(pair);
     const prices = createPriceRange(bidPrice, adjust, side);
@@ -329,15 +326,7 @@ class OrdersManager {
   }
 
   private parseApiFill(fillApi: ApiFill): IResponseFill {
-    const {
-      orderId,
-      transactionHash,
-      order,
-      createdAt,
-      updatedAt,
-      fillAmount,
-      status
-    } = fillApi;
+    const { orderId, transactionHash, order, createdAt, updatedAt, status } = fillApi;
     const {
       makerAmount,
       takerAmount,
@@ -391,5 +380,8 @@ class OrdersManager {
   }
 }
 
-export default (solo: Solo, observerEmitter?: EventEmitter, redis?: IRedisManager) =>
-  new OrdersManager(solo, observerEmitter, redis);
+export const ordersFactory = (
+  solo: Solo,
+  observerEmitter?: EventEmitter,
+  redis?: IRedisManager
+) => new OrdersManager(solo, observerEmitter, redis);

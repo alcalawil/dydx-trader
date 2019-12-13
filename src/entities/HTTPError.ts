@@ -1,12 +1,14 @@
-import { IHTTPError } from './types';
+export interface IHTTPError {
+  status: number;
+  message: string;
+}
 
-class HTTPError implements IHTTPError {
+export class HTTPError implements IHTTPError {
   public message: string;
   public status: number;
+
   constructor(message: string, status = 500) {
     this.message = message;
     this.status = status;
   }
 }
-
-export default HTTPError;

@@ -1,29 +1,32 @@
+import { SQS } from 'aws-sdk';
 import app from '@server';
 import { logger } from '@shared';
-import { SQS } from 'aws-sdk';
 import config from './config';
-import SQSConsumer from './modules/SQSConsumer';
-import SQSRoutes from './sqs/routes';
-import RedisManager from './cache/redisManager';
+// import RedisManager from './cache/redisManager';
 import Observer from './observer';
+import SQSConsumer from './sqs/SQSConsumer';
+import SQSRoutes from './sqs/routes';
 import SQSPublisher from './sqs/SQSPublisher';
 
-// Initialize API Server
+// TODO: Traer "SENDER" y "PORT" desde "/config" mejor
+const SENDER = process.env.SENDER_NAME || 'dydx-operator'
+
+/* API SERVER */
 const port = Number(process.env.PORT || 3000);
 app.listen(port, () => {
   logger.info('Express server started on port: ' + port);
 });
 
-// Redis
+/* REDIS */
 // const redisManager = RedisManager(config.redis.host, config.redis.port);
 
-// Initialize SQS Server
+/* SQS SERVER */
 const sqs = new SQS({ region: config.sqs.region });
 const sqsPublisher = new SQSPublisher(sqs, config.sqs.strategyQueueUrl, {
-  sender: 'dydx-operator'
+  sender: SENDER
 });
 
-// Observer
+/* OBSERVER */
 const observer = new Observer(config.observer.interval, sqsPublisher);
 observer.startInterval();
 

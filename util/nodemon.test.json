@@ -1,6 +1,10 @@
 {
-  "watch": ["tests"],
+  "watch": [
+    "tests"
+  ],
   "ext": "spec.ts",
-  "ignore": ["tests/support"],
+  "ignore": [
+    "tests/support"
+  ],
   "exec": "cross-env ENV_FILE=test mocha -r ts-node/register ./tests/start.ts"
 }

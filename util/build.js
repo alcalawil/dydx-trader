@@ -9,3 +9,6 @@ try {
 } catch (err) {
   console.log(err);
 }
+
+// TODO: (OJO) El comando "tsc" se ejecuta desde la libreria global y no desde la
+// instalada en el proyecto

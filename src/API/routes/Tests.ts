@@ -1,8 +1,7 @@
-import { logger } from '@shared';
 import { Request, Response, Router } from 'express';
 import { BAD_REQUEST, OK } from 'http-status-codes';
+import { logger, convertToCexOrder, convertToDexOrder } from '@shared';
 import { ICexOrder, IDexOrder } from '@entities';
-import { convertToCexOrder, convertToDexOrder } from '../shared/utils';
 
 const router = Router();
 
@@ -31,7 +30,12 @@ router.get('/convert-to-dex', async (req: Request, res: Response) => {
 router.get('/convert-to-cex', async (req: Request, res: Response) => {
   const { takerAmount, makerAmount, makerMarket, takerMarket }: IDexOrder = req.body;
   try {
-    const cexOrder = convertToCexOrder({ takerAmount, makerAmount, makerMarket, takerMarket });
+    const cexOrder = convertToCexOrder({
+      takerAmount,
+      makerAmount,
+      makerMarket,
+      takerMarket
+    });
     return res.status(OK).json({
       message: 'DEx order converted to CEx',
       cexOrder

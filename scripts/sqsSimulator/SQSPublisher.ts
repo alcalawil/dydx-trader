@@ -4,11 +4,13 @@ export default class SQSPublisher {
   private sqs: SQS;
   private queueUrl: string;
   private sender: string;
+
   constructor(sqs: SQS, queueUrl: string, { sender = 'dydx-operator' }) {
     this.sqs = sqs;
     this.queueUrl = queueUrl;
     this.sender = sender;
   }
+
   public async publishToSQS(topic: string, body: string, extraAttributes: any = {}) {
     const publishParams: SQS.SendMessageRequest = {
       MessageBody: body,
@@ -27,6 +29,7 @@ export default class SQSPublisher {
       MessageDeduplicationId: Date.now().toString(),
       MessageGroupId: 'DEFAULT_GROUP_ID' // Don't know if this will be useful
     };
+
     try {
       console.log('SQS SEND');
       return this.sqs.sendMessage(publishParams).promise();

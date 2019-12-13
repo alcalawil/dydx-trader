@@ -1,10 +1,9 @@
-node_modules
+/node_modules
 
 # env files
 production.env
 development.env
 test.env
-.env
 
 # compiled
-dist
+/dist

@@ -1,5 +1,5 @@
 import AWS, { SQS, SNS, KMS, SecretsManager } from 'aws-sdk';
-import { decrypt } from '../shared/utils';
+import { decrypt } from '@shared';
 import config from '../config';
 
 AWS.config.update({
@@ -138,4 +138,4 @@ class AwsManager {
   }
 }
 
-export default new AwsManager();
+export const awsManager = new AwsManager();

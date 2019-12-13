@@ -1,5 +1,5 @@
-import SQSPublisher from './SQSPublisher';
 import { SQS } from 'aws-sdk';
+import SQSPublisher from './SQSPublisher';
 import { ORDERS_BUY } from '../../src/constants/Topics';
 
 const ORDERS = [
@@ -15,15 +15,18 @@ const sqs = new SQS({
   accessKeyId: process.env.ACCESS_KEY_ID,
   secretAccessKey: process.env.SECRET_ACCESS_KEY
 });
-
 const consumerQueueUrl =
   process.env.CONSUMER_QUEUE_URL ||
   'https://sqs.us-east-1.amazonaws.com/949045345033/test1.fifo';
+const SENDER = process.env.SENDER_NAME || 'dydx-operator';
 
-const sqsPublisher = new SQSPublisher(sqs, consumerQueueUrl, { sender: 'sqs_simulator' });
+const sqsPublisher = new SQSPublisher(sqs, consumerQueueUrl, {
+  sender: SENDER
+});
 
 (async () => {
   ORDERS.forEach((order) => {
     sqsPublisher.publishToSQS(ORDERS_BUY, JSON.stringify(order));
   });
+  console.log('SQS OK: orders sendeds');
 })();

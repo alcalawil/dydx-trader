@@ -1,10 +1,11 @@
 import { Solo } from '@dydxprotocol/solo';
-import { getTokens, convertToCexOrder } from '../shared/utils';
-import { IResponseTrade, MarketSideString } from '../entities/types';
-import awsManager from './awsManager';
+import { getTokens, convertToCexOrder } from '@shared';
+import { IResponseTrade, MarketSideString } from '@entities';
+import { awsManager } from '@services';
 
 let DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
 const ENCRYPTED_DEFAULT_ADDRESS = process.env.ENCRYPTED_DEFAULT_ADDRESS || '';
+const PAIR_DEFAULT = 'WETH-DAI';
 
 class TradesManager {
   public solo: Solo;
@@ -23,7 +24,7 @@ class TradesManager {
     account,
     limit = 10,
     startingBefore = new Date(),
-    pair = 'WETH-DAI'
+    pair = PAIR_DEFAULT
   }: {
     account?: string;
     limit?: number;
@@ -92,4 +93,4 @@ class TradesManager {
   }
 }
 
-export default (solo: Solo) => new TradesManager(solo);
+export const tradesFactory = (solo: Solo) => new TradesManager(solo);

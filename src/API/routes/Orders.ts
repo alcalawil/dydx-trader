@@ -1,15 +1,12 @@
 import { Request, Response, Router, NextFunction } from 'express';
 import { CREATED, OK, INTERNAL_SERVER_ERROR } from 'http-status-codes';
-import { solo } from '../modules/solo';
-import { IResponseFill, MarketSide, ICexOrder } from '../entities/types';
-// tslint:disable-next-line: no-var-requires
-import ordersManagerFactory from '../modules/ordersManager';
+import { soloManager, awsManager, ordersFactory } from '@services';
+import { IResponseFill, MarketSide, ICexOrder, HTTPError } from '@entities';
 import { logger } from '@shared';
-import awsManager from '../modules/awsManager';
-import errors from '../shared/errorsConstants';
-import HTTPError from '../entities/HTTPError';
+import errorsConstants from '../../constants/Errors';
 
-const ordersManager = ordersManagerFactory(solo); // FIXME: fundsManager class should be instanced once
+// FIXME: fundsManager class should be instanced once
+const ordersManager = ordersFactory(soloManager);
 const router = Router();
 
 /******************************************************************************
@@ -20,7 +17,7 @@ router.get('/order', async (req: Request, res: Response, next: NextFunction) => 
   try {
     const orderId: string = req.query.id;
     if (!orderId) {
-      return next(errors.BAD_PARAMS);
+      return next(errorsConstants.BAD_PARAMS);
     }
 
     const order = await ordersManager.getOrderById(orderId);
@@ -102,7 +99,7 @@ router.post('/place/:side', async (req: Request, res: Response, next: NextFuncti
     const { pair = 'ETH-DAI' } = req.body;
 
     if (!price || !amount) {
-      return next(errors.BAD_PARAMS);
+      return next(errorsConstants.BAD_PARAMS);
     }
 
     const order = await ordersManager.placeOrder(
@@ -135,7 +132,7 @@ router.post('/buy', async (req: Request, res: Response, next: NextFunction) => {
   const { price, amount }: any = req.body;
   try {
     if (!price || !amount) {
-      return next(errors.BAD_PARAMS);
+      return next(errorsConstants.BAD_PARAMS);
     }
 
     const order = await ordersManager.buy(price, amount, pair);
@@ -163,11 +160,11 @@ router.post('/sell', async (req: Request, res: Response, next: NextFunction) => 
     const { pair = 'WETH-DAI' } = req.body;
 
     // if (!isSymbolEnabled(pair)) {
-    //   return next(errors.BAD_PARAMS);
+    //   return next(errorsConstants.BAD_PARAMS);
     // }
 
     if (!price || !amount) {
-      return next(errors.BAD_PARAMS);
+      return next(errorsConstants.BAD_PARAMS);
     }
 
     const order = await ordersManager.sell(price, amount, pair);
@@ -193,7 +190,7 @@ router.post('/cancel', async (req: Request, res: Response, next: NextFunction) =
     const orderId: string = req.body.orderId;
 
     if (!orderId) {
-      return next(errors.BAD_PARAMS);
+      return next(errorsConstants.BAD_PARAMS);
     }
 
     const result = await ordersManager.cancelOrder(orderId);
@@ -292,11 +289,12 @@ router.post('/cancel-all', async (req: Request, res: Response, next: NextFunctio
 /**
  * @deprecated Will be deleted future versions. This is a strategy module concern
  */
+
 router.post('/buy-many', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { amount, adjust, pair = 'WETH-DAI' } = req.body;
     if (!amount) {
-      return next(errors.BAD_PARAMS);
+      return next(errorsConstants.BAD_PARAMS);
     }
 
     const result = await ordersManager.postMany(amount, adjust, 'buy', pair);
@@ -311,15 +309,15 @@ router.post('/buy-many', async (req: Request, res: Response, next: NextFunction)
 /******************************************************************************
  *                      Sell Many - "POST /api/orders/sell-many"
  ******************************************************************************/
-
 /**
  * @deprecated Will be deleted future versions. This is a strategy module concern
  */
+
 router.post('/sell-many', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { amount, adjust, pair = 'WETH-DAI' } = req.body;
     if (!amount) {
-      return next(errors.BAD_PARAMS);
+      return next(errorsConstants.BAD_PARAMS);
     }
 
     const result = await ordersManager.postMany(amount, adjust, 'sell', pair);

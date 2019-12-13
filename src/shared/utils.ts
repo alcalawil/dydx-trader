@@ -1,14 +1,13 @@
 // tslint:disable-next-line: no-var-requires
 const aes256 = require('aes256'); // TODO: Convert to ES6 module
 import BigNumber from 'bignumber.js';
-import { IDexOrder, ICexOrder, MarketSide, IMarket, IToken } from '../entities/types';
+import { IDexOrder, ICexOrder, MarketSide, IToken } from '@entities';
 import { logger } from './Logger';
 import { DYDX_TOKENS } from '../constants/Tokens';
-import { INVALID_TOKEN_ERROR } from '../constants/Errors';
+import errorsConstants from '../constants/Errors';
 
 export const calculatePrice = ({
   makerMarket,
-  takerMarket,
   makerAmount,
   takerAmount
 }: IDexOrder) => {
@@ -30,7 +29,7 @@ export const convertToCexOrder = (dexOrder: IDexOrder): ICexOrder => {
   const makerToken = getTokenById(Number(dexOrder.makerMarket));
 
   if (!takerToken || !makerToken) {
-    throw new Error(INVALID_TOKEN_ERROR);
+    throw new Error(errorsConstants.INVALID_TOKEN);
   }
 
   if (makerToken.isBase) {

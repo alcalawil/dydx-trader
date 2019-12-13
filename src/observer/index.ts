@@ -1,16 +1,13 @@
 import ordersMonitorFactory from './ordersMonitor';
 import fundsMonitorFactory from './fundsMonitor';
-import ordersFactory from '../modules/ordersManager';
-import fundsFactory from '../modules/fundsManager';
-import awsManager from '../modules/awsManager';
-import { solo } from '../modules/solo';
-import { EventEmitter } from 'events';
+import { soloManager, awsManager, ordersFactory, fundsFactory } from '@services';
 import { IRedisManager, ISQSPublisher, IOrdersMonitor, IFundsMonitor } from '@entities';
+import { EventEmitter } from 'events';
 
 let observerInterval: NodeJS.Timeout;
 const observerEvents = new EventEmitter();
-const ordersManager = ordersFactory(solo);
-const fundsManager = fundsFactory(solo);
+const ordersManager = ordersFactory(soloManager);
+const fundsManager = fundsFactory(soloManager);
 
 class Observer {
   private ordersMonitor: IOrdersMonitor;

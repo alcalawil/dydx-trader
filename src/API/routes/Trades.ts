@@ -1,13 +1,10 @@
-import { logger } from '@shared';
 import { Request, Response, Router, NextFunction } from 'express';
 import { OK, INTERNAL_SERVER_ERROR } from 'http-status-codes';
-import { solo } from '../modules/solo';
-import tradesManagerFactory from '../modules/tradesManager';
-import { IResponseTrade } from '@entities';
-import HTTPError from '../entities/HTTPError';
-import awsManager from '../modules/awsManager';
+import { logger } from '@shared';
+import { soloManager, awsManager, tradesFactory } from '@services';
+import { IResponseTrade, HTTPError } from '@entities';
 
-const tradesManager = tradesManagerFactory(solo);
+const tradesManager = tradesFactory(soloManager);
 const router = Router();
 
 /******************************************************************************
@@ -45,7 +42,15 @@ router.get('/mytradesCsv', async (req: Request, res: Response, next: NextFunctio
     }
 
     const trades = await tradesManager.getOwnTrades(limit, pair, startingBefore);
-    const csvHeader = ['transactionHash', 'pair', 'side', 'createdAt', 'price', 'amount', 'status'];
+    const csvHeader = [
+      'transactionHash',
+      'pair',
+      'side',
+      'createdAt',
+      'price',
+      'amount',
+      'status'
+    ];
     res.setHeader('Content-Type', 'text/csv');
     res.attachment(`myTrades-${new Date().toISOString()}.csv`);
     res.status(OK);
