@@ -13,11 +13,13 @@ import {
   ORDERS_SELL_RESPONSE,
   ORDERS_CANCEL_RESPONSE,
   ORDERS_BUY_MANY_RESPONSE,
-  ORDERS_CANCEL_ALL_RESPONSE
-} from '@topics';
+  ORDERS_CANCEL_ALL_RESPONSE,
+  ORDERS_PLACE_MANY,
+  ORDERS_PLACE_MANY_RESPONSE
+} from '../../constants/Topics';
 import SQSPublisher from '../SQSPublisher';
 import SQSRouter from '../SQSRouter';
-import { IRedisManager } from '@entities';
+import { IRedisManager, ICexOrder } from '@entities';
 import { EventEmitter } from 'events';
 
 const router = new SQSRouter();
@@ -107,6 +109,41 @@ router.createRoute(ORDERS_CANCEL, async (body: any) => {
   }
 });
 
+router.createRoute(ORDERS_PLACE_MANY, async (body: any) => {
+  const topic = ORDERS_PLACE_MANY;
+  // FIXME: order as any porque el types cexOrder de la estrategia es distinto al del bot (corregir eso)
+  const operations: { operationId: string; order: any }[] = body;
+  try {
+    const bodyResponse = await Promise.all(operations.map(async ({ operationId, order }) => {
+      const { side, amount, price, pair } = order;
+      const responseOrder = await ordersManager.placeOrder(
+        {
+          side,
+          amount,
+          price
+        },
+        pair
+      );
+      return {
+        operationId,
+        responseOrder
+      };
+    }));
+
+    logger.debug(`Topic ${topic} is working`);
+    awsManager.publishLogToSNS(topic, bodyResponse);
+    publishResponseToSQS(
+      ORDERS_PLACE_MANY_RESPONSE,
+      operations[0].operationId,
+      bodyResponse
+    );
+    return;
+  } catch (err) {
+    logger.error(topic, err.message);
+    throw err;
+  }
+});
+
 /* ORDERS BUY MANY ROUTE */
 router.createRoute(ORDERS_BUY_MANY, async (body: any) => {
   const topic = ORDERS_BUY_MANY;
@@ -162,6 +199,8 @@ router.createRoute(ORDERS_CANCEL_ALL, async (body: any) => {
     throw err;
   }
 });
+
+// TODO: Create Route PLACE_MANY
 
 const publishResponseToSQS = (topic: string, operationId: string, response: object) => {
   const body = {
