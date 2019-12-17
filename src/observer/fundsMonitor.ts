@@ -3,7 +3,11 @@ import { logger } from '@shared';
 import config from '../config';
 import { BALANCES_CHANGES, STOP_OPS } from '@topics';
 
-let BALANCE: IBalances;
+let BALANCE: IBalances = {
+  dai: '0',
+  eth: '0',
+  usdc: '0',
+};
 
 class FundsMonitor {
   private awsManager: IAwsManager;
@@ -19,10 +23,9 @@ class FundsMonitor {
     this.awsManager = awsManager;
     this.fundsManager = fundsManager;
     this.sqsPublisher = sqsPublisher;
-    this.initialize();
   }
 
-  private async initialize() {
+  public async initialize() {
     BALANCE = await this.fundsManager.getBalances();
   }
 

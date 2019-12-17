@@ -160,6 +160,7 @@ export const observerEvents = {
 
 export interface IFundsMonitor {
   checkBalance: () => Promise<void>;
+  initialize: () => Promise<void>;
 }
 
 export interface IOrdersMonitor {

@@ -30,6 +30,7 @@ class Observer {
   }
 
   public startInterval() {
+    this.fundsMonitor.initialize();
     observerInterval = setInterval(() => {
       this.ordersMonitor.checkOrdersStatus();
       this.fundsMonitor.checkBalance();
