@@ -24,7 +24,10 @@
   "_moduleAliases": {
     "@entities": "dist/entities",
     "@shared": "dist/shared",
-    "@server": "dist/server"
+    "@server": "dist/API/server.js",
+    "@middlewares": "dist/API/middlewares",
+    "@topics": "dist/constants/Topics.js",
+    "@services": "dist/services"
   },
   "dependencies": {
     "@dydxprotocol/solo": "^0.28.0",
