@@ -19,7 +19,7 @@ This is a market maker bot made in typescript to increase liquidity and earn spr
 ### Docker
 
 - `docker build -t dydx-mm:0.0.1 .`
-- `docker run --init -it -d --env-file ./.env -p 3000:3000 dydx-mm:0.0.1`
+- `docker run --name dydx_trade_ops --init -it -d --env-file ./.env -p 3000:3000 dydx-mm:0.0.1`
 
 ### REST Client
 
