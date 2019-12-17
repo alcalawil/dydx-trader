@@ -96,7 +96,7 @@ router.post('/place/:side', async (req: Request, res: Response, next: NextFuncti
 
     const side = req.params.side === 'buy' ? MarketSide.buy : MarketSide.sell;
 
-    const { pair = 'ETH-DAI' } = req.body;
+    const { pair = 'WETH-DAI' } = req.body;
 
     if (!price || !amount) {
       return next(errorsConstants.BAD_PARAMS);

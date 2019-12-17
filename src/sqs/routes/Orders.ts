@@ -114,21 +114,29 @@ router.createRoute(ORDERS_PLACE_MANY, async (body: any) => {
   // FIXME: order as any porque el types cexOrder de la estrategia es distinto al del bot (corregir eso)
   const operations: { operationId: string; order: any }[] = body;
   try {
-    const bodyResponse = await Promise.all(operations.map(async ({ operationId, order }) => {
-      const { side, amount, price, pair } = order;
-      const responseOrder = await ordersManager.placeOrder(
-        {
+    const bodyResponse = await Promise.all(
+      operations.map(async ({ operationId, order }) => {
+        const {
           side,
           amount,
-          price
-        },
-        pair
-      );
-      return {
-        operationId,
-        responseOrder
-      };
-    }));
+          price,
+          pair
+        }: { side: number; amount: number; price: number; pair: string } = order;
+        logger.debug('ORDER >> ', order);
+        const responseOrder = await ordersManager.placeOrder(
+          {
+            side,
+            amount,
+            price
+          },
+          pair
+        );
+        return {
+          operationId,
+          responseOrder
+        };
+      })
+    );
 
     logger.debug(`Topic ${topic} is working`);
     awsManager.publishLogToSNS(topic, bodyResponse);
@@ -139,7 +147,7 @@ router.createRoute(ORDERS_PLACE_MANY, async (body: any) => {
     );
     return;
   } catch (err) {
-    logger.error(topic, err.message);
+    logger.error(topic, err);
     throw err;
   }
 });
