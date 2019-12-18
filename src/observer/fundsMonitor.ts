@@ -6,7 +6,7 @@ import { BALANCES_CHANGES, STOP_OPS } from '@topics';
 let BALANCE: IBalances = {
   dai: '0',
   eth: '0',
-  usdc: '0',
+  usdc: '0'
 };
 
 class FundsMonitor {
@@ -26,23 +26,28 @@ class FundsMonitor {
   }
 
   public async initialize() {
-    BALANCE = await this.fundsManager.getBalances();
+    const newBalance = await this.getBalance();
+    if (newBalance) {
+      BALANCE = newBalance;
+    }
   }
 
   public async checkBalance() {
-    const newBalance: IBalances = await this.fundsManager.getBalances();
-    const ethQty = Number(newBalance.eth);
-    if (
-      newBalance.dai !== BALANCE.dai ||
-      newBalance.usdc !== BALANCE.usdc ||
-      newBalance.eth !== BALANCE.eth
-    ) {
-      logger.debug('the balance was changed');
-      this.sqsPublisher.publishToSQS(BALANCES_CHANGES, JSON.stringify(newBalance));
-      BALANCE = newBalance;
-      if (ethQty >= config.fundsMonitor.maxEthQty) {
-        logger.debug('stop ops');
-        this.stopOrders(newBalance);
+    const newBalance = await this.getBalance();
+    if (newBalance) {
+      const ethQty = Number(newBalance.eth);
+      if (
+        newBalance.dai !== BALANCE.dai ||
+        newBalance.usdc !== BALANCE.usdc ||
+        newBalance.eth !== BALANCE.eth
+      ) {
+        logger.debug('the balance was changed');
+        this.sqsPublisher.publishToSQS(BALANCES_CHANGES, JSON.stringify(newBalance));
+        BALANCE = newBalance;
+        if (ethQty >= config.fundsMonitor.maxEthQty) {
+          logger.debug('stop ops');
+          this.stopOrders(newBalance);
+        }
       }
     }
   }
@@ -50,6 +55,15 @@ class FundsMonitor {
   private stopOrders(balance: IBalances) {
     this.sqsPublisher.publishToSQS(STOP_OPS, JSON.stringify(balance));
     this.awsManager.publishLogToSNS(STOP_OPS, balance);
+  }
+
+  private async getBalance() {
+    try {
+      const balances: IBalances = await this.fundsManager.getBalances();
+      return balances;
+    } catch (error) {
+      logger.error(`Error trying to get the balances: ${error.message}`);
+    }
   }
 }
 

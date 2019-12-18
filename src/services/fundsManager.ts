@@ -23,28 +23,32 @@ class FundsManager {
   }
 
   public async getBalances(accountOwner = DEFAULT_ADDRESS): Promise<IBalances> {
-    const account = await this.solo.api.getAccountBalances({
-      accountOwner,
-      accountNumber: new BigNumber(0)
-    });
-    const balances = account.balances;
+    if (DEFAULT_ADDRESS) {
+      const account = await this.solo.api.getAccountBalances({
+        accountOwner,
+        accountNumber: new BigNumber(0)
+      });
 
-    const eth = this.solo.web3.utils.fromWei(
-      new BigNumber(balances['0'].wei).toFixed(0)
-    );
+      const balances = account.balances;
 
-    const usdcInWei = new BigNumber(balances['2'].wei).toNumber();
-    const usdc = (usdcInWei / Number(`1${TOKEN_WETH.weiUnit}`)).toString();
+      const eth = this.solo.web3.utils.fromWei(
+        new BigNumber(balances['0'].wei).toFixed(0)
+      );
 
-    const dai = this.solo.web3.utils.fromWei(
-      new BigNumber(balances['3'].wei).toFixed(0)
-    );
+      const usdcInWei = new BigNumber(balances['2'].wei).toNumber();
+      const usdc = (usdcInWei / Number(`1${TOKEN_WETH.weiUnit}`)).toString();
 
-    return {
-      eth,
-      usdc,
-      dai
-    };
+      const dai = this.solo.web3.utils.fromWei(
+        new BigNumber(balances['3'].wei).toFixed(0)
+      );
+
+      return {
+        eth,
+        usdc,
+        dai
+      };
+    }
+    throw new Error('DEFAULT ADDRESS IS EMPTY');
   }
 }
 
