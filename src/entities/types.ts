@@ -94,6 +94,7 @@ export interface IToken {
 export interface ISQSConsumer {
   start: () => void;
   stop: () => void;
+  purge: () => Promise<any>;
   isRunning: boolean;
 }
 

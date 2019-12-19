@@ -7,11 +7,15 @@ class SQSConsumer implements ISQSConsumer {
   public isRunning = false;
   private app: Consumer;
   private sqsRoutes: ISQSRoute[];
+  private _sqs: SQS;
+  private _queueUrl: string;
 
   constructor(sqs: SQS, queueUrl: string, sqsRoutes: ISQSRoute[]) {
     this.sqsRoutes = sqsRoutes;
+    this._sqs = sqs;
+    this._queueUrl = queueUrl;
     this.app = Consumer.create({
-      queueUrl: queueUrl,
+      queueUrl,
       messageAttributeNames: ['All'],
       handleMessage: this.messageHandler,
       sqs
@@ -34,6 +38,16 @@ class SQSConsumer implements ISQSConsumer {
 
   public stop() {
     this.app.stop();
+  }
+
+  public async purge() {
+    try {
+      this.stop();
+      await this._sqs.purgeQueue({ QueueUrl: this._queueUrl }).promise();
+      logger.info(`Purge successfully for url: ${this._queueUrl}`);
+    } catch (err) {
+      logger.error('PURGE_QUEUE_ERROR', err);
+    }
   }
 
   private messageHandler = async (message: SQS.Message) => {

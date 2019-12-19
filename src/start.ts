@@ -34,4 +34,5 @@ observer.startInterval();
 const sqsRoutes = SQSRoutes(sqsPublisher, observer.observerEmitter);
 
 const sqsConsumer = SQSConsumer(sqs, config.sqs.consumerQueueUrl, sqsRoutes);
+sqsConsumer.purge();
 sqsConsumer.start();
