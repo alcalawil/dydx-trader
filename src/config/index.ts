@@ -52,6 +52,9 @@ const CONSUMER_QUEUE_URL: string =
   ENV.CONSUMER_QUEUE_URL || 'https://sqs.us-east-1.amazonaws.com/949045345033/test.fifo';
 const TRANSACTIONAL_LOGS_QUEUE_ARN: string =
   ENV.TRANSACTIONAL_LOGS_QUEUE_ARN || 'arn:aws:sns:us-east-1:949045345033:test';
+const MSJ_GROUP_ID: string = ENV.MSJ_GROUP_ID || 'DEFAULT_GROUP_ID';
+
+/****************************************************************************************/
 
 const config: IConfig = {
   app: {
@@ -99,7 +102,8 @@ const config: IConfig = {
     receiverName: RECEIVER_NAME,
     strategyQueueUrl: STRATEGY_QUEUE_URL,
     consumerQueueUrl: CONSUMER_QUEUE_URL,
-    transactionalLog: TRANSACTIONAL_LOGS_QUEUE_ARN
+    transactionalLog: TRANSACTIONAL_LOGS_QUEUE_ARN,
+    msjGroupId: MSJ_GROUP_ID
   }
 };
 

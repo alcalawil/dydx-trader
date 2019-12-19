@@ -5,7 +5,7 @@ declare global {
     interface ProcessEnv {
       // APP
       NODE_ENV: 'production' | 'development' | 'test';
-      LOG_LEVEL: string
+      LOG_LEVEL: string;
       API_KEY: string;
 
       // Server
@@ -42,11 +42,12 @@ declare global {
       MAX_QTY_ETH: string;
 
       // SQS
-      SENDER_NAME: string
-      RECEIVER_NAME: string
+      SENDER_NAME: string;
+      RECEIVER_NAME: string;
       STRATEGY_QUEUE_URL: string;
       CONSUMER_QUEUE_URL: string;
       TRANSACTIONAL_LOGS_QUEUE_ARN: string;
+      MSJ_GROUP_ID: string;
     }
   }
 }

@@ -47,6 +47,7 @@ export interface IConfig {
     strategyQueueUrl: string;
     consumerQueueUrl: string;
     transactionalLog: string;
+    msjGroupId: string;
   };
 }
 

@@ -1,6 +1,9 @@
 import { SQS } from 'aws-sdk';
 import { logger } from '@shared';
+import config from '@config';
 
+/* LOAD CONFIG */
+const MSJ_GROUP_ID: string = config.sqs.msjGroupId;
 const DEFAULT_SENDER: string = 'dydx-operator';
 
 export default class SQSPublisher {
@@ -30,7 +33,7 @@ export default class SQSPublisher {
         ...extraAttributes
       },
       MessageDeduplicationId: Date.now().toString(),
-      MessageGroupId: 'DEFAULT_GROUP_ID' // Don't know if this will be useful
+      MessageGroupId: MSJ_GROUP_ID
     };
 
     try {
