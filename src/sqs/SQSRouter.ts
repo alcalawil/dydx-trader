@@ -12,13 +12,9 @@ class SQSRouter {
       handler
     };
 
-    // TODO: Validar existencia de "topic" en las rutas
-    // if (this._routes.find((route) => route.topic === topic)) {
-    //   // if route exists -> override it
-    //   this._routes[`${topic}`]
-    // }
-
-    this._routes.push(route);
+    if (!this._routes.find((route) => route.topic === topic)) {
+      this._routes.push(route);
+    }
   }
 
   public get routes() {

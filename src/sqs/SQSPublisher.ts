@@ -4,7 +4,7 @@ import config from '@config';
 
 /* LOAD CONFIG */
 const MSJ_GROUP_ID: string = config.sqs.msjGroupId;
-const DEFAULT_SENDER: string = 'dydx-operator';
+const DEFAULT_SENDER: string = config.sqs.senderName;
 
 export default class SQSPublisher {
   private sqs: SQS;

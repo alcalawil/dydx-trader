@@ -168,7 +168,12 @@ export interface IOrdersMonitor {
   checkOrdersStatus: () => Promise<void>;
 }
 
-export type pair =
-  | 'WETH-DAI'
-  | 'WETH-USDC'
-  | '' // TODO: continuar...
+export type pair = 'WETH-DAI' | 'WETH-USDC' | ''; // TODO: continuar...
+
+export interface ICancelOrder {
+  orderId: string;
+}
+
+export interface ICancelResponse {
+  orderId: string;
+}

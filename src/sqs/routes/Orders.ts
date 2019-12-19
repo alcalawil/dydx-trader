@@ -15,11 +15,13 @@ import {
   ORDERS_BUY_MANY_RESPONSE,
   ORDERS_CANCEL_ALL_RESPONSE,
   ORDERS_PLACE_MANY,
-  ORDERS_PLACE_MANY_RESPONSE
+  ORDERS_PLACE_MANY_RESPONSE,
+  ORDERS_CANCEL_MANY,
+  ORDERS_CANCEL_MANY_RESPONSE
 } from '../../constants/Topics';
 import SQSPublisher from '../SQSPublisher';
 import SQSRouter from '../SQSRouter';
-import { IRedisManager } from '@entities';
+import { IRedisManager, IResponseOrder, ICancelOrder, ICancelResponse } from '@entities';
 import { EventEmitter } from 'events';
 
 const router = new SQSRouter();
@@ -94,13 +96,15 @@ router.createRoute(ORDERS_SELL, async (body: any) => {
 router.createRoute(ORDERS_CANCEL, async (body: any) => {
   const topic = ORDERS_CANCEL;
   try {
-    const { operationId, orderId } = body;
-    const response = await ordersManager.cancelOrder(orderId);
-    // Here add result to the application state or/and publish to sqs
-
+    const {
+      operationId,
+      cancelOrder
+    }: { operationId: string; cancelOrder: ICancelOrder } = body;
+    const response: IResponseOrder = await ordersManager.cancelOrder(cancelOrder.orderId);
+    const bodyResponse: ICancelResponse = { orderId: response.id };
     logger.debug(`Topic ${topic} is working`);
     awsManager.publishLogToSNS(topic, response);
-    publishResponseToSQS(ORDERS_CANCEL_RESPONSE, operationId, response);
+    publishResponseToSQS(ORDERS_CANCEL_RESPONSE, operationId, bodyResponse);
 
     return;
   } catch (err) {
@@ -123,7 +127,7 @@ router.createRoute(ORDERS_PLACE_MANY, async (body: any) => {
           pair
         }: { side: number; amount: number; price: number; pair: string } = order;
         logger.debug('ORDER >> ', order);
-        const responseOrder = await ordersManager.placeOrder(
+        const orderResponse = await ordersManager.placeOrder(
           {
             side,
             amount,
@@ -133,7 +137,7 @@ router.createRoute(ORDERS_PLACE_MANY, async (body: any) => {
         );
         return {
           operationId,
-          responseOrder
+          orderResponse
         };
       })
     );
@@ -194,12 +198,16 @@ router.createRoute(ORDERS_SELL_MANY, async (body: any) => {
 router.createRoute(ORDERS_CANCEL_ALL, async (body: any) => {
   const topic = ORDERS_CANCEL_ALL;
   try {
-    const { operationId, pair } = body;
-    const response = await ordersManager.cancelMyOrders(pair);
-
+    const { operationId, pair }: { operationId: string; pair: string } = body;
+    const response: IResponseOrder[] = await ordersManager.cancelMyOrders(pair);
+    const bodyResponse: ICancelResponse[] = response.map((element: IResponseOrder) => {
+      return {
+        orderId: element.id
+      };
+    });
     logger.debug(`Topic ${topic} is working`);
     awsManager.publishLogToSNS(topic, response);
-    publishResponseToSQS(ORDERS_CANCEL_ALL_RESPONSE, operationId, response);
+    publishResponseToSQS(ORDERS_CANCEL_ALL_RESPONSE, operationId, bodyResponse);
 
     return;
   } catch (err) {
@@ -208,7 +216,34 @@ router.createRoute(ORDERS_CANCEL_ALL, async (body: any) => {
   }
 });
 
-// TODO: Create Route PLACE_MANY
+/* CANCEL MANY ROUTE */
+router.createRoute(ORDERS_CANCEL_MANY, async (body: any) => {
+  const topic = ORDERS_CANCEL_MANY;
+  try {
+    const operation: { operationId: string; ordersId: ICancelOrder[] } = body;
+    const bodyResponse: ICancelResponse[] = await Promise.all(
+      operation.ordersId.map(async ({ orderId }) => {
+        const cancelResponse: IResponseOrder = await ordersManager.cancelOrder(orderId);
+        return {
+          orderId: cancelResponse.id
+        };
+      })
+    );
+
+    logger.debug(`Topic ${topic} is working`);
+    awsManager.publishLogToSNS(topic, bodyResponse);
+    publishResponseToSQS(
+      ORDERS_CANCEL_MANY_RESPONSE,
+      operation.operationId,
+      bodyResponse
+    );
+
+    return;
+  } catch (err) {
+    logger.error(topic, err.message);
+    throw err;
+  }
+});
 
 const publishResponseToSQS = (topic: string, operationId: string, response: object) => {
   const body = {
