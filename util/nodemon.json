@@ -6,5 +6,5 @@
   "ignore": [
     "src/public"
   ],
-  "exec": "cross-env ENV_FILE=development ts-node -r ./env -r tsconfig-paths/register ./src/start.ts"
+  "exec": "npm run env:dev | ts-node -r ./env -r tsconfig-paths/register ./src/start.ts"
 }

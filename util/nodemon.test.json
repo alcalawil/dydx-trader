@@ -6,5 +6,5 @@
   "ignore": [
     "tests/support"
   ],
-  "exec": "cross-env ENV_FILE=test mocha -r ts-node/register ./tests/start.ts"
+  "exec": "npm run env:test | mocha -r ts-node/register ./tests/start.ts"
 }
