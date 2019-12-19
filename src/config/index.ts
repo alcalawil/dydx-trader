@@ -25,7 +25,7 @@ const SM_TAG_ADDRESS: string = ENV.SM_TAG_ADDRESS || 'TEST_WALLET_1_PUBLIC_KEY';
 const TAKER_ACCOUNT: string =
   ENV.TAKER_ACCOUNT || '0x0000000000000000000000000000000000000000';
 const EXPIRATION_IN_SECONDS: number = Number(ENV.EXPIRATION_IN_SECONDS) || 1250;
-const DEFAULT_PAIR: pair = ENV.DEFAULT_PAIR as pair || 'WETH-DAI';
+const DEFAULT_PAIR: pair = (ENV.DEFAULT_PAIR as pair) || 'WETH-DAI';
 
 /* AWS */
 const ACCESS_KEY_ID: string = ENV.ACCESS_KEY_ID || '';
@@ -104,6 +104,8 @@ const config: IConfig = {
 };
 
 export default config;
+
+// TODO: Buscar valores por defecto para todos los env
 
 // TODO: Cargador de variables super-globales como en php
 // function loadEnvGlobal() {

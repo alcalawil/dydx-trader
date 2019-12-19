@@ -3,9 +3,14 @@ import { OK, INTERNAL_SERVER_ERROR } from 'http-status-codes';
 import { logger } from '@shared';
 import { soloManager, awsManager, tradesFactory } from '@services';
 import { IResponseTrade, HTTPError } from '@entities';
+import config from '@config';
 
 const tradesManager = tradesFactory(soloManager);
 const router = Router();
+
+/* LOAD CONFIG */
+const DEFAULT_PAIR: string = config.dydx.defaultPair;
+const DEFAULT_LIMIT: number = 100;
 
 /******************************************************************************
  *                       Get Trades - "GET /api/trades/mytrades"
@@ -13,7 +18,7 @@ const router = Router();
 
 router.get('/mytrades', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { limit = 100, pair = 'WETH-DAI' } = req.query;
+    const { limit = DEFAULT_LIMIT, pair = DEFAULT_PAIR } = req.query;
     let { startingBefore } = req.query;
 
     if (startingBefore) {
@@ -34,7 +39,7 @@ router.get('/mytrades', async (req: Request, res: Response, next: NextFunction) 
 
 router.get('/mytradesCsv', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { limit = 100, pair = 'WETH-DAI' } = req.query;
+    const { limit = DEFAULT_LIMIT, pair = DEFAULT_PAIR } = req.query;
     let { startingBefore } = req.query;
 
     if (startingBefore) {

@@ -4,10 +4,15 @@ import { soloManager, awsManager, ordersFactory } from '@services';
 import { IResponseFill, MarketSide, ICexOrder, HTTPError } from '@entities';
 import { logger } from '@shared';
 import errorsConstants from '../../constants/Errors';
+import config from '@config';
 
 // FIXME: fundsManager class should be instanced once
 const ordersManager = ordersFactory(soloManager);
 const router = Router();
+
+/* LOAD CONFIG */
+const DEFAULT_PAIR: string = config.dydx.defaultPair;
+const DEFAULT_LIMIT: number = 100;
 
 /******************************************************************************
  *                      Get order by id - "GET /api/orders/order"
@@ -36,7 +41,7 @@ router.get('/order', async (req: Request, res: Response, next: NextFunction) => 
 router.get('/myorders', async (req: Request, res: Response, next: NextFunction) => {
   try {
     // FIXME: Temporary default market
-    const pair = req.query.pair || 'WETH-DAI';
+    const pair = req.query.pair || DEFAULT_PAIR;
     const myOrders = await ordersManager.getOwnOrders(pair);
 
     res.status(OK).json({
@@ -56,7 +61,7 @@ router.get('/myorders', async (req: Request, res: Response, next: NextFunction) 
 
 router.get('/orderbook', async (req: Request, res: Response, next: NextFunction) => {
   const { limit = 10, side = 'both' }: { limit: number; side: string } = req.query;
-  const pair = req.query.pair || 'WETH-DAI';
+  const pair = req.query.pair || DEFAULT_PAIR;
 
   try {
     const orders = await ordersManager.getOrderbook({ limit }, pair);
@@ -96,7 +101,7 @@ router.post('/place/:side', async (req: Request, res: Response, next: NextFuncti
 
     const side = req.params.side === 'buy' ? MarketSide.buy : MarketSide.sell;
 
-    const { pair = 'WETH-DAI' } = req.body;
+    const { pair = DEFAULT_PAIR } = req.body;
 
     if (!price || !amount) {
       return next(errorsConstants.BAD_PARAMS);
@@ -128,7 +133,7 @@ router.post('/place/:side', async (req: Request, res: Response, next: NextFuncti
 
 router.post('/buy', async (req: Request, res: Response, next: NextFunction) => {
   // BREAKING CHANGE: In future versions symbol will be required
-  const { pair = 'ETH-DAI' } = req.body;
+  const { pair = 'ETH-DAI' } = req.body; // TODO: por defecto o personalizado ?
   const { price, amount }: any = req.body;
   try {
     if (!price || !amount) {
@@ -157,7 +162,7 @@ router.post('/sell', async (req: Request, res: Response, next: NextFunction) => 
   try {
     const { price, amount }: any = req.body;
     // BREAKING CHANGE: In future versions symbol will be required
-    const { pair = 'WETH-DAI' } = req.body;
+    const { pair = DEFAULT_PAIR } = req.body;
 
     // if (!isSymbolEnabled(pair)) {
     //   return next(errorsConstants.BAD_PARAMS);
@@ -211,7 +216,7 @@ router.post('/cancel', async (req: Request, res: Response, next: NextFunction) =
 
 router.get('/bid', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const pair = req.query.pair || 'WETH-DAI';
+    const pair = req.query.pair || DEFAULT_PAIR;
     const bid = await ordersManager.getBid(pair);
     return res.status(OK).json({
       bid
@@ -229,7 +234,7 @@ router.get('/bid', async (req: Request, res: Response, next: NextFunction) => {
 
 router.get('/ask', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const pair = req.query.pair || 'WETH-DAI';
+    const pair = req.query.pair || DEFAULT_PAIR;
     const ask = await ordersManager.getAsk(pair);
     return res.status(OK).json({
       ask
@@ -247,7 +252,7 @@ router.get('/ask', async (req: Request, res: Response, next: NextFunction) => {
 
 router.get('/best-prices', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const pair = req.query.pair || 'WETH-DAI';
+    const pair = req.query.pair || DEFAULT_PAIR;
     const bestPrices = await Promise.all([
       ordersManager.getAsk(pair),
       ordersManager.getBid(pair)
@@ -269,7 +274,7 @@ router.get('/best-prices', async (req: Request, res: Response, next: NextFunctio
 
 router.post('/cancel-all', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { pair = 'WETH-DAI' } = req.body;
+    const { pair = DEFAULT_PAIR } = req.body;
     const ordersCanceled = await ordersManager.cancelMyOrders(pair);
 
     return res.status(OK).json({
@@ -292,7 +297,7 @@ router.post('/cancel-all', async (req: Request, res: Response, next: NextFunctio
 
 router.post('/buy-many', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { amount, adjust, pair = 'WETH-DAI' } = req.body;
+    const { amount, adjust, pair = DEFAULT_PAIR } = req.body;
     if (!amount) {
       return next(errorsConstants.BAD_PARAMS);
     }
@@ -315,7 +320,7 @@ router.post('/buy-many', async (req: Request, res: Response, next: NextFunction)
 
 router.post('/sell-many', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { amount, adjust, pair = 'WETH-DAI' } = req.body;
+    const { amount, adjust, pair = DEFAULT_PAIR } = req.body;
     if (!amount) {
       return next(errorsConstants.BAD_PARAMS);
     }
@@ -335,7 +340,7 @@ router.post('/sell-many', async (req: Request, res: Response, next: NextFunction
 
 router.get('/myfills', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { limit = 100, pair = 'WETH-DAI' } = req.query;
+    const { limit = DEFAULT_LIMIT, pair = DEFAULT_PAIR } = req.query;
     let { startingBefore } = req.query;
 
     if (startingBefore) {
@@ -359,7 +364,7 @@ router.get('/myfills', async (req: Request, res: Response, next: NextFunction) =
 
 router.get('/myfillsCsv', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { limit = 100, pair = 'WETH-DAI' } = req.query;
+    const { limit = DEFAULT_LIMIT, pair = DEFAULT_PAIR } = req.query;
     let { startingBefore = new Date() } = req.query;
 
     if (startingBefore) {

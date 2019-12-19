@@ -1,14 +1,14 @@
 import { SQS } from 'aws-sdk';
 import { logger } from '@shared';
 
-const SENDER_DEFAULT = 'dydx-operator';
+const DEFAULT_SENDER: string = 'dydx-operator';
 
 export default class SQSPublisher {
   private sqs: SQS;
   private queueUrl: string;
   private sender: string;
 
-  constructor(sqs: SQS, queueUrl: string, { sender = SENDER_DEFAULT }) {
+  constructor(sqs: SQS, queueUrl: string, { sender = DEFAULT_SENDER }) {
     this.sqs = sqs;
     this.queueUrl = queueUrl;
     this.sender = sender;

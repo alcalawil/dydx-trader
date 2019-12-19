@@ -19,7 +19,7 @@ import {
 } from '../../constants/Topics';
 import SQSPublisher from '../SQSPublisher';
 import SQSRouter from '../SQSRouter';
-import { IRedisManager, ICexOrder } from '@entities';
+import { IRedisManager } from '@entities';
 import { EventEmitter } from 'events';
 
 const router = new SQSRouter();

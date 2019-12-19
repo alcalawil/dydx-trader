@@ -26,15 +26,19 @@ const sqs = new SQS({
   region: region.sqs
 });
 
-const SENDER_NAME: string = config.sqs.senderName || '';
-const TRANSACTIONAL_LOG: string = config.sqs.transactionalLog || 'none';
-const CONSUMER_QUEUE_URL: string = config.sqs.consumerQueueUrl || 'none';
+const SENDER_NAME: string = config.sqs.senderName;
+const TRANSACTIONAL_LOG: string = config.sqs.transactionalLog;
+const CONSUMER_QUEUE_URL: string = config.sqs.consumerQueueUrl;
+
+/* CONSTANTS */
+const DEFAULT_LEVEL: string = 'debug'; // TODO: crear un type para esto, con valores por defecto
+const ENCODING: BufferEncoding = 'base64';
 
 class AwsManager {
   public kmsDecrypt(encryptedData: string) {
     return new Promise<string>((resolve: any, reject: any) => {
       const params = {
-        CiphertextBlob: Buffer.from(encryptedData, 'base64')
+        CiphertextBlob: Buffer.from(encryptedData, ENCODING)
       };
 
       kms.decrypt(params, (err, data) => {
@@ -42,7 +46,7 @@ class AwsManager {
           return reject(err);
         } else {
           const result: any = data.Plaintext;
-          resolve(Buffer.from(result).toString('base64'));
+          resolve(Buffer.from(result).toString(ENCODING));
         }
       });
     });
@@ -62,12 +66,12 @@ class AwsManager {
           return reject(err);
         }
         const result: any = data.CiphertextBlob;
-        resolve(Buffer.from(result).toString('base64'));
+        resolve(Buffer.from(result).toString(ENCODING));
       });
     });
   }
 
-  public publishLogToSNS(operation: string, message: any, level: string = 'debug') {
+  public publishLogToSNS(operation: string, message: any, level: string = DEFAULT_LEVEL) {
     return new Promise<any>((resolve, reject) => {
       const publishParams: SNS.PublishInput = {
         TopicArn: TRANSACTIONAL_LOG,
