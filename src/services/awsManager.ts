@@ -1,30 +1,34 @@
 import AWS, { SQS, SNS, KMS, SecretsManager } from 'aws-sdk';
 import { decrypt } from '@shared';
-import config from '../config';
+import config from '@config';
 
+/* LOAD CONFIG */
 AWS.config.update({
-  accessKeyId: process.env.ACCESS_KEY_ID,
-  secretAccessKey: process.env.SECRET_ACCESS_KEY
+  accessKeyId: config.aws.accessKeyId,
+  secretAccessKey: config.aws.secretAccessKey
 });
 
+const region = config.aws.region;
 // FIXME: This may throw an unhanled exception
 const kms = new KMS({
-  region: process.env.KMS_REGION
+  region: region.kms
 });
 
 const sns = new SNS({
-  region: process.env.SNS_REGION
+  region: region.sns
 });
 
 const sm = new SecretsManager({
-  region: process.env.SM_REGION
+  region: region.sm
 });
 
 const sqs = new SQS({
-  region: process.env.SQS_REGION
+  region: region.sqs
 });
 
-const SENDER: string = process.env.SENDER_NAME || '';
+const SENDER_NAME: string = config.sqs.senderName || '';
+const TRANSACTIONAL_LOG: string = config.sqs.transactionalLog || 'none';
+const CONSUMER_QUEUE_URL: string = config.sqs.consumerQueueUrl || 'none';
 
 class AwsManager {
   public kmsDecrypt(encryptedData: string) {
@@ -44,6 +48,7 @@ class AwsManager {
     });
   }
 
+  // TODO: La variable KEY_ID no esta definida en el "template.env"
   public kmsEncrypt(plainText: string) {
     return new Promise<string>((resolve: any, reject: any) => {
       const key: any = process.env.KEY_ID;
@@ -65,7 +70,7 @@ class AwsManager {
   public publishLogToSNS(operation: string, message: any, level: string = 'debug') {
     return new Promise<any>((resolve, reject) => {
       const publishParams: SNS.PublishInput = {
-        TopicArn: config.transactionalLog.queueArn || 'none',
+        TopicArn: TRANSACTIONAL_LOG,
         Message: JSON.stringify(message),
         MessageAttributes: {
           operation: {
@@ -116,11 +121,11 @@ class AwsManager {
     return new Promise<SQS.SendMessageResult>(async (resolve: any, reject: any) => {
       const publishParams: SQS.SendMessageRequest = {
         MessageBody: JSON.stringify(msg),
-        QueueUrl: process.env.SQS_URL || 'none',
+        QueueUrl: CONSUMER_QUEUE_URL,
         MessageAttributes: {
           sender: {
             DataType: 'String',
-            StringValue: SENDER
+            StringValue: SENDER_NAME
           },
           ...extraAttributes
         },

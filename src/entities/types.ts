@@ -167,3 +167,8 @@ export interface IFundsMonitor {
 export interface IOrdersMonitor {
   checkOrdersStatus: () => Promise<void>;
 }
+
+export type pair =
+  | 'WETH-DAI'
+  | 'WETH-USDC'
+  | '' // TODO: continuar...

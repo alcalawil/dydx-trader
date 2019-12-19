@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { BAD_REQUEST } from 'http-status-codes';
 import { logger } from '@shared';
-
-const API_KEY = process.env.API_KEY || '12345';
+import config from '@config';
 
 const clientApiKeyValidation = (req: Request, res: Response, next: NextFunction) => {
   const clientApiKey: string =
@@ -16,7 +15,7 @@ const clientApiKeyValidation = (req: Request, res: Response, next: NextFunction)
     });
   }
 
-  if (clientApiKey === API_KEY) next();
+  if (clientApiKey === config.app.apiKey) next();
   else {
     logger.error('Invalid Api Key');
     return res.status(400).send({

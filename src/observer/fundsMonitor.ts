@@ -1,7 +1,10 @@
 import { IBalances, IRedisManager, IAwsManager, ISQSPublisher } from '@entities';
 import { logger } from '@shared';
-import config from '../config';
 import { BALANCES_CHANGES, STOP_OPS } from '@topics';
+import config from '@config';
+
+/* LOAD CONFIG */
+const MAX_ETH_QTY: number = config.observer.maxQtyEth;
 
 let BALANCE: IBalances = {
   dai: '0',
@@ -44,7 +47,7 @@ class FundsMonitor {
         logger.debug('the balance was changed');
         this.sqsPublisher.publishToSQS(BALANCES_CHANGES, JSON.stringify(newBalance));
         BALANCE = newBalance;
-        if (ethQty >= config.fundsMonitor.maxEthQty) {
+        if (ethQty >= MAX_ETH_QTY) {
           logger.debug('stop ops');
           this.stopOrders(newBalance);
         }

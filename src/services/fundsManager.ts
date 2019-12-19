@@ -1,11 +1,12 @@
 import { Solo, BigNumber } from '@dydxprotocol/solo';
-import { IBalances } from '@entities';
+import { IBalances, IToken } from '@entities';
 import { awsManager } from '@services';
 import { DYDX_TOKENS } from '../constants/Tokens';
+import config from '@config';
 
-let DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
-const ENCRYPTED_DEFAULT_ADDRESS = process.env.ENCRYPTED_DEFAULT_ADDRESS || '';
-const TOKEN_WETH = DYDX_TOKENS[0];
+let DEFAULT_ADDRESS: string = config.account.defaultAddress;
+const TAG_ADDRESS: string = config.secretManager.tagAddress;
+const TOKEN_WETH: IToken = DYDX_TOKENS[0];
 
 class FundsManager {
   public solo: Solo;
@@ -14,7 +15,7 @@ class FundsManager {
     this.solo = solo;
 
     if (!DEFAULT_ADDRESS) {
-      this.loadAddress(ENCRYPTED_DEFAULT_ADDRESS);
+      this.loadAddress(TAG_ADDRESS);
     }
   }
 

@@ -33,14 +33,18 @@ import { awsManager } from '@services';
 import errorsConstants from '../constants/Errors';
 import _ from 'lodash';
 import { EventEmitter } from 'events';
+import config from '@config';
 
-// Config
-let DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
-const DEFAULT_EXPIRATION = parseInt(process.env.DEFAULT_EXPIRATION_IN_SECONDS || '610');
-const ENCRYPTED_PRIVATE_KEY = process.env.ENCRYPTED_PRIVATE_KEY || '';
-const ENCRYPTED_DEFAULT_ADDRESS = process.env.ENCRYPTED_DEFAULT_ADDRESS || '';
-const TAKER_ACCOUNT_OWNER =
-  process.env.TAKER_ACCOUNT || '0x0000000000000000000000000000000000000000';
+/* LOAD CONFIG */
+const PRIVATE_KEY: string = config.account.privateKey
+let DEFAULT_ADDRESS: string = config.account.defaultAddress;
+const TAG_KEY: string = config.secretManager.tagKey;
+const TAG_ADDRESS: string = config.secretManager.tagAddress;
+const DEFAULT_EXPIRATION: number = config.dydx.expirationInSeconds;
+const TAKER_ACCOUNT: string = config.dydx.takerAccount;
+
+/* CONSTANTS */
+const DEFAULT_LIMIT: number = 100;
 
 class OrdersManager {
   public solo: Solo;
@@ -55,12 +59,12 @@ class OrdersManager {
   }
 
   private async loadAccount() {
-    let privateKey = process.env.PRIVATE_KEY || '';
-    if (ENCRYPTED_PRIVATE_KEY) {
-      privateKey = await awsManager.decryptSecretName(ENCRYPTED_PRIVATE_KEY);
+    let privateKey = PRIVATE_KEY;
+    if (TAG_KEY) {
+      privateKey = await awsManager.decryptSecretName(TAG_KEY);
     }
-    if (ENCRYPTED_DEFAULT_ADDRESS) {
-      DEFAULT_ADDRESS = await awsManager.decryptSecretName(ENCRYPTED_DEFAULT_ADDRESS);
+    if (TAG_ADDRESS) {
+      DEFAULT_ADDRESS = await awsManager.decryptSecretName(TAG_ADDRESS);
     }
     this.solo.loadAccount({
       address: DEFAULT_ADDRESS,
@@ -81,7 +85,7 @@ class OrdersManager {
       takerAmount: new BigNumber(takerAmount),
       makerAccountOwner: DEFAULT_ADDRESS,
       makerAccountNumber: new BigNumber(0),
-      takerAccountOwner: TAKER_ACCOUNT_OWNER,
+      takerAccountOwner: TAKER_ACCOUNT,
       takerAccountNumber: new BigNumber(0),
       expiration: new BigNumber(DEFAULT_EXPIRATION),
       salt: new BigNumber(Date.now())
@@ -159,7 +163,7 @@ class OrdersManager {
 
   public async getOrders({
     account,
-    limit = 100,
+    limit = DEFAULT_LIMIT,
     pairs
   }: {
     account?: string;
@@ -196,7 +200,7 @@ class OrdersManager {
     return responseOrder;
   }
 
-  public async getOrderbook({ limit = 100 }, pair: string): Promise<IOrderbook> {
+  public async getOrderbook({ limit = DEFAULT_LIMIT }, pair: string): Promise<IOrderbook> {
     const [assetToken, baseToken] = getTokens(pair);
     const marketName: string = `${assetToken.shortName}-${baseToken.shortName}`;
 
@@ -247,13 +251,13 @@ class OrdersManager {
   }
 
   public async getAsk(pair: string) {
-    const orderbook = await this.getOrderbook({ limit: 100 }, pair);
+    const orderbook = await this.getOrderbook({ limit: DEFAULT_LIMIT }, pair);
     const askPrice = orderbook.sellOrders[0].price;
     return askPrice;
   }
 
   public async getBid(pair: string) {
-    const orderbook = await this.getOrderbook({ limit: 100 }, pair);
+    const orderbook = await this.getOrderbook({ limit: DEFAULT_LIMIT }, pair);
     const buyPrice = orderbook.buyOrders[0].price;
     return buyPrice;
   }

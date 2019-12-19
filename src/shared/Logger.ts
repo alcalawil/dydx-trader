@@ -5,12 +5,13 @@
  */
 
 import { createLogger, format, transports } from 'winston';
+import config from '@config';
 
 const { File, Console } = transports;
 
 // Init Logger
 const winstonLogger = createLogger({
-  level: process.env.LOG_LEVEL === 'debug' ? 'debug' : 'info'
+  level: config.app.logLevel === 'debug' ? 'debug' : 'info'
 });
 
 /**
@@ -18,7 +19,7 @@ const winstonLogger = createLogger({
  * to `combined.log. Write all logs error (and below) to `error.log`.
  * For development, print to the console.
  */
-if (process.env.NODE_ENV === 'production') {
+if (config.app.nodeEnv === 'production') {
   const fileFormat = format.combine(format.timestamp(), format.json());
   const errTransport = new File({
     filename: './logs/error.log',

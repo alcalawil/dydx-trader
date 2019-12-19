@@ -3,7 +3,7 @@ import Web3 from 'web3';
 import config from '../config';
 
 function getSoloInstance(): Solo {
-  const provider = new Web3.providers.HttpProvider(config.solo.httpProvider);
+  const provider = new Web3.providers.HttpProvider(config.server.httpProvider);
   return new Solo(provider, Networks.MAINNET);
 }
 

@@ -4,11 +4,12 @@ import morgan from 'morgan';
 import cors from 'cors';
 import { authKey, errorHandler, routeErrorHandler } from './middlewares';
 import BaseRouter from './routes';
+import config from '@config';
 
 const app = express();
 
 /* MIDDLEWARES */
-process.env.NODE_ENV === 'development' ? app.use(morgan('dev')) : null;
+config.app.nodeEnv === 'development' ? app.use(morgan('dev')) : null;
 app
   .use(express.json())
   .use(express.urlencoded({ extended: true }))

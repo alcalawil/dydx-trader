@@ -1,6 +1,20 @@
 import { SQS } from 'aws-sdk';
 import SQSPublisher from './SQSPublisher';
 import { ORDERS_BUY } from '../../src/constants/Topics';
+import config from '../../src/config';
+
+/* LOAD CONFIG */
+const REGION_SQS: string = config.aws.region.sqs;
+const ACCESS_KEY_ID: string = config.aws.accessKeyId;
+const SECRET_ACCESS_KEY: string = config.aws.secretAccessKey;
+const SENDER_NAME: string = config.sqs.senderName;
+const CONSUMER_QUEUE_URL: string = config.sqs.consumerQueueUrl;
+
+const sqs = new SQS({
+  region: REGION_SQS,
+  accessKeyId: ACCESS_KEY_ID,
+  secretAccessKey: SECRET_ACCESS_KEY
+});
 
 const ORDERS = [
   { price: 145, amount: 0.1, side: 0, pair: 'WETH-DAI' },
@@ -10,18 +24,9 @@ const ORDERS = [
   { price: 150, amount: 0.1, side: 0, pair: 'WETH-DAI' },
   { price: 150, amount: 0.1, side: 1, pair: 'WETH-DAI' }
 ];
-const sqs = new SQS({
-  region: process.env.SQS_REGION || 'us-east-1',
-  accessKeyId: process.env.ACCESS_KEY_ID,
-  secretAccessKey: process.env.SECRET_ACCESS_KEY
-});
-const consumerQueueUrl =
-  process.env.CONSUMER_QUEUE_URL ||
-  'https://sqs.us-east-1.amazonaws.com/949045345033/test1.fifo';
-const SENDER = process.env.SENDER_NAME || 'dydx-operator';
 
-const sqsPublisher = new SQSPublisher(sqs, consumerQueueUrl, {
-  sender: SENDER
+const sqsPublisher = new SQSPublisher(sqs, CONSUMER_QUEUE_URL, {
+  sender: SENDER_NAME
 });
 
 (async () => {

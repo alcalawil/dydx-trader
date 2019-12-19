@@ -2,17 +2,23 @@ import { Solo } from '@dydxprotocol/solo';
 import { getTokens, convertToCexOrder } from '@shared';
 import { IResponseTrade, MarketSideString } from '@entities';
 import { awsManager } from '@services';
+import config from '@config';
 
-let DEFAULT_ADDRESS = process.env.DEFAULT_ADDRESS || '';
-const ENCRYPTED_DEFAULT_ADDRESS = process.env.ENCRYPTED_DEFAULT_ADDRESS || '';
-const PAIR_DEFAULT = 'WETH-DAI';
+/* LOAD CONFIG */
+let DEFAULT_ADDRESS: string = config.account.defaultAddress;
+const TAG_ADDRESS: string = config.secretManager.tagAddress;
+const DEFAULT_PAIR: string = config.dydx.defaultPair;
+
+/* CONSTANTS */
+const DEFAULT_LIMIT: number = 10;
 
 class TradesManager {
   public solo: Solo;
+
   constructor(solo: Solo) {
     this.solo = solo;
     if (!DEFAULT_ADDRESS) {
-      this.loadAddress(ENCRYPTED_DEFAULT_ADDRESS);
+      this.loadAddress(TAG_ADDRESS);
     }
   }
 
@@ -22,9 +28,9 @@ class TradesManager {
 
   public async getTrades({
     account,
-    limit = 10,
+    limit = DEFAULT_LIMIT,
     startingBefore = new Date(),
-    pair = PAIR_DEFAULT
+    pair = DEFAULT_PAIR
   }: {
     account?: string;
     limit?: number;

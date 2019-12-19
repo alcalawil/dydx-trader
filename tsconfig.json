@@ -20,7 +20,8 @@
       "@entities": ["src/entities"],
       "@shared": ["src/shared"],
       "@topics": ["src/constants/Topics.ts"],
-      "@services": ["src/services"]
+      "@services": ["src/services"],
+      "@config": ["src/config"]
     },
     "types": ["node"],
     "typeRoots": ["node_modules/@types"]

@@ -1,26 +1,27 @@
+import { pair } from './types';
+
 export interface IConfig {
   app: {
     nodeEnv: string;
     logLevel: string;
-    apiKey: string
+    apiKey: string;
   };
   server: {
     port: number;
     httpProvider: string;
   };
   account: {
-    normal: { // TODO: normal ?, evaluar este nombre
-      defaultAddress: string;
-      privateKey: string;
-    };
-    encrypted: {
-      defaultAddress: string;
-      privateKey: string;
-    };
+    defaultAddress: string;
+    privateKey: string;
+  };
+  secretManager: {
+    tagKey: string;
+    tagAddress: string;
   };
   dydx: {
     takerAccount: string;
     expirationInSeconds: number;
+    defaultPair: pair;
   };
   aws: {
     accessKeyId: string;
@@ -28,8 +29,9 @@ export interface IConfig {
     region: {
       kms: string;
       sns: string;
+      sqs: string;
       sm: string;
-    }
+    };
   };
   redis: {
     port: number;
@@ -45,7 +47,6 @@ export interface IConfig {
     strategyQueueUrl: string;
     consumerQueueUrl: string;
     transactionalLog: string;
-    region: string;
   };
 }
 
