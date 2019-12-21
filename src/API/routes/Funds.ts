@@ -1,11 +1,10 @@
 import { Request, Response, Router, NextFunction } from 'express';
 import { OK, INTERNAL_SERVER_ERROR } from 'http-status-codes';
-import { soloManager, awsManager, fundsFactory } from '@services';
+import { awsManager } from '@services';
 import { logger } from '@shared';
 import { HTTPError } from '@entities';
+import { gettersService } from '@services';
 
-// FIXME: fundsManager class should be instanced once
-const fundsManager = fundsFactory(soloManager);
 const router = Router();
 
 /******************************************************************************
@@ -14,7 +13,7 @@ const router = Router();
 
 router.get('/balances', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const balances = await fundsManager.getBalances();
+    const balances = await gettersService.getBalances();
     return res.status(OK).json({
       message: 'Account balances converted',
       balances

@@ -115,9 +115,10 @@ class AwsManager {
     });
   }
 
-  public async decryptSecretName(privateKey: string) {
-    const encryptedData = await this.getSecretValue(privateKey);
+  public async decryptSecretName(tagName: string) {
+    const encryptedData = await this.getSecretValue(tagName);
     const decryptedDataKey: any = await this.kmsDecrypt(encryptedData.DATA_KEY);
+    // TODO: Make it return a string type
     return decrypt(decryptedDataKey, encryptedData.DATA);
   }
 

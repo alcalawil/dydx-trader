@@ -1,11 +1,10 @@
 import { Request, Response, Router, NextFunction } from 'express';
 import { OK, INTERNAL_SERVER_ERROR } from 'http-status-codes';
 import { logger } from '@shared';
-import { soloManager, awsManager, tradesFactory } from '@services';
+import { awsManager, gettersService } from '@services';
 import { IResponseTrade, HTTPError } from '@entities';
 import config from '@config';
 
-const tradesManager = tradesFactory(soloManager);
 const router = Router();
 
 /* LOAD CONFIG */
@@ -24,7 +23,7 @@ router.get('/mytrades', async (req: Request, res: Response, next: NextFunction) 
     if (startingBefore) {
       startingBefore = new Date(startingBefore);
     }
-    const trades = await tradesManager.getOwnTrades(limit, pair, startingBefore);
+    const trades = await gettersService.getOwnTrades(limit, pair, startingBefore);
     return res.status(OK).json({ trades });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
@@ -46,7 +45,7 @@ router.get('/mytradesCsv', async (req: Request, res: Response, next: NextFunctio
       startingBefore = new Date(startingBefore);
     }
 
-    const trades = await tradesManager.getOwnTrades(limit, pair, startingBefore);
+    const trades = await gettersService.getOwnTrades(limit, pair, startingBefore);
     const csvHeader = [
       'transactionHash',
       'pair',
@@ -74,9 +73,9 @@ router.get('/mytradesCsv', async (req: Request, res: Response, next: NextFunctio
     });
     res.end();
   } catch (err) {
-    logger.error(err.message, JSON.stringify(err));
+    logger.error(err);
     awsManager.publishLogToSNS('ERROR', err);
-    next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
+    next(new HTTPError(err, INTERNAL_SERVER_ERROR));
   }
 });
 

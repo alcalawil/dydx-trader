@@ -31,7 +31,6 @@ export default class SQSPublisher {
     };
 
     try {
-      console.log('SQS SEND');
       return this.sqs.sendMessage(publishParams).promise();
     } catch (err) {
       console.log('Publish to SQS Error', err);

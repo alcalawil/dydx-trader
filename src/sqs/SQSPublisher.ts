@@ -37,7 +37,7 @@ export default class SQSPublisher {
     };
 
     try {
-      logger.debug('SQS SEND');
+      logger.debug(`SQS SENT to topic: ${topic}`)
       return this.sqs.sendMessage(publishParams).promise();
     } catch (err) {
       logger.error('Publish to SQS Error', err);

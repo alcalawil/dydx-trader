@@ -25,3 +25,7 @@ export const DYDX_TOKENS: IToken[] = [
     priceUnit: 'e0'
   }
 ];
+
+export const getTokenById = (tokenId: number) => {
+  return DYDX_TOKENS.find((token) => token.id === tokenId);
+};

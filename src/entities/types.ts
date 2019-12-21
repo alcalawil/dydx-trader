@@ -173,7 +173,11 @@ export type pair = 'WETH-DAI' | 'WETH-USDC' | ''; // TODO: continuar...
 export interface ICancelOrder {
   orderId: string;
 }
-
+// FIXME: Por qué dos interfaces iguales con dos nombres distintos?
 export interface ICancelResponse {
   orderId: string;
+}
+export interface IState {
+  orders: IResponseOrder[];
+  balances: IBalances | null;
 }
