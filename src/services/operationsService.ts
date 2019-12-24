@@ -10,6 +10,7 @@ import { convertToDexOrder, convertToResponseOrder } from '../helpers/converters
 import { gettersService } from './gettersService';
 import config from '@config';
 import StateManager from './StateManager';
+import { ORDER_STATUS_CANCELED } from '../constants/OrderStatuses';
 
 // Config
 let DEFAULT_ADDRESS = config.account.defaultAddress;
@@ -43,7 +44,7 @@ class OperationsService {
     const { order: apiOrder } = await _solo.api.placeOrder(order);
     const responseOrder = convertToResponseOrder(apiOrder);
     _stateManager.setNewOrder(responseOrder);
-  
+
     return responseOrder;
   }
 
@@ -68,25 +69,24 @@ class OperationsService {
     });
 
     const parsedOrder = convertToResponseOrder(order);
-    // TODO: _stateManager.removeOrder
+    _stateManager.setOrderStatus(parsedOrder.id, ORDER_STATUS_CANCELED);
     return parsedOrder;
   }
 
   public async cancelMyOrders(pair: string) {
     const orders = await gettersService.getMyOrders(pair);
-    const ordersCanceled = Array<IResponseOrder>();
-    await orders.forEach(async (order) => {
-      ordersCanceled.push(await this.cancelOrder(order.id));
-    });
-
-    return orders;
+    const canceledOrders = await Promise.all(
+      orders.map(async (order) => {
+        const cancelResponse = await this.cancelOrder(order.id);
+        _stateManager.setOrderStatus(cancelResponse.id, ORDER_STATUS_CANCELED);
+        return cancelResponse;
+      })
+    );
+    return canceledOrders;
   }
 
   private async _signOrder(order: LimitOrder): Promise<SignedLimitOrder> {
-    const typedSignature = await _solo.limitOrders.signOrder(
-      order,
-      SigningMethod.Hash
-    );
+    const typedSignature = await _solo.limitOrders.signOrder(order, SigningMethod.Hash);
 
     const signedOrder: SignedLimitOrder = {
       ...order,
@@ -123,4 +123,4 @@ class OperationsService {
   }
 }
 
-export const operationsService =  new OperationsService();
+export const operationsService = new OperationsService();

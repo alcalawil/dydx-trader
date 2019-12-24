@@ -1,5 +1,6 @@
 import { IState, IResponseOrder, IBalances } from '@entities';
 import { EventEmitter } from 'events';
+import { ORDER_STATUS_CANCELED, ORDER_STATUS_FILLED } from '../constants/OrderStatuses';
 
 export default class StateManager {
   private _state: IState;
@@ -20,21 +21,24 @@ export default class StateManager {
   }
 
   public setOrderStatus(orderId: string, newStatus: string) {
-    const orders = this.state.orders.map((order) => {
-      if (order.id === orderId) {
-        order.status = newStatus;
-      }
-      return order;
-    });
-    // Acá se puede por agregar lógica sobre el manejo del estado de la orden.
-    // Por ejemplo, si el status == FILLED eliminar la orden de la lista
+    switch (newStatus) {
+      case ORDER_STATUS_CANCELED:
+        this.removeOrder(orderId);
+        break;
+      case ORDER_STATUS_FILLED:
+        this.removeOrder(orderId);
+        break;
+      default:
+        const orders = this.state.orders.map((order) => {
+          if (order.id === orderId) {
+            order.status = newStatus;
+          }
+          return order;
+        });
+        this.state.orders = orders;
+        break;
+    }
 
-    this.state.orders = orders;
-
-    const data = {
-      orderId,
-      newStatus
-    };
     this._stateChanges.emit('ORDER_STATUS_CHANGE', { orderId, orderStatus: newStatus });
   }
 
@@ -50,6 +54,11 @@ export default class StateManager {
 
   public get stateChanges() {
     return this._stateChanges;
+  }
+
+  private removeOrder(orderId: string) {
+    const orderIndex = this._state.orders.findIndex((order) => order.id === orderId);
+    this._state.orders.splice(orderIndex, 1);
   }
 
   // TODO: Add removeOrder() {}
