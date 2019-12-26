@@ -2,6 +2,7 @@ import { SQS } from 'aws-sdk';
 import { Consumer } from 'sqs-consumer';
 import { logger } from '@shared';
 import { ISQSConsumer, ISQSRoute } from '@entities';
+import config from '@config';
 
 class SQSConsumer implements ISQSConsumer {
   public isRunning = false;
@@ -18,7 +19,8 @@ class SQSConsumer implements ISQSConsumer {
       queueUrl,
       messageAttributeNames: ['All'],
       handleMessage: this.messageHandler,
-      sqs
+      sqs,
+      batchSize: config.sqs.consumerBatchSize
     });
     // TODO: Create an err interface if needed
     this.app.on('error', (err: any) => {

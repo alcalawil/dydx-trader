@@ -48,6 +48,7 @@ export interface IConfig {
     consumerQueueUrl: string;
     transactionalLog: string;
     msjGroupId: string;
+    consumerBatchSize: number;
   };
 }
 

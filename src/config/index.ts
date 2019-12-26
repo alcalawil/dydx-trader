@@ -53,7 +53,7 @@ const CONSUMER_QUEUE_URL: string =
 const TRANSACTIONAL_LOGS_QUEUE_ARN: string =
   ENV.TRANSACTIONAL_LOGS_QUEUE_ARN || 'arn:aws:sns:us-east-1:949045345033:test';
 const MSJ_GROUP_ID: string = ENV.MSJ_GROUP_ID || 'DEFAULT_GROUP_ID';
-
+const CONSUMER_BATCH_SIZE: number = Number(ENV.CONSUMER_BATCH_SIZE) || 10;
 /****************************************************************************************/
 
 const config: IConfig = {
@@ -103,7 +103,8 @@ const config: IConfig = {
     strategyQueueUrl: STRATEGY_QUEUE_URL,
     consumerQueueUrl: CONSUMER_QUEUE_URL,
     transactionalLog: TRANSACTIONAL_LOGS_QUEUE_ARN,
-    msjGroupId: MSJ_GROUP_ID
+    msjGroupId: MSJ_GROUP_ID,
+    consumerBatchSize: CONSUMER_BATCH_SIZE
   }
 };
 

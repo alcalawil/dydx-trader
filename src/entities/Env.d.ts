@@ -48,6 +48,7 @@ declare global {
       CONSUMER_QUEUE_URL: string;
       TRANSACTIONAL_LOGS_QUEUE_ARN: string;
       MSJ_GROUP_ID: string;
+      CONSUMER_BATCH_SIZE: string
     }
   }
 }
