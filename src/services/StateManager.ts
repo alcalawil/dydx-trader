@@ -1,4 +1,4 @@
-import { IState, IResponseOrder, IFundsBalances } from '@entities';
+import { IState, IResponseOrder, IFundsBalances, IOperation } from '@entities';
 import { EventEmitter } from 'events';
 import { ORDER_STATUS_CANCELED, ORDER_STATUS_FILLED } from '../constants/OrderStatuses';
 
@@ -15,7 +15,8 @@ export class StateManager {
         virtualWalletId: '',
         balances: [],
         oldestBalancesTimestamp: 0
-      }
+      },
+      operations: []
     };
     this._stateChanges = new EventEmitter();
   }
@@ -54,6 +55,11 @@ export class StateManager {
   public setNewOrder(order: IResponseOrder) {
     this._state.orders.push(order);
     this._stateChanges.emit('NEW_ORDER', order);
+  }
+
+  public setNewOperation(operation: IOperation) {
+    this._state.operations.push(operation);
+    this._stateChanges.emit('NEW_OPERATION', operation);
   }
 
   public get stateChanges() {

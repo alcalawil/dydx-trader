@@ -1,10 +1,11 @@
-import { pair } from './types';
+import { pair, logLevel } from './types';
 
 export interface IConfig {
   app: {
     nodeEnv: string;
-    logLevel: string;
+    logLevel: logLevel;
     apiKey: string;
+    version: string;
   };
   server: {
     port: number;
@@ -49,9 +50,10 @@ export interface IConfig {
     receiverName: string;
     strategyQueueUrl: string;
     tradeOpsQueueUrl: string;
-    transactionalLog: string;
+    logTopicArn: string;
     msjGroupId: string;
     consumerBatchSize: number;
+    logLevel: string;
   };
 }
 

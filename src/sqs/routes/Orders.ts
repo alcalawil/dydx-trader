@@ -1,4 +1,4 @@
-import { awsManager, operationsService } from '@services';
+import { operationsService, StateManager } from '@services';
 import { logger } from '@shared';
 import {
   ORDERS_CANCEL,
@@ -6,13 +6,10 @@ import {
   ORDERS_BUY,
   ORDERS_SELL,
   ORDERS_CANCEL_ALL,
-  ORDERS_BUY_MANY,
-  ORDERS_SELL_MANY,
   ORDERS_PLACE_RESPONSE,
   ORDERS_BUY_RESPONSE,
   ORDERS_SELL_RESPONSE,
   ORDERS_CANCEL_RESPONSE,
-  ORDERS_BUY_MANY_RESPONSE,
   ORDERS_CANCEL_ALL_RESPONSE,
   ORDERS_PLACE_MANY,
   ORDERS_PLACE_MANY_RESPONSE,
@@ -21,16 +18,74 @@ import {
 } from '../../constants/Topics';
 import SQSPublisher from '../SQSPublisher';
 import SQSRouter from '../SQSRouter';
-import { IResponseOrder, ICancelResponse, ICancelOrder } from '@entities';
+import {
+  IResponseOrder,
+  ICancelResponse,
+  ICancelOrder,
+  logLevel,
+  IStrategyInfo,
+  MarketSide,
+  pair
+} from '@entities';
+import SNSLogger from '../../sns/SNSLogger';
+import { ORDER_STATUS_CANCELED } from '../../constants/OrderStatuses';
+import {
+  STRATEGY_BUY_ORDER_COMPLETED,
+  STRATEGY_SELL_ORDER_COMPLETED,
+  STRATEGY_SELL_ORDER_ERROR,
+  STRATEGY_BUY_ORDER_ERROR,
+  STRATEGY_BUY_ORDER_ATTEMPT,
+  STRATEGY_SELL_ORDER_ATTEMPT,
+  STRATEGY_CANCEL_ORDER_ATTEMPT,
+  STRATEGY_CANCEL_ORDER_COMPLETED,
+  ERROR,
+  STRATEGY_CANCEL_ALL_ORDERS_ATTEMPT,
+  STRATEGY_CANCEL_ALL_ORDERS_COMPLETED,
+  STRATEGY_CANCEL_ALL_ORDERS_ERROR,
+  STRATEGY_CANCEL_ORDER_ERROR
+} from '../../constants/logTypes';
+import { getTokensFromPair } from '../../helpers/converters';
 
 const router = new SQSRouter();
 let _sqsPublisher: SQSPublisher;
+let _snsLogger: SNSLogger;
+let _stateManager: StateManager;
+
+const ERROR_LOG_LEVEL: logLevel = 'error';
+const DEBUG_LOG_LEVEL: logLevel = 'debug';
 
 /* PLACE ORDER ROUTE */
 router.createRoute(ORDERS_PLACE, async (body: any) => {
   const topic = ORDERS_PLACE;
+  const {
+    side,
+    amount,
+    price,
+    pair,
+    operationId,
+    strategyInfo
+  }: {
+    side: number;
+    amount: number;
+    price: number;
+    pair: pair;
+    operationId: string;
+    strategyInfo: IStrategyInfo;
+  } = body;
+  const [assetToken, baseToken] = getTokensFromPair(pair);
   try {
-    const { side, amount, price, pair, operationId } = body;
+    _snsLogger.LogMessage(
+      `Intento de ejecucion del topico: ${topic}.`,
+      {
+        details: body,
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      side === MarketSide.buy ? STRATEGY_BUY_ORDER_ATTEMPT : STRATEGY_SELL_ORDER_ATTEMPT,
+      DEBUG_LOG_LEVEL,
+      '4'
+    );
     const orderResponse = await operationsService.placeOrder(
       {
         side,
@@ -39,14 +94,46 @@ router.createRoute(ORDERS_PLACE, async (body: any) => {
       },
       pair
     );
-
+    _stateManager.setNewOperation({
+      orderId: orderResponse.id,
+      pair,
+      operationId,
+      ...strategyInfo,
+      tokenIN: side === MarketSide.buy ? assetToken.shortName : baseToken.shortName,
+      tokenOUT: side === MarketSide.buy ? baseToken.shortName : assetToken.shortName,
+      tokenFees: 'none',
+      feesOut: 0,
+      originalRequest: JSON.stringify(body),
+      originalResponse: JSON.stringify(orderResponse)
+    });
     logger.debug(`Topic ${topic} is working`);
-    awsManager.publishLogToSNS(topic, orderResponse);
+    _snsLogger.LogMessage(
+      `Ejecucion del topico: ${topic} completada.`,
+      {
+        details: orderResponse,
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      side === MarketSide.buy
+        ? STRATEGY_BUY_ORDER_COMPLETED
+        : STRATEGY_SELL_ORDER_COMPLETED
+    );
     publishResponseToSQS(ORDERS_PLACE_RESPONSE, operationId, orderResponse);
-
     return;
   } catch (err) {
     logger.error(topic, err.message);
+    _snsLogger.LogMessage(
+      `Error en la ejecucion del topico: ${topic}.`,
+      {
+        details: { message: err.message, stack: err.stack },
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      side === MarketSide.buy ? STRATEGY_BUY_ORDER_ERROR : STRATEGY_SELL_ORDER_ERROR,
+      ERROR_LOG_LEVEL
+    );
     throw err;
   }
 });
@@ -55,17 +142,73 @@ router.createRoute(ORDERS_PLACE, async (body: any) => {
 router.createRoute(ORDERS_BUY, async (body: any) => {
   const topic = ORDERS_BUY;
   const responseTopic = ORDERS_BUY_RESPONSE;
+  const {
+    operationId,
+    price,
+    amount,
+    pair,
+    strategyInfo
+  }: {
+    operationId: string;
+    price: number;
+    amount: number;
+    pair: pair;
+    strategyInfo: IStrategyInfo;
+  } = body;
   try {
-    const { operationId, price, amount, pair } = body;
+    const [assetToken, baseToken] = getTokensFromPair(pair);
+    _snsLogger.LogMessage(
+      `Intento de ejecucion del topico: ${topic}.`,
+      {
+        details: body,
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      STRATEGY_BUY_ORDER_ATTEMPT,
+      DEBUG_LOG_LEVEL,
+      '4'
+    );
     const orderResponse = await operationsService.buy(price, amount, pair);
-
+    _stateManager.setNewOperation({
+      orderId: orderResponse.id,
+      pair,
+      operationId,
+      ...strategyInfo,
+      tokenIN: assetToken.shortName,
+      tokenOUT: baseToken.shortName,
+      tokenFees: 'none',
+      feesOut: 0,
+      originalRequest: JSON.stringify(body),
+      originalResponse: JSON.stringify(orderResponse)
+    });
     logger.debug(`Topic ${topic} is working`);
-    awsManager.publishLogToSNS(topic, orderResponse);
+    _snsLogger.LogMessage(
+      `Ejecucion del topico: ${topic} completada.`,
+      {
+        details: orderResponse,
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      STRATEGY_BUY_ORDER_COMPLETED
+    );
     publishResponseToSQS(responseTopic, operationId, orderResponse);
 
     return;
   } catch (err) {
     logger.error(topic, err.message);
+    _snsLogger.LogMessage(
+      `Error en la ejecucion del topico: ${topic}.`,
+      {
+        details: { message: err.message, stack: err.stack },
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      STRATEGY_BUY_ORDER_ERROR,
+      ERROR_LOG_LEVEL
+    );
     throw err;
   }
 });
@@ -73,17 +216,73 @@ router.createRoute(ORDERS_BUY, async (body: any) => {
 /* SELL ORDER ROUTE */
 router.createRoute(ORDERS_SELL, async (body: any) => {
   const topic = ORDERS_SELL;
+  const {
+    operationId,
+    price,
+    amount,
+    pair,
+    strategyInfo
+  }: {
+    operationId: string;
+    price: number;
+    amount: number;
+    pair: pair;
+    strategyInfo: IStrategyInfo;
+  } = body;
   try {
-    const { operationId, price, amount, pair } = body;
+    const [assetToken, baseToken] = getTokensFromPair(pair);
+    _snsLogger.LogMessage(
+      `Intento de ejecucion del topico: ${topic}.`,
+      {
+        details: body,
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      STRATEGY_SELL_ORDER_ATTEMPT,
+      DEBUG_LOG_LEVEL,
+      '4'
+    );
     const orderResponse = await operationsService.sell(price, amount, pair);
-
+    _stateManager.setNewOperation({
+      orderId: orderResponse.id,
+      pair,
+      operationId,
+      ...strategyInfo,
+      tokenIN: baseToken.shortName,
+      tokenOUT: assetToken.shortName,
+      tokenFees: 'none',
+      feesOut: 0,
+      originalRequest: JSON.stringify(body),
+      originalResponse: JSON.stringify(orderResponse)
+    });
     logger.debug(`Topic ${topic} is working`);
-    awsManager.publishLogToSNS(topic, orderResponse);
+    _snsLogger.LogMessage(
+      `Ejecucion del topico: ${topic} completada.`,
+      {
+        details: orderResponse,
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      STRATEGY_SELL_ORDER_COMPLETED
+    );
     publishResponseToSQS(ORDERS_SELL_RESPONSE, operationId, orderResponse);
 
     return;
   } catch (err) {
     logger.error(topic, err.message);
+    _snsLogger.LogMessage(
+      `Error en la ejecucion del topico: ${topic}.`,
+      {
+        details: { message: err.message, stack: err.stack },
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      STRATEGY_SELL_ORDER_ERROR,
+      ERROR_LOG_LEVEL
+    );
     throw err;
   }
 });
@@ -91,20 +290,59 @@ router.createRoute(ORDERS_SELL, async (body: any) => {
 /* CANCEL ORDER ROUTE */
 router.createRoute(ORDERS_CANCEL, async (body: any) => {
   const topic = ORDERS_CANCEL;
+  const {
+    operationId,
+    cancelOrder,
+    strategyInfo
+  }: {
+    operationId: string;
+    cancelOrder: ICancelOrder;
+    strategyInfo: IStrategyInfo;
+  } = body;
   try {
-    const {
-      operationId,
-      cancelOrder
-    }: { operationId: string; cancelOrder: ICancelOrder } = body;
-    const response: IResponseOrder = await operationsService.cancelOrder(cancelOrder.orderId);
+    _snsLogger.LogMessage(
+      `Intento de ejecucion del topico: ${topic}.`,
+      {
+        details: body,
+        topic,
+        operationId, 
+        ...strategyInfo
+      },
+      STRATEGY_CANCEL_ORDER_ATTEMPT,
+      DEBUG_LOG_LEVEL,
+      '4'
+    );
+    const response: IResponseOrder = await operationsService.cancelOrder(
+      cancelOrder.orderId
+    );
     const bodyResponse: ICancelResponse = { orderId: response.id };
     logger.debug(`Topic ${topic} is working`);
-    awsManager.publishLogToSNS(topic, response);
+    _snsLogger.LogMessage(
+      `Ejecucion del topico: ${topic} completada.`,
+      {
+        details: response,
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      STRATEGY_CANCEL_ORDER_COMPLETED
+    );
     publishResponseToSQS(ORDERS_CANCEL_RESPONSE, operationId, bodyResponse);
 
     return;
   } catch (err) {
     logger.error(topic, err.message);
+    _snsLogger.LogMessage(
+      `Error en la ejecucion del topico: ${topic}.`,
+      {
+        details: { message: err.message, stack: err.stack },
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      STRATEGY_SELL_ORDER_ERROR,
+      ERROR_LOG_LEVEL
+    );
     throw err;
   }
 });
@@ -112,7 +350,13 @@ router.createRoute(ORDERS_CANCEL, async (body: any) => {
 router.createRoute(ORDERS_PLACE_MANY, async (body: any) => {
   const topic = ORDERS_PLACE_MANY;
   // FIXME: order as any porque el types cexOrder de la estrategia es distinto al del bot (corregir eso)
-  const operations: { operationId: string; order: any }[] = body;
+  const {
+    operations,
+    strategyInfo
+  }: {
+    operations: Array<{ operationId: string; order: any }>;
+    strategyInfo: IStrategyInfo;
+  } = body;
   try {
     const bodyResponse = await Promise.all(
       operations.map(async ({ operationId, order }) => {
@@ -121,8 +365,23 @@ router.createRoute(ORDERS_PLACE_MANY, async (body: any) => {
           amount,
           price,
           pair
-        }: { side: number; amount: number; price: number; pair: string } = order;
+        }: { side: number; amount: number; price: number; pair: pair } = order;
+        const [assetToken, baseToken] = getTokensFromPair(pair);
         logger.debug('ORDER >> ', order);
+        _snsLogger.LogMessage(
+          `Intento de ejecucion del topico: ${topic}.`,
+          {
+            details: body,
+            topic,
+            operationId,
+            ...strategyInfo
+          },
+          side === MarketSide.buy
+            ? STRATEGY_BUY_ORDER_ATTEMPT
+            : STRATEGY_SELL_ORDER_ATTEMPT,
+          DEBUG_LOG_LEVEL,
+          '4'
+        );
         const orderResponse = await operationsService.placeOrder(
           {
             side,
@@ -131,15 +390,37 @@ router.createRoute(ORDERS_PLACE_MANY, async (body: any) => {
           },
           pair
         );
+        _stateManager.setNewOperation({
+          orderId: orderResponse.id,
+          pair,
+          operationId,
+          ...strategyInfo,
+          tokenIN: side === MarketSide.buy ? assetToken.shortName : baseToken.shortName,
+          tokenOUT: side === MarketSide.buy ? baseToken.shortName : assetToken.shortName,
+          tokenFees: 'none',
+          feesOut: 0,
+          originalRequest: JSON.stringify(body),
+          originalResponse: JSON.stringify(orderResponse)
+        });
+        logger.debug(`Topic ${topic} is working`);
+        _snsLogger.LogMessage(
+          `Ejecucion del topico: ${topic} completada.`,
+          {
+            details: orderResponse,
+            topic,
+            operationId,
+            ...strategyInfo
+          },
+          side === MarketSide.buy
+            ? STRATEGY_BUY_ORDER_COMPLETED
+            : STRATEGY_SELL_ORDER_COMPLETED
+        );
         return {
           operationId,
           orderResponse
         };
       })
     );
-
-    logger.debug(`Topic ${topic} is working`);
-    awsManager.publishLogToSNS(topic, bodyResponse);
     publishResponseToSQS(
       ORDERS_PLACE_MANY_RESPONSE,
       operations[0].operationId,
@@ -147,6 +428,16 @@ router.createRoute(ORDERS_PLACE_MANY, async (body: any) => {
     );
     return;
   } catch (err) {
+    _snsLogger.LogMessage(
+      `Error en la ejecucion del topico: ${topic}.`,
+      {
+        details: { message: err.message, stack: err.stack },
+        topic,
+        ...strategyInfo
+      },
+      ERROR,
+      ERROR_LOG_LEVEL
+    );
     logger.error(topic, err);
     throw err;
   }
@@ -195,8 +486,24 @@ router.createRoute(ORDERS_PLACE_MANY, async (body: any) => {
 /* CANCEL ALL ORDER ROUTE */
 router.createRoute(ORDERS_CANCEL_ALL, async (body: any) => {
   const topic = ORDERS_CANCEL_ALL;
+  const {
+    operationId,
+    pair,
+    strategyInfo
+  }: { operationId: string; pair: string; strategyInfo: IStrategyInfo } = body;
   try {
-    const { operationId, pair }: { operationId: string; pair: string } = body;
+    _snsLogger.LogMessage(
+      `Intento de ejecucion del topico: ${topic}.`,
+      {
+        details: body,
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      STRATEGY_CANCEL_ALL_ORDERS_ATTEMPT,
+      DEBUG_LOG_LEVEL,
+      '4'
+    );
     const response: IResponseOrder[] = await operationsService.cancelMyOrders(pair);
     const bodyResponse: ICancelResponse[] = response.map((element: IResponseOrder) => {
       return {
@@ -205,12 +512,33 @@ router.createRoute(ORDERS_CANCEL_ALL, async (body: any) => {
     });
 
     logger.debug(`Topic ${topic} is working`);
-    awsManager.publishLogToSNS(topic, response);
+    _snsLogger.LogMessage(
+      `Ejecucion del topico: ${topic} completada.`,
+      {
+        details: bodyResponse,
+        topic,
+        ...strategyInfo
+      },
+      STRATEGY_CANCEL_ALL_ORDERS_COMPLETED,
+      DEBUG_LOG_LEVEL,
+      '4'
+    );
     publishResponseToSQS(ORDERS_CANCEL_ALL_RESPONSE, operationId, bodyResponse);
 
     return;
   } catch (err) {
     logger.error(topic, err.message);
+    _snsLogger.LogMessage(
+      `Error en la ejecucion del topico: ${topic}.`,
+      {
+        details: { message: err.message, stack: err.stack },
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      STRATEGY_CANCEL_ALL_ORDERS_ERROR,
+      ERROR_LOG_LEVEL
+    );
     throw err;
   }
 });
@@ -218,11 +546,46 @@ router.createRoute(ORDERS_CANCEL_ALL, async (body: any) => {
 /* CANCEL MANY ROUTE */
 router.createRoute(ORDERS_CANCEL_MANY, async (body: any) => {
   const topic = ORDERS_CANCEL_MANY;
+  const {
+    operationId,
+    operations,
+    strategyInfo
+  }: {
+    operationId: string;
+    operations: ICancelOrder[];
+    strategyInfo: IStrategyInfo;
+  } = body;
   try {
-    const operation: { operationId: string; ordersId: ICancelOrder[] } = body;
     const bodyResponse: ICancelResponse[] = await Promise.all(
-      operation.ordersId.map(async ({ orderId }) => {
-        const cancelResponse: IResponseOrder = await operationsService.cancelOrder(orderId);
+      operations.map(async ({ orderId }) => {
+        _snsLogger.LogMessage(
+          `Intento de ejecucion del topico: ${topic}.`,
+          {
+            details: body,
+            topic,
+            operationId,
+            ...strategyInfo
+          },
+          STRATEGY_CANCEL_ORDER_ATTEMPT,
+          DEBUG_LOG_LEVEL,
+          '4'
+        );
+        const cancelResponse: IResponseOrder = await operationsService.cancelOrder(
+          orderId
+        );
+        _stateManager.setOrderStatus(cancelResponse.id, ORDER_STATUS_CANCELED);
+        _snsLogger.LogMessage(
+          `Ejecucion del topico: ${topic} completada.`,
+          {
+            details: cancelResponse,
+            topic,
+            operationId,
+            ...strategyInfo
+          },
+          STRATEGY_CANCEL_ORDER_COMPLETED,
+          DEBUG_LOG_LEVEL,
+          '4'
+        );
         return {
           orderId: cancelResponse.id
         };
@@ -230,16 +593,22 @@ router.createRoute(ORDERS_CANCEL_MANY, async (body: any) => {
     );
 
     logger.debug(`Topic ${topic} is working`);
-    awsManager.publishLogToSNS(topic, bodyResponse);
-    publishResponseToSQS(
-      ORDERS_CANCEL_MANY_RESPONSE,
-      operation.operationId,
-      bodyResponse
-    );
+    publishResponseToSQS(ORDERS_CANCEL_MANY_RESPONSE, operationId, bodyResponse);
 
     return;
   } catch (err) {
     logger.error(topic, err.message);
+    _snsLogger.LogMessage(
+      `Error en la ejecucion del topico: ${topic}.`,
+      {
+        details: { message: err.message, stack: err.stack },
+        topic,
+        operationId,
+        ...strategyInfo
+      },
+      STRATEGY_CANCEL_ORDER_ERROR,
+      ERROR_LOG_LEVEL
+    );
     throw err;
   }
 });
@@ -258,7 +627,13 @@ const publishResponseToSQS = (topic: string, operationId: string, response: obje
   });
 };
 
-export default (sqsPublisher: SQSPublisher) => {
+export default (
+  sqsPublisher: SQSPublisher,
+  snsLogger: SNSLogger,
+  stateManager: StateManager
+) => {
   _sqsPublisher = sqsPublisher;
+  _snsLogger = snsLogger;
+  _stateManager = stateManager;
   return router;
 };

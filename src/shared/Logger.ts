@@ -20,6 +20,9 @@ const winstonLogger = createLogger({
  * For development, print to the console.
  */
 if (config.app.nodeEnv === 'production') {
+  // FIXME: Cuando se corre en docker se detiene el proceso debido a
+  // que no existe la carpeta './logs'. Posible solucion: realizar un mkdir en el dockerfile.
+  // Error: ENOENT: no such file or directory, mkdir './logs'
   const fileFormat = format.combine(format.timestamp(), format.json());
   const errTransport = new File({
     filename: './logs/error.log',
