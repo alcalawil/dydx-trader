@@ -138,10 +138,11 @@ export interface IRedisManager {
 export interface IAwsManager {
   kmsDecrypt: (encryptedData: string) => Promise<string>;
   kmsEncrypt: (plainText: string) => Promise<string>;
-  publishLogToSNS: (operation: string, message: any, level?: string) => Promise<any>;
   getSecretValue: (secretName: string) => Promise<any>;
   decryptSecretName: (privateKey: string) => Promise<any>;
   publishToSQS: (groupId: string, msg: any, extraAttributes?: any) => Promise<any>;
+  getPublicIP: () => string;
+  getInstanceId: () => string;
 }
 
 export interface ISQSPublisher {
@@ -179,6 +180,7 @@ export interface ICancelResponse {
 export interface IState {
   orders: IResponseOrder[];
   balances: IFundsBalances;
+  operations: IOperation[];
 }
 
 export class ITime {
@@ -193,3 +195,49 @@ export type pair = 'WETH-DAI' | 'WETH-USDC' | ''; // TODO: continuar...
 export type financialAsset = 'eth' | 'usdc' | 'dai';
 
 export type observer = NodeJS.Timeout[];
+
+export type logLevel =
+  | 'error'
+  | 'warn'
+  | 'help'
+  | 'data'
+  | 'info'
+  | 'debug'
+  | 'prompt'
+  | 'verbose'
+  | 'input'
+  | 'silly'
+  | 'security';
+
+export type snsDebugLogLevel = '1' | '2' | '3' | '4' | '5';
+
+export interface ISNSLogger {
+  LogMessage: (
+    action: string,
+    body: any,
+    logType: string,
+    logLvl?: logLevel,
+    dbgLogLvl?: snsDebugLogLevel
+  ) => Promise<any>;
+}
+
+export interface IStrategyInfo {
+  strategyInstanceId: string;
+  strategyInstanceIp: string;
+  strategySoftwareVersion: string;
+  subStrategy: string;
+  cycleId: string;
+  walletId: string;
+  virtualWalletId: string;
+}
+export interface IOperation extends IStrategyInfo {
+  pair: pair;
+  orderId: string;
+  operationId: string;
+  tokenIN: string;
+  tokenOUT: string;
+  tokenFees: string;
+  feesOut: number;
+  originalRequest: string;
+  originalResponse: string;
+}

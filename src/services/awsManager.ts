@@ -1,6 +1,7 @@
-import AWS, { SQS, SNS, KMS, SecretsManager } from 'aws-sdk';
+import AWS, { SQS, SNS, KMS, SecretsManager, MetadataService } from 'aws-sdk';
 import { decrypt } from '@shared';
 import config from '@config';
+import { logLevel } from '@entities';
 
 /* LOAD CONFIG */
 AWS.config.update({
@@ -26,15 +27,22 @@ const sqs = new SQS({
   region: region.sqs
 });
 
+const ms = new MetadataService();
+
 const SENDER_NAME: string = config.sqs.senderName;
-const TRANSACTIONAL_LOG: string = config.sqs.transactionalLog;
 const STRATEGY_QUEUE_URL: string = config.sqs.strategyQueueUrl;
 
 /* CONSTANTS */
-const DEFAULT_LEVEL: string = 'debug'; // TODO: crear un type para esto, con valores por defecto
 const ENCODING: BufferEncoding = 'base64';
+let OPERATOR_INSTANCE_ID: string = config.sqs.senderName;
+let APP_IP: string = 'localhost';
 
 class AwsManager {
+  constructor() {
+    this.getInstanceIdFromMS();
+    this.getPublicIPFromMS();
+  }
+
   public kmsDecrypt(encryptedData: string) {
     return new Promise<string>((resolve: any, reject: any) => {
       const params = {
@@ -67,36 +75,6 @@ class AwsManager {
         }
         const result: any = data.CiphertextBlob;
         resolve(Buffer.from(result).toString(ENCODING));
-      });
-    });
-  }
-
-  public publishLogToSNS(operation: string, message: any, level: string = DEFAULT_LEVEL) {
-    return new Promise<any>((resolve, reject) => {
-      const publishParams: SNS.PublishInput = {
-        TopicArn: TRANSACTIONAL_LOG,
-        Message: JSON.stringify(message),
-        MessageAttributes: {
-          operation: {
-            DataType: 'String',
-            StringValue: operation
-          },
-          level: {
-            DataType: 'String',
-            StringValue: level
-          },
-          timestamp: {
-            DataType: 'String',
-            StringValue: new Date().toISOString()
-          }
-        }
-      };
-
-      sns.publish(publishParams, (err, data) => {
-        if (err) {
-          return reject(err);
-        }
-        resolve(data);
       });
     });
   }
@@ -145,6 +123,30 @@ class AwsManager {
         resolve(data);
       });
     });
+  }
+
+  private getInstanceIdFromMS() {
+    ms.request('/latest/meta-data/instance-id', (err, data) => {
+      if (data) {
+        OPERATOR_INSTANCE_ID = data;
+      }
+    });
+  }
+
+  public getInstanceId() {
+    return OPERATOR_INSTANCE_ID;
+  }
+
+  private getPublicIPFromMS() {
+    ms.request('/latest/meta-data/public-ipv4', (err, data) => {
+      if (data) {
+        APP_IP = data;
+      }
+    });
+  }
+
+  public getPublicIP() {
+    return APP_IP;
   }
 }
 

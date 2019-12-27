@@ -1,11 +1,11 @@
-import { pair } from './types';
+import { pair, logLevel } from './types';
 
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
       // APP
       NODE_ENV: 'production' | 'development' | 'test';
-      LOG_LEVEL: string;
+      LOG_LEVEL: logLevel;
       API_KEY: string;
 
       // Server
@@ -47,9 +47,10 @@ declare global {
       RECEIVER_NAME: string;
       STRATEGY_QUEUE_URL: string;
       TRADEOPS_QUEUE_URL: string;
-      TRANSACTIONAL_LOGS_QUEUE_ARN: string;
       MSJ_GROUP_ID: string;
       CONSUMER_BATCH_SIZE: string;
+      LOGS_TOPIC_ARN: string;
+      SNS_DEBUG_LOG_LEVEL: string;
     }
   }
 }

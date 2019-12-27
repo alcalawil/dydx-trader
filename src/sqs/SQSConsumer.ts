@@ -1,8 +1,11 @@
 import { SQS } from 'aws-sdk';
 import { Consumer } from 'sqs-consumer';
 import { logger } from '@shared';
-import { ISQSConsumer, ISQSRoute } from '@entities';
+import { ISQSConsumer, ISQSRoute, ISNSLogger, logLevel } from '@entities';
 import config from '@config';
+import { SQS_MSJ_RECEIVED } from '../constants/logTypes';
+
+const DEBUG_LOG_LEVEL: logLevel = 'debug';
 
 class SQSConsumer implements ISQSConsumer {
   public isRunning = false;
@@ -10,11 +13,13 @@ class SQSConsumer implements ISQSConsumer {
   private sqsRoutes: ISQSRoute[];
   private _sqs: SQS;
   private _queueUrl: string;
+  private _snsLogger: ISNSLogger;
 
-  constructor(sqs: SQS, queueUrl: string, sqsRoutes: ISQSRoute[]) {
+  constructor(sqs: SQS, queueUrl: string, sqsRoutes: ISQSRoute[], snsLogger: ISNSLogger) {
     this.sqsRoutes = sqsRoutes;
     this._sqs = sqs;
     this._queueUrl = queueUrl;
+    this._snsLogger = snsLogger;
     this.app = Consumer.create({
       queueUrl,
       messageAttributeNames: ['All'],
@@ -53,8 +58,7 @@ class SQSConsumer implements ISQSConsumer {
   }
 
   private messageHandler = async (message: SQS.Message) => {
-    logger.debug('SQS RECEIVED');
-    console.log(message.Body);
+    logger.debug('Message received', message);
 
     if (!message.MessageAttributes || !message.MessageAttributes.topic) {
       logger.error('INVALID OR EMPTY TOPIC', JSON.stringify(message));
@@ -63,19 +67,39 @@ class SQSConsumer implements ISQSConsumer {
 
     const { topic } = message.MessageAttributes; // topic should map 1:1 with http endpoints
     const body = JSON.parse(message.Body || ''); // body or querystring params
-    const topicString = topic.StringValue || '';
+    const topicString = topic ? topic.StringValue || 'undefined' : 'undefined';
     const sqsRoute = this.sqsRoutes.find((route) => route.topic === topicString);
 
     if (!sqsRoute) {
       logger.error(`TOPIC '${topicString}' NOT FOUND`, JSON.stringify(message));
       throw new Error(`TOPIC '${topicString}' NOT FOUND`);
     }
-
+    this._snsLogger.LogMessage(
+      `Mensaje recibido con topico: ${topicString}`,
+      {
+        details: body,
+        strategyInstanceId: body.strategyInstanceId || 'undefined',
+        strategyInstanceIp: body.strategyInstanceIp || 'undefined',
+        strategySoftwareVersion: body.strategySoftwareVersion || 'undefined',
+        subStrategy: body.subStrategy || 'undefined',
+        topic: topicString,
+        cycleId: body.cycleId || 'undefined',
+        walletId: body.walletId || 'undefined',
+        virtualWalletId: body.virtualWallet || 'undefined'
+      },
+      SQS_MSJ_RECEIVED,
+      DEBUG_LOG_LEVEL,
+      '2'
+    );
     await sqsRoute.handler(body);
     // TODO: Do something with result
     return;
   };
 }
 
-export default (sqs: SQS, queueUrl: string, sqsRoutes: ISQSRoute[]): ISQSConsumer =>
-  new SQSConsumer(sqs, queueUrl, sqsRoutes);
+export default (
+  sqs: SQS,
+  queueUrl: string,
+  sqsRoutes: ISQSRoute[],
+  snsLogger: ISNSLogger
+): ISQSConsumer => new SQSConsumer(sqs, queueUrl, sqsRoutes, snsLogger);

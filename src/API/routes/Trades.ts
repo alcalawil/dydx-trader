@@ -1,7 +1,7 @@
 import { Request, Response, Router, NextFunction } from 'express';
 import { OK, INTERNAL_SERVER_ERROR } from 'http-status-codes';
 import { logger } from '@shared';
-import { awsManager, gettersService } from '@services';
+import { gettersService } from '@services';
 import { IResponseTrade, HTTPError } from '@entities';
 import config from '@config';
 
@@ -27,7 +27,6 @@ router.get('/mytrades', async (req: Request, res: Response, next: NextFunction) 
     return res.status(OK).json({ trades });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -74,7 +73,6 @@ router.get('/mytradesCsv', async (req: Request, res: Response, next: NextFunctio
     res.end();
   } catch (err) {
     logger.error(err);
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err, INTERNAL_SERVER_ERROR));
   }
 });

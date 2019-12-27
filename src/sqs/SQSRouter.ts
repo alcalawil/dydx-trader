@@ -1,4 +1,4 @@
-import { ISQSRoute } from '@entities';
+import { ISQSRoute, IStrategyInfo } from '@entities';
 
 class SQSRouter {
   private _routes: ISQSRoute[];

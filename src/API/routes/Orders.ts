@@ -1,6 +1,5 @@
 import { Request, Response, Router, NextFunction } from 'express';
 import { CREATED, OK, INTERNAL_SERVER_ERROR } from 'http-status-codes';
-import { awsManager } from '@services';
 import { IResponseFill, MarketSide, ICexOrder, HTTPError } from '@entities';
 import { logger } from '@shared';
 import errorsConstants from '../../constants/Errors';
@@ -26,7 +25,6 @@ router.post('/buy', async (req: Request, res: Response, next: NextFunction) => {
     }
 
     const order = await operationsService.buy(price, amount, pair);
-    awsManager.publishLogToSNS('buy', order);
 
     return res.status(CREATED).json({
       message: 'Order successfully created',
@@ -34,7 +32,6 @@ router.post('/buy', async (req: Request, res: Response, next: NextFunction) => {
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -58,14 +55,12 @@ router.post('/sell', async (req: Request, res: Response, next: NextFunction) => 
 
     const order = await operationsService.sell(price, amount, pair);
 
-    awsManager.publishLogToSNS('sell', order);
     return res.status(CREATED).json({
       message: 'Order successfully created',
       order
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -100,7 +95,6 @@ router.post('/place/:side', async (req: Request, res: Response, next: NextFuncti
     });
   } catch (err) {
     logger.error(err);
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -123,7 +117,6 @@ router.post('/cancel', async (req: Request, res: Response, next: NextFunction) =
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -142,7 +135,6 @@ router.post('/cancel-all', async (req: Request, res: Response, next: NextFunctio
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -164,7 +156,6 @@ router.get('/myorders', async (req: Request, res: Response, next: NextFunction) 
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -183,7 +174,6 @@ router.get('/order', async (req: Request, res: Response, next: NextFunction) => 
     res.status(OK).json(order);
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -218,7 +208,6 @@ router.get('/orderbook', async (req: Request, res: Response, next: NextFunction)
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -235,7 +224,6 @@ router.get('/bid', async (req: Request, res: Response, next: NextFunction) => {
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -252,7 +240,6 @@ router.get('/ask', async (req: Request, res: Response, next: NextFunction) => {
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -273,7 +260,6 @@ router.get('/best-prices', async (req: Request, res: Response, next: NextFunctio
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -342,7 +328,6 @@ router.get('/myfills', async (req: Request, res: Response, next: NextFunction) =
     });
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });
@@ -399,7 +384,6 @@ router.get('/myfillsCsv', async (req: Request, res: Response, next: NextFunction
     res.end();
   } catch (err) {
     logger.error(err.message, JSON.stringify(err));
-    awsManager.publishLogToSNS('ERROR', err);
     next(new HTTPError(err.message, INTERNAL_SERVER_ERROR));
   }
 });

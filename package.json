@@ -10,7 +10,7 @@
     "format:check": "prettier --check \"./src/**/*.+(ts|js|json)\"",
     "format:apply": "prettier --write \"./src/**/*.+(ts|js|json)\"",
     "lint": "tslint --project \"tsconfig.json\"",
-    "start-prod": "npm run env:dev | node -r ./env -r module-alias/register ./dist/start.js",
+    "start-prod": "npm run env:prod | node -r ./env -r module-alias/register ./dist/start.js",
     "start": "nodemon --config \"./util/nodemon.json\"",
     "test": "nodemon --config \"./util/nodemon.test.json\"",
     "head-orders": "node -r dotenv/config ./scripts/headOrders/headOrders.js dotenv_config_path=./scripts/scripts.env",
