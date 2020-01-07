@@ -1,14 +1,18 @@
-import { IState, IResponseOrder, IFundsBalances, IOperation } from '@entities';
+import { IState, IResponseOrder, IFundsBalances, ICacheDB, IOperation } from '@entities';
 import { EventEmitter } from 'events';
 import { ORDER_STATUS_CANCELED, ORDER_STATUS_FILLED } from '../constants/OrderStatuses';
 
-export class StateManager {
+const CACHE_ORDERS_KEY = 'DYDX_ORDERS';
+const CACHE_BALANCE_KEY = 'DYDX_BALANCE';
+
+export default class StateManager {
   private _state: IState;
   private _stateChanges: EventEmitter;
+  private _cacheDB: ICacheDB;
+  public ready: Promise<any>;
 
-  constructor() {
-    // TODO: Receive db driver though constructor
-    // TODO: Load state from Redis
+  constructor(cacheDB: ICacheDB) {
+    this._cacheDB = cacheDB;
     this._state = {
       orders: [],
       balances: {
@@ -18,14 +22,29 @@ export class StateManager {
       },
       operations: []
     };
+
+    this.ready = new Promise((resolve, reject) => {
+      this.initializeState()
+        .then(resolve)
+        .catch(reject);
+    });
+
     this._stateChanges = new EventEmitter();
   }
+
+  private async initializeState() {
+    const ordersString = await this._cacheDB.getValueFromCache(CACHE_ORDERS_KEY);
+    const balanceString = await this._cacheDB.getValueFromCache(CACHE_BALANCE_KEY);
+
+    this._state.orders = ordersString ? JSON.parse(ordersString) : [];
+    this._state.balances = balanceString ? JSON.parse(balanceString) : null;
+  };
 
   public get state() {
     return this._state;
   }
 
-  public setOrderStatus(orderId: string, newStatus: string) {
+  public async setOrderStatus(orderId: string, newStatus: string) {
     switch (newStatus) {
       case ORDER_STATUS_CANCELED:
         this.removeOrder(orderId);
@@ -45,16 +64,20 @@ export class StateManager {
     }
 
     this._stateChanges.emit('ORDER_STATUS_CHANGE', { orderId, orderStatus: newStatus });
+    this._cacheDB.setValueInCache(CACHE_ORDERS_KEY, JSON.stringify(this.state.orders));
   }
 
   public setBalances(balances: IFundsBalances) {
     this._state.balances = balances;
+
     this._stateChanges.emit('BALANCE_CHANGE', balances);
+    this._cacheDB.setValueInCache(CACHE_BALANCE_KEY, JSON.stringify(balances));
   }
 
-  public setNewOrder(order: IResponseOrder) {
+  public async setNewOrder(order: IResponseOrder) {
     this._state.orders.push(order);
     this._stateChanges.emit('NEW_ORDER', order);
+    this._cacheDB.setValueInCache(CACHE_ORDERS_KEY, JSON.stringify(this.state.orders));
   }
 
   public setNewOperation(operation: IOperation) {
@@ -69,5 +92,6 @@ export class StateManager {
   private removeOrder(orderId: string) {
     const orderIndex = this._state.orders.findIndex((order) => order.id === orderId);
     this._state.orders.splice(orderIndex, 1);
+    this._cacheDB.setValueInCache(CACHE_ORDERS_KEY, JSON.stringify(this.state.orders));
   }
 }

@@ -241,3 +241,15 @@ export interface IOperation extends IStrategyInfo {
   originalRequest: string;
   originalResponse: string;
 }
+
+declare module 'redis' {
+  export interface RedisClient extends NodeJS.EventEmitter {
+    setAsync(key: string, value: string): Promise<void>;
+    getAsync(key: string): Promise<string>;
+  }
+}
+
+export interface ICacheDB {
+  getValueFromCache: (key: string) => Promise<string>;
+  setValueInCache: (key: string, value: string) => Promise<void>;
+}
