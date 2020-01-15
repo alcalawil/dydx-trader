@@ -1,6 +1,6 @@
 import { ApiOrderStatus } from '@dydxprotocol/solo';
 import { gettersService } from '@services';
-import StateManager from '../StateManager';
+import { StateManager } from '@services';
 import { IState } from '@entities';
 import { logger } from '@shared';
 import _ from 'lodash';
@@ -17,7 +17,7 @@ export default class OrdersMonitor {
 
     const { state } = this._stateManager;
     const openOrders = this.getOpenOrdersFromState(state);
-    if(!openOrders.length) {
+    if (!openOrders.length) {
       logger.debug('There are no open orders');
       return;
     }

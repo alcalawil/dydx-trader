@@ -53,7 +53,8 @@ class SQSConsumer implements ISQSConsumer {
   }
 
   private messageHandler = async (message: SQS.Message) => {
-    logger.debug('Message received', message)
+    logger.debug('SQS RECEIVED');
+    console.log(message.Body);
 
     if (!message.MessageAttributes || !message.MessageAttributes.topic) {
       logger.error('INVALID OR EMPTY TOPIC', JSON.stringify(message));

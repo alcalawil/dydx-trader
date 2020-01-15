@@ -1,5 +1,5 @@
 import redis, { RedisClient } from 'redis';
-import { IResponseOrder, IFundsBalances, IBalances } from '../entities';
+import { IResponseOrder, IFundsBalances, IBalance } from '../entities';
 import { EventEmitter } from 'events';
 import { logger } from '@shared';
 
@@ -27,7 +27,7 @@ class RedisManager {
     return this.client.rpush('orders', JSON.stringify(order));
   };
 
-  public setBalance = (balance: IBalances) => {
+  public setBalance = (balance: IBalance) => {
     return this.client.set('balance', JSON.stringify(balance));
   };
 
@@ -68,13 +68,13 @@ class RedisManager {
       });
     });
 
-  public getBalance = (): Promise<IBalances> =>
+  public getBalance = (): Promise<IBalance> =>
     new Promise((resolve, reject) => {
       this.client.get('balance', (err, value) => {
         if (err) {
           return reject(err);
         }
-        const balance: IBalances = JSON.parse(value);
+        const balance: IBalance = JSON.parse(value);
         resolve(balance);
       });
     });
@@ -87,7 +87,7 @@ class RedisManager {
         }
         values.map((item: string) => {
           const balance: IFundsBalances = JSON.parse(item);
-          if (balance.account.includes(account)) {
+          if (balance.virtualWalletId.includes(account)) {
             resolve(balance);
           }
         });

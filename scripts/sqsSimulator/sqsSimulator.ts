@@ -8,7 +8,7 @@ const REGION_SQS: string = config.aws.region.sqs;
 const ACCESS_KEY_ID: string = config.aws.accessKeyId;
 const SECRET_ACCESS_KEY: string = config.aws.secretAccessKey;
 const SENDER_NAME: string = config.sqs.senderName;
-const CONSUMER_QUEUE_URL: string = config.sqs.consumerQueueUrl;
+const STRATEGY_QUEUE_URL: string = config.sqs.strategyQueueUrl;
 
 const sqs = new SQS({
   region: REGION_SQS,
@@ -25,7 +25,7 @@ const ORDERS = [
   { price: 150, amount: 0.1, side: 1, pair: 'WETH-DAI' }
 ];
 
-const sqsPublisher = new SQSPublisher(sqs, CONSUMER_QUEUE_URL, {
+const sqsPublisher = new SQSPublisher(sqs, STRATEGY_QUEUE_URL, {
   sender: SENDER_NAME
 });
 

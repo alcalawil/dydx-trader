@@ -6,3 +6,4 @@ export * from './fundsManager';
 export * from './operationsService';
 export * from './gettersService';
 export * from './observer';
+export * from './StateManager';

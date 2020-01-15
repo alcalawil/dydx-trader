@@ -38,14 +38,17 @@ export interface IConfig {
     host: string;
   };
   observer: {
-    interval: number;
+    interval: {
+      fundMonitor: number;
+      orderMonitor: number;
+    };
     maxQtyEth: number;
   };
   sqs: {
     senderName: string; // TODO: si esto cambia a un id, entonces mejor "senderId"
     receiverName: string;
     strategyQueueUrl: string;
-    consumerQueueUrl: string;
+    tradeOpsQueueUrl: string;
     transactionalLog: string;
     msjGroupId: string;
     consumerBatchSize: number;
