@@ -9,7 +9,7 @@ import {
 import { convertToDexOrder, convertToResponseOrder } from '../helpers/converters';
 import { gettersService } from './gettersService';
 import config from '@config';
-import StateManager from './StateManager';
+import { StateManager } from '@services';
 import { ORDER_STATUS_CANCELED } from '../constants/OrderStatuses';
 
 // Config

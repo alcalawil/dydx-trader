@@ -22,9 +22,9 @@ import {
 import SQSPublisher from '../SQSPublisher';
 import SQSRouter from '../SQSRouter';
 import { IResponseOrder, ICancelResponse, ICancelOrder } from '@entities';
+
 const router = new SQSRouter();
 let _sqsPublisher: SQSPublisher;
-
 
 /* PLACE ORDER ROUTE */
 router.createRoute(ORDERS_PLACE, async (body: any) => {

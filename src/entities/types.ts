@@ -41,10 +41,16 @@ export interface IResponseOrder {
   amountRemaining?: number;
 }
 
-export interface IBalances {
-  eth: string;
-  usdc: string;
-  dai: string;
+export interface IFundsBalances {
+  virtualWalletId: string;
+  balances: IBalance[];
+  oldestBalancesTimestamp: number; // TODO: Buscar otro nombre
+}
+
+export interface IBalance {
+  token: financialAsset;
+  amount: string;
+  usdAmount: number;
 }
 
 export interface IOrderbook {
@@ -101,13 +107,6 @@ export interface ISQSConsumer {
 export interface ISQSRoute {
   topic: string;
   handler: (body: any) => Promise<any>;
-}
-
-export interface IFundsBalances {
-  account: string;
-  eth: number;
-  usdc: number;
-  dai: number;
 }
 
 export interface IOrderChange {
@@ -168,16 +167,29 @@ export interface IOrdersMonitor {
   checkOrdersStatus: () => Promise<void>;
 }
 
-export type pair = 'WETH-DAI' | 'WETH-USDC' | ''; // TODO: continuar...
-
 export interface ICancelOrder {
   orderId: string;
 }
+
 // FIXME: Por qué dos interfaces iguales con dos nombres distintos?
 export interface ICancelResponse {
   orderId: string;
 }
+
 export interface IState {
   orders: IResponseOrder[];
-  balances: IBalances | null;
+  balances: IFundsBalances;
 }
+
+export class ITime {
+  private static current: () => { unix: number; utc: string };
+  private static experation: () => { unix: number; utc: string };
+}
+
+/****************************************************************************************/
+
+export type pair = 'WETH-DAI' | 'WETH-USDC' | ''; // TODO: continuar...
+
+export type financialAsset = 'eth' | 'usdc' | 'dai';
+
+export type observer = NodeJS.Timeout[];

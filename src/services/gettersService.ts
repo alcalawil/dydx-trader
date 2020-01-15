@@ -1,9 +1,4 @@
-import {
-  IResponseOrder,
-  IOrderbook,
-  IBalances,
-  IToken
-} from '@entities';
+import { IResponseOrder, IOrderbook, IFundsBalances, IToken, IBalance } from '@entities';
 import {
   Solo,
   BigNumber,
@@ -19,11 +14,13 @@ import {
   parseApiTrade
 } from '../helpers/converters';
 import { DYDX_TOKENS } from '../constants/Tokens';
+import { Time } from '@shared';
 import config from '@config';
 
 /* LOAD CONFIG */
 let DEFAULT_ADDRESS: string = config.account.defaultAddress;
 const DEFAULT_PAIR: string = config.dydx.defaultPair;
+
 /* CONSTANTS */
 const DEFAULT_LIMIT: number = 10;
 
@@ -146,26 +143,38 @@ class GettersService {
     return buyPrice;
   }
 
-  public async getBalances(accountOwner = DEFAULT_ADDRESS): Promise<IBalances> {
+  public async getBalances(accountOwner = DEFAULT_ADDRESS): Promise<IFundsBalances> {
     if (DEFAULT_ADDRESS) {
       const account = await _solo.api.getAccountBalances({
         accountOwner,
         accountNumber: new BigNumber(0)
       });
-
       const balances = account.balances;
 
-      const eth = _solo.web3.utils.fromWei(new BigNumber(balances['0'].wei).toFixed(0));
+      // TODO: obtener "usdAmount"
+      const eth: IBalance = {
+        token: 'eth',
+        amount: _solo.web3.utils.fromWei(new BigNumber(balances['0'].wei).toFixed(0)),
+        usdAmount: 0
+      };
 
       const usdcInWei = new BigNumber(balances['2'].wei).toNumber();
-      const usdc = (usdcInWei / Number(`1${TOKEN_WETH.weiUnit}`)).toString();
+      const usdc: IBalance = {
+        token: 'usdc',
+        amount: (usdcInWei / Number(`1${TOKEN_WETH.weiUnit}`)).toString(),
+        usdAmount: 0
+      };
 
-      const dai = _solo.web3.utils.fromWei(new BigNumber(balances['3'].wei).toFixed(0));
+      const dai: IBalance = {
+        token: 'dai',
+        amount: _solo.web3.utils.fromWei(new BigNumber(balances['3'].wei).toFixed(0)),
+        usdAmount: 0
+      };
 
       return {
-        eth,
-        usdc,
-        dai
+        virtualWalletId: account.uuid,
+        balances: [eth, usdc, dai],
+        oldestBalancesTimestamp: Time.current().unix
       };
     }
     throw new Error('DEFAULT ADDRESS IS EMPTY');

@@ -1,8 +1,8 @@
-import { IState, IResponseOrder, IBalances } from '@entities';
+import { IState, IResponseOrder, IFundsBalances } from '@entities';
 import { EventEmitter } from 'events';
 import { ORDER_STATUS_CANCELED, ORDER_STATUS_FILLED } from '../constants/OrderStatuses';
 
-export default class StateManager {
+export class StateManager {
   private _state: IState;
   private _stateChanges: EventEmitter;
 
@@ -11,7 +11,11 @@ export default class StateManager {
     // TODO: Load state from Redis
     this._state = {
       orders: [],
-      balances: null
+      balances: {
+        virtualWalletId: '',
+        balances: [],
+        oldestBalancesTimestamp: 0
+      }
     };
     this._stateChanges = new EventEmitter();
   }
@@ -42,7 +46,7 @@ export default class StateManager {
     this._stateChanges.emit('ORDER_STATUS_CHANGE', { orderId, orderStatus: newStatus });
   }
 
-  public setBalances(balances: IBalances) {
+  public setBalances(balances: IFundsBalances) {
     this._state.balances = balances;
     this._stateChanges.emit('BALANCE_CHANGE', balances);
   }
@@ -60,6 +64,4 @@ export default class StateManager {
     const orderIndex = this._state.orders.findIndex((order) => order.id === orderId);
     this._state.orders.splice(orderIndex, 1);
   }
-
-  // TODO: Add removeOrder() {}
 }

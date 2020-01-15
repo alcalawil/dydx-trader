@@ -28,7 +28,7 @@ const sqs = new SQS({
 
 const SENDER_NAME: string = config.sqs.senderName;
 const TRANSACTIONAL_LOG: string = config.sqs.transactionalLog;
-const CONSUMER_QUEUE_URL: string = config.sqs.consumerQueueUrl;
+const STRATEGY_QUEUE_URL: string = config.sqs.strategyQueueUrl;
 
 /* CONSTANTS */
 const DEFAULT_LEVEL: string = 'debug'; // TODO: crear un type para esto, con valores por defecto
@@ -126,7 +126,7 @@ class AwsManager {
     return new Promise<SQS.SendMessageResult>(async (resolve: any, reject: any) => {
       const publishParams: SQS.SendMessageRequest = {
         MessageBody: JSON.stringify(msg),
-        QueueUrl: CONSUMER_QUEUE_URL,
+        QueueUrl: STRATEGY_QUEUE_URL,
         MessageAttributes: {
           sender: {
             DataType: 'String',

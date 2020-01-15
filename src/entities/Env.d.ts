@@ -38,17 +38,18 @@ declare global {
       REDIS_PORT: string;
 
       // Observer
-      OBSERVER_INTERVAL: string;
+      FUND_MONITOR_INTERVAL: string;
+      ORDER_MONITOR_INTERVAL: string;
       MAX_QTY_ETH: string;
 
       // SQS
       SENDER_NAME: string;
       RECEIVER_NAME: string;
       STRATEGY_QUEUE_URL: string;
-      CONSUMER_QUEUE_URL: string;
+      TRADEOPS_QUEUE_URL: string;
       TRANSACTIONAL_LOGS_QUEUE_ARN: string;
       MSJ_GROUP_ID: string;
-      CONSUMER_BATCH_SIZE: string
+      CONSUMER_BATCH_SIZE: string;
     }
   }
 }

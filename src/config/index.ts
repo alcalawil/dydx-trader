@@ -1,5 +1,4 @@
 import { IConfig, pair } from '@entities';
-// import { isNumber } from 'util';
 
 const ENV: NodeJS.ProcessEnv = process.env;
 const DEFAULT_REGION: string = 'us-east-1';
@@ -40,20 +39,19 @@ const REDIS_HOST: string = ENV.HOST || '';
 const REDIS_PORT: number = Number(ENV.REDIS_PORT) || 6379;
 
 /* OBSERVER */
-const OBSERVER_INTERVAL: number = Number(ENV.OBSERVER_INTERVAL) || 1;
+const FUND_MONITOR_INTERVAL: number = Number(ENV.FUND_MONITOR_INTERVAL) || 120;
+const ORDER_MONITOR_INTERVAL: number = Number(ENV.ORDER_MONITOR_INTERVAL) || 15;
 const MAX_QTY_ETH: number = Number(ENV.MAX_QTY_ETH) || 0.3;
 
 /* SQS */
 const SENDER_NAME: string = ENV.SENDER_NAME || 'bot_operator';
 const RECEIVER_NAME: string = ENV.RECEIVER_NAME || 'strategy';
-const STRATEGY_QUEUE_URL: string =
-  ENV.STRATEGY_QUEUE_URL || 'https://sqs.us-east-1.amazonaws.com/949045345033/test1.fifo';
-const CONSUMER_QUEUE_URL: string =
-  ENV.CONSUMER_QUEUE_URL || 'https://sqs.us-east-1.amazonaws.com/949045345033/test.fifo';
-const TRANSACTIONAL_LOGS_QUEUE_ARN: string =
-  ENV.TRANSACTIONAL_LOGS_QUEUE_ARN || 'arn:aws:sns:us-east-1:949045345033:test';
+const STRATEGY_QUEUE_URL: string = ENV.STRATEGY_QUEUE_URL || '';
+const TRADEOPS_QUEUE_URL: string = ENV.TRADEOPS_QUEUE_URL || '';
+const TRANSACTIONAL_LOGS_QUEUE_ARN: string = ENV.TRANSACTIONAL_LOGS_QUEUE_ARN || '';
 const MSJ_GROUP_ID: string = ENV.MSJ_GROUP_ID || 'DEFAULT_GROUP_ID';
 const CONSUMER_BATCH_SIZE: number = Number(ENV.CONSUMER_BATCH_SIZE) || 10;
+
 /****************************************************************************************/
 
 const config: IConfig = {
@@ -94,14 +92,17 @@ const config: IConfig = {
     port: REDIS_PORT
   },
   observer: {
-    interval: OBSERVER_INTERVAL,
+    interval: {
+      fundMonitor: FUND_MONITOR_INTERVAL,
+      orderMonitor: ORDER_MONITOR_INTERVAL
+    },
     maxQtyEth: MAX_QTY_ETH
   },
   sqs: {
     senderName: SENDER_NAME,
     receiverName: RECEIVER_NAME,
     strategyQueueUrl: STRATEGY_QUEUE_URL,
-    consumerQueueUrl: CONSUMER_QUEUE_URL,
+    tradeOpsQueueUrl: TRADEOPS_QUEUE_URL,
     transactionalLog: TRANSACTIONAL_LOGS_QUEUE_ARN,
     msjGroupId: MSJ_GROUP_ID,
     consumerBatchSize: CONSUMER_BATCH_SIZE

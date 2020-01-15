@@ -11,11 +11,11 @@ import {
   operationsService,
   awsManager,
   gettersService,
-  Observer
+  Observer,
+  StateManager
 } from '@services';
-import StateManager from './services/StateManager';
-import { IOrderStatus, IBalances } from '@entities';
-import { ORDERS_STATUS_CHANGES, BALANCES_CHANGES } from '@topics';
+import { IOrderStatus } from '@entities';
+import { ORDERS_STATUS_CHANGES } from '@topics';
 
 /* LOAD CONFIG */
 const SENDER_NAME: string = config.sqs.senderName;
@@ -24,8 +24,7 @@ const PORT: number = config.server.port;
 // const REDIS_PORT:number = config.redis.port;
 const REGION_SQS: string = config.aws.region.sqs;
 const STRATEGY_QUEUE_URL: string = config.sqs.strategyQueueUrl;
-const CONSUMER_QUEUE_URL: string = config.sqs.consumerQueueUrl;
-const INTERVAL: number = config.observer.interval;
+const TRADEOPS_QUEUE_URL: string = config.sqs.tradeOpsQueueUrl;
 
 // --------------- 3. Inicializar AWS / SOLO / REDIS / etc -----------------------
 
@@ -37,36 +36,37 @@ const INTERVAL: number = config.observer.interval;
     - Inject db driver into stateManager
     - Add catch unhanded exception
 */
+
 (async () => {
-  // Load keys from Secret Manager
+  // Init keys from Secret Manager
   const address = await awsManager.decryptSecretName(config.secretManager.tagAddress);
   const privateKey = await awsManager.decryptSecretName(config.secretManager.tagKey);
-  // Initialize state
+
+  // Init State
   const stateManager = new StateManager();
 
-  // Load SOLO
+  // Init SOLO
   const solo = getSoloInstance();
   solo.loadAccount({
     address,
     privateKey
   });
-  // Update config
-  config.account.defaultAddress = address;
-  // Initialize Services
+
+  // Init Services
   operationsService.setDefaultAccount(address);
   gettersService.setDefaultAccount(address);
   operationsService.setDependencies(solo, stateManager);
   gettersService.setDependencies(solo);
 
-  /* Config SQS SERVER */
+  // Config SQS Server
   const sqs = new SQS({ region: REGION_SQS });
   const sqsPublisher = new SQSPublisher(sqs, STRATEGY_QUEUE_URL, {
     sender: SENDER_NAME
   });
-  const sqsRoutes = SQSRoutes(sqsPublisher);
-  const sqsConsumer = SQSConsumer(sqs, CONSUMER_QUEUE_URL, sqsRoutes);
+  const sqsRoutes = SQSRoutes(sqsPublisher, stateManager.state);
+  const sqsConsumer = SQSConsumer(sqs, TRADEOPS_QUEUE_URL, sqsRoutes);
 
-  // Start API server
+  // Start API Server
   app.listen(PORT, () => {
     logger.info('Express server started on port: ' + PORT);
   });
@@ -78,7 +78,7 @@ const INTERVAL: number = config.observer.interval;
   const observer = Observer(stateManager);
   observer.startInterval();
 
-  // Esto no sé si deba ir acá o capaz en un service
+  // TODO: Esto no sé si deba ir acá o capaz en un service
   stateManager.stateChanges.on(
     'ORDER_STATUS_CHANGE',
     ({ orderId, orderStatus }: IOrderStatus) => {
@@ -89,10 +89,4 @@ const INTERVAL: number = config.observer.interval;
       logger.debug('SQS ORDER_STATUS_CHANGE SEND');
     }
   );
-
-  // Uncomment if want to send balances changes
-  // stateManager.stateChanges.on('BALANCE_CHANGE', (balances: IBalances) => {
-  //   sqsPublisher.publishToSQS(BALANCES_CHANGES, JSON.stringify(balances));
-  //   logger.debug('SQS BALANCE_CHANGE SEND');
-  // });
 })();

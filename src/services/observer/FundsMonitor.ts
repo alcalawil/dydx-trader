@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import { logger } from '@shared';
-import StateManager from '../StateManager';
+import { StateManager } from '@services';
 import { gettersService } from '@services';
 
 export default class FundsMonitor {

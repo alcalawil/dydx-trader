@@ -1,10 +1,13 @@
 import FundsMonitor from './FundsMonitor';
 import OrdersMonitor from './OrdersMonitor';
-import StateManager from '../StateManager';
+import { StateManager } from '@services';
+import { observer } from '@entities';
 import config from '@config';
 
-let observerInterval: NodeJS.Timeout;
-const INTERVAL_IN_SECONDS = config.observer.interval;
+let observersInterval: observer;
+
+const FUND_MONITOR_INTERVAL = config.observer.interval.fundMonitor * 1000;
+const ORDER_MONITOR_INTERVAL = config.observer.interval.orderMonitor * 1000;
 
 class ObserverSerService {
   private fundsMonitor: FundsMonitor;
@@ -16,14 +19,21 @@ class ObserverSerService {
   }
 
   public startInterval() {
-    observerInterval = setInterval(() => {
-      this.ordersMonitor.checkForUpdates();
-      this.fundsMonitor.checkForUpdates();
-    }, INTERVAL_IN_SECONDS * 1000);
+    observersInterval = [
+      setInterval(() => {
+        this.fundsMonitor.checkForUpdates();
+      }, FUND_MONITOR_INTERVAL),
+
+      setInterval(() => {
+        this.ordersMonitor.checkForUpdates();
+      }, ORDER_MONITOR_INTERVAL)
+    ];
   }
 
   public stopInterval() {
-    clearInterval(observerInterval);
+    observersInterval.map((monitor: NodeJS.Timeout) => {
+      clearInterval(monitor);
+    });
   }
 }
 
