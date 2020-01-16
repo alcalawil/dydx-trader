@@ -33,9 +33,10 @@ WORKDIR /app
 ## We just need the build and package to execute the command
 COPY --from=builder /app/dist /app/dist
 COPY --from=builder /app/node_modules /app/node_modules
+COPY ./env /app/env
 
 COPY package*.json /app/
 
 USER node
 
-CMD [ "node", "-r", "module-alias/register", "./dist/start.js" ]
+CMD [ "npm", "run", "start-prod" ]

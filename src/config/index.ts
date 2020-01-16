@@ -1,12 +1,16 @@
-import { IConfig, pair } from '@entities';
+import { IConfig, pair, snsDebugLogLevel, logLevel } from '@entities';
+// import { isNumber } from 'util';
 
 const ENV: NodeJS.ProcessEnv = process.env;
 const DEFAULT_REGION: string = 'us-east-1';
+const DEFAULT_LOG_LEVEL: logLevel = 'debug';
+const DEFAULT_SNS_DEBUG_LEVEL: snsDebugLogLevel = '5';
 
 /* APP */
 const NODE_ENV: string = ENV.NODE_ENV || 'development';
-const LOG_LEVEL: string = ENV.LOG_LEVEL || 'debug';
+const LOG_LEVEL: logLevel = (ENV.LOG_LEVEL as logLevel) || DEFAULT_LOG_LEVEL;
 const API_KEY: string = ENV.API_KEY || '12345';
+const VERSION: string = process.env.npm_package_version || '';
 
 /* SERVER */
 const PORT: number = Number(ENV.PORT) || 3000;
@@ -51,6 +55,10 @@ const TRADEOPS_QUEUE_URL: string = ENV.TRADEOPS_QUEUE_URL || '';
 const TRANSACTIONAL_LOGS_QUEUE_ARN: string = ENV.TRANSACTIONAL_LOGS_QUEUE_ARN || '';
 const MSJ_GROUP_ID: string = ENV.MSJ_GROUP_ID || 'DEFAULT_GROUP_ID';
 const CONSUMER_BATCH_SIZE: number = Number(ENV.CONSUMER_BATCH_SIZE) || 10;
+const LOGS_TOPIC_ARN: string =
+  ENV.LOGS_TOPIC_ARN || 'arn:aws:sns:us-east-1:949045345033:test';
+const SNS_DEBUG_LOG_LEVEL: snsDebugLogLevel =
+  (ENV.SNS_DEBUG_LOG_LEVEL as snsDebugLogLevel) || DEFAULT_SNS_DEBUG_LEVEL;
 
 /****************************************************************************************/
 
@@ -58,7 +66,8 @@ const config: IConfig = {
   app: {
     nodeEnv: NODE_ENV,
     logLevel: LOG_LEVEL,
-    apiKey: API_KEY
+    apiKey: API_KEY,
+    version: VERSION
   },
   server: {
     port: PORT,
@@ -103,9 +112,10 @@ const config: IConfig = {
     receiverName: RECEIVER_NAME,
     strategyQueueUrl: STRATEGY_QUEUE_URL,
     tradeOpsQueueUrl: TRADEOPS_QUEUE_URL,
-    transactionalLog: TRANSACTIONAL_LOGS_QUEUE_ARN,
+    logTopicArn: LOGS_TOPIC_ARN,
     msjGroupId: MSJ_GROUP_ID,
-    consumerBatchSize: CONSUMER_BATCH_SIZE
+    consumerBatchSize: CONSUMER_BATCH_SIZE,
+    logLevel: SNS_DEBUG_LOG_LEVEL
   }
 };
 

@@ -3,6 +3,7 @@ import OrdersMonitor from './OrdersMonitor';
 import { StateManager } from '@services';
 import { observer } from '@entities';
 import config from '@config';
+import SNSLogger from '../../sns/SNSLogger';
 
 let observersInterval: observer;
 
@@ -13,9 +14,9 @@ class ObserverSerService {
   private fundsMonitor: FundsMonitor;
   private ordersMonitor: OrdersMonitor;
 
-  constructor(stateManager: StateManager) {
-    this.fundsMonitor = new FundsMonitor(stateManager);
-    this.ordersMonitor = new OrdersMonitor(stateManager);
+  constructor(stateManager: StateManager, snsLogger: SNSLogger) {
+    this.fundsMonitor = new FundsMonitor(stateManager, snsLogger);
+    this.ordersMonitor = new OrdersMonitor(stateManager, snsLogger);
   }
 
   public startInterval() {
@@ -37,5 +38,5 @@ class ObserverSerService {
   }
 }
 
-export const Observer = (stateManager: StateManager) =>
-  new ObserverSerService(stateManager);
+export const Observer = (stateManager: StateManager, snsLogger: SNSLogger) =>
+  new ObserverSerService(stateManager, snsLogger);
