@@ -18,6 +18,7 @@ import {
 import { IOrderStatus, logLevel } from '@entities';
 import { ORDERS_STATUS_CHANGES } from '@topics';
 import { GET_ADDRESS, GET_PRIVATE_KEY } from './constants/logTypes';
+import RedisDriver from './db/cache/redisDriver';
 
 /* LOAD CONFIG */
 const SENDER_NAME: string = config.sqs.senderName;
@@ -61,23 +62,11 @@ const SECURITY_LOG_LEVEL: logLevel = 'security';
     '2'
   );
   const privateKey = await awsManager.decryptSecretName(config.secretManager.tagKey);
-  snsLogger.LogMessage(
-    `Consultando secret name a secret manager.`,
-    {
-      details: {
-        secretName: config.secretManager.tagKey
-      }
-    },
-    GET_PRIVATE_KEY,
-    SECURITY_LOG_LEVEL,
-    '2'
-  );
-
-  // const address = config.account.defaultAddress;
-  // const privateKey = config.account.privateKey;
 
   // Initialize state
-  const stateManager = new StateManager();
+  const cacheDB = RedisDriver(config.redis);
+  const stateManager = new StateManager(cacheDB);
+  await stateManager.ready;
 
   // Init SOLO
   const solo = getSoloInstance();
