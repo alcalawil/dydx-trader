@@ -1,4 +1,4 @@
-import { pair, logLevel } from './types';
+import { pair, logLevel, snsDebugLogLevel } from './types';
 
 declare global {
   namespace NodeJS {
@@ -50,7 +50,8 @@ declare global {
       MSJ_GROUP_ID: string;
       CONSUMER_BATCH_SIZE: string;
       LOGS_TOPIC_ARN: string;
-      SNS_DEBUG_LOG_LEVEL: string;
+      // SNS
+      SNS_DEBUG_LOG_LEVEL: snsDebugLogLevel;
     }
   }
 }
