@@ -211,15 +211,14 @@ export type logLevel =
 
 export type snsDebugLogLevel = '1' | '2' | '3' | '4' | '5';
 
-export interface ILogger {
-  LogMessage: (body: any, logType: ILogType) => Promise<any>;
-}
-
-export interface ILogType {
-  codeType: string;
-  action: string;
-  logLevel: logLevel;
-  debugLogLevel: snsDebugLogLevel;
+export interface ISNSLogger {
+  LogMessage: (
+    action: string,
+    body: any,
+    logType: string,
+    logLvl?: logLevel,
+    dbgLogLvl?: snsDebugLogLevel
+  ) => Promise<any>;
 }
 
 export interface IStrategyInfo {

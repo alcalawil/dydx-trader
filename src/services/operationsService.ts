@@ -1,10 +1,4 @@
-import {
-  MarketSide,
-  IResponseOrder,
-  ICexOrder,
-  IDexOrder,
-  ILogger
-} from '@entities';
+import { MarketSide, IResponseOrder, ICexOrder, IDexOrder, logLevel } from '@entities';
 import {
   Solo,
   LimitOrder,
@@ -17,27 +11,29 @@ import { gettersService } from './gettersService';
 import config from '@config';
 import { StateManager } from '@services';
 import { ORDER_STATUS_CANCELED } from '../constants/OrderStatuses';
-import { SET_NEW_ORDER_IN_STATE, UPDATE_ORDER_IN_STATE } from '../constants/logTypes';
+import SNSLogger from '../sns/SNSLogger';
+import { SET_NEW_ORDER_IN_STATE, STATE_UPDATED } from '../constants/logTypes';
 
 // Config
 let DEFAULT_ADDRESS = config.account.defaultAddress;
 const DEFAULT_EXPIRATION = config.dydx.expirationInSeconds;
 const TAKER_ACCOUNT_OWNER = config.dydx.takerAccount;
+const DEBUG_LOG_LEVEL: logLevel = 'debug';
 
 // Dependencies
 let _solo: Solo;
 let _stateManager: StateManager;
-let _logger: ILogger;
+let _snsLogger: SNSLogger;
 
 class OperationsService {
   public setDefaultAccount(account: string) {
     DEFAULT_ADDRESS = account;
   }
 
-  public setDependencies(solo: Solo, stateManager: StateManager, Logger: ILogger) {
+  public setDependencies(solo: Solo, stateManager: StateManager, snsLogger: SNSLogger) {
     _solo = solo;
     _stateManager = stateManager;
-    _logger = Logger;
+    _snsLogger = snsLogger;
   }
 
   public async placeOrder(cexOrder: ICexOrder, pair: string): Promise<IResponseOrder> {
@@ -53,11 +49,14 @@ class OperationsService {
     const { order: apiOrder } = await _solo.api.placeOrder(order);
     const responseOrder = convertToResponseOrder(apiOrder);
     _stateManager.setNewOrder(responseOrder);
-    _logger.LogMessage(
+    _snsLogger.LogMessage(
+      `Insertando nueva orden al state.`,
       {
         details: responseOrder
       },
-      SET_NEW_ORDER_IN_STATE
+      SET_NEW_ORDER_IN_STATE,
+      DEBUG_LOG_LEVEL,
+      '5'
     );
     return responseOrder;
   }
@@ -84,11 +83,14 @@ class OperationsService {
 
     const parsedOrder = convertToResponseOrder(order);
     _stateManager.setOrderStatus(parsedOrder.id, ORDER_STATUS_CANCELED);
-    _logger.LogMessage(
+    _snsLogger.LogMessage(
+      `Actualizando status de la orden en el state.`,
       {
         details: parsedOrder
       },
-      UPDATE_ORDER_IN_STATE
+      STATE_UPDATED,
+      DEBUG_LOG_LEVEL,
+      '5'
     );
     return parsedOrder;
   }
@@ -99,11 +101,14 @@ class OperationsService {
       orders.map(async (order) => {
         const cancelResponse = await this.cancelOrder(order.id);
         _stateManager.setOrderStatus(cancelResponse.id, ORDER_STATUS_CANCELED);
-        _logger.LogMessage(
+        _snsLogger.LogMessage(
+          `Actualizando status de la orden en el state.`,
           {
             details: cancelResponse
           },
-          UPDATE_ORDER_IN_STATE
+          STATE_UPDATED,
+          DEBUG_LOG_LEVEL,
+          '5'
         );
         return cancelResponse;
       })

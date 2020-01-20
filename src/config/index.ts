@@ -11,7 +11,6 @@ const NODE_ENV: string = ENV.NODE_ENV || 'development';
 const LOG_LEVEL: logLevel = (ENV.LOG_LEVEL as logLevel) || DEFAULT_LOG_LEVEL;
 const API_KEY: string = ENV.API_KEY || '12345';
 const VERSION: string = process.env.npm_package_version || '';
-const IP: string = 'localhost';
 
 /* SERVER */
 const PORT: number = Number(ENV.PORT) || 3000;
@@ -40,7 +39,7 @@ const SM_REGION: string = ENV.SM_REGION || DEFAULT_REGION;
 const SQS_REGION: string = ENV.SQS_REGION || DEFAULT_REGION;
 
 /* REDIS */
-const REDIS_HOST: string = ENV.REDIS_HOST || '';
+const REDIS_HOST: string = ENV.HOST || '';
 const REDIS_PORT: number = Number(ENV.REDIS_PORT) || 6379;
 
 /* OBSERVER */
@@ -53,6 +52,7 @@ const SENDER_NAME: string = ENV.SENDER_NAME || 'bot_operator';
 const RECEIVER_NAME: string = ENV.RECEIVER_NAME || 'strategy';
 const STRATEGY_QUEUE_URL: string = ENV.STRATEGY_QUEUE_URL || '';
 const TRADEOPS_QUEUE_URL: string = ENV.TRADEOPS_QUEUE_URL || '';
+const TRANSACTIONAL_LOGS_QUEUE_ARN: string = ENV.TRANSACTIONAL_LOGS_QUEUE_ARN || '';
 const MSJ_GROUP_ID: string = ENV.MSJ_GROUP_ID || 'DEFAULT_GROUP_ID';
 const CONSUMER_BATCH_SIZE: number = Number(ENV.CONSUMER_BATCH_SIZE) || 10;
 const LOGS_TOPIC_ARN: string =
@@ -67,8 +67,7 @@ const config: IConfig = {
     nodeEnv: NODE_ENV,
     logLevel: LOG_LEVEL,
     apiKey: API_KEY,
-    version: VERSION,
-    ip: IP
+    version: VERSION
   },
   server: {
     port: PORT,
@@ -115,9 +114,7 @@ const config: IConfig = {
     tradeOpsQueueUrl: TRADEOPS_QUEUE_URL,
     logTopicArn: LOGS_TOPIC_ARN,
     msjGroupId: MSJ_GROUP_ID,
-    consumerBatchSize: CONSUMER_BATCH_SIZE
-  },
-  sns: {
+    consumerBatchSize: CONSUMER_BATCH_SIZE,
     logLevel: SNS_DEBUG_LOG_LEVEL
   }
 };

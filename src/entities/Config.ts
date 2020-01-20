@@ -1,4 +1,4 @@
-import { pair, logLevel, snsDebugLogLevel } from './types';
+import { pair, logLevel } from './types';
 
 export interface IConfig {
   app: {
@@ -6,7 +6,6 @@ export interface IConfig {
     logLevel: logLevel;
     apiKey: string;
     version: string;
-    ip: string;
   };
   server: {
     port: number;
@@ -54,10 +53,8 @@ export interface IConfig {
     logTopicArn: string;
     msjGroupId: string;
     consumerBatchSize: number;
+    logLevel: string;
   };
-  sns: {
-    logLevel: snsDebugLogLevel;
-  }
 }
 
 // TODO: separar los types de config en "startegies" tambien
