@@ -34,12 +34,10 @@ const STRATEGY_QUEUE_URL: string = config.sqs.strategyQueueUrl;
 
 /* CONSTANTS */
 const ENCODING: BufferEncoding = 'base64';
-let DEFAULT_APP_IP: string = config.app.ip;
+let OPERATOR_INSTANCE_ID: string = config.sqs.senderName;
+let APP_IP: string = 'localhost';
 
 class AwsManager {
-  private appIp: string = DEFAULT_APP_IP;
-  private instanceId: string = SENDER_NAME;
-
   constructor() {
     this.getInstanceIdFromMS();
     this.getPublicIPFromMS();
@@ -130,25 +128,25 @@ class AwsManager {
   private getInstanceIdFromMS() {
     ms.request('/latest/meta-data/instance-id', (err, data) => {
       if (data) {
-        this.instanceId = data;
+        OPERATOR_INSTANCE_ID = data;
       }
     });
   }
 
-  public get getInstanceId() {
-    return this.instanceId;
+  public getInstanceId() {
+    return OPERATOR_INSTANCE_ID;
   }
 
   private getPublicIPFromMS() {
     ms.request('/latest/meta-data/public-ipv4', (err, data) => {
       if (data) {
-        this.appIp = data;
+        APP_IP = data;
       }
     });
   }
 
-  public get getAppIP() {
-    return this.appIp;
+  public getPublicIP() {
+    return APP_IP;
   }
 }
 

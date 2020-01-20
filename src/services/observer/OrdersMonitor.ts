@@ -1,21 +1,24 @@
 import { ApiOrderStatus } from '@dydxprotocol/solo';
 import { gettersService, StateManager } from '@services';
-import { IState, ILogger } from '@entities';
+import { IState, logLevel, IResponseOrder, IStrategyInfo } from '@entities';
 import { logger } from '@shared';
 import _ from 'lodash';
 import { ORDERS_STATUS_CHANGES } from '@topics';
+import SNSLogger from '../../sns/SNSLogger';
 import {
-  TRADER_ORDER_STATUS_CHANGES,
-  TRADER_ORDER_STATUS_CHANGES_ERROR
+  TRADER_REQUEST_ORDER_STATUS,
+  TRADER_REQUEST_ORDER_STATUS_ERROR
 } from '../../constants/logTypes';
+
+const ERROR_LOG_LEVEL: logLevel = 'error';
 
 export default class OrdersMonitor {
   private _stateManager: StateManager;
-  private _logger: ILogger;
+  private _snsLogger: SNSLogger;
 
-  constructor(stateManager: StateManager, Logger: ILogger) {
+  constructor(stateManager: StateManager, snsLogger: SNSLogger) {
     this._stateManager = stateManager;
-    this._logger = Logger;
+    this._snsLogger = snsLogger;
   }
 
   public async checkForUpdates() {
@@ -36,25 +39,28 @@ export default class OrdersMonitor {
             (operation) => operation.orderId === currentOrder.id
           );
           if (updatedOrder.status !== currentOrder.status) {
-            this._logger.LogMessage(
+            this._snsLogger.LogMessage(
+              `Detectado cambio de estado de una orden.`,
               {
                 details: updatedOrder,
                 topic: ORDERS_STATUS_CHANGES,
                 ...currentOperation
               },
-              TRADER_ORDER_STATUS_CHANGES
+              TRADER_REQUEST_ORDER_STATUS
             );
             logger.debug(`Order: ${currentOrder.id} updated`);
             this._stateManager.setOrderStatus(currentOrder.id, updatedOrder.status);
             return;
           }
         } catch (err) {
-          this._logger.LogMessage(
+          this._snsLogger.LogMessage(
+            `Error al consultar estado de la orden.`,
             {
               details: err,
               topic: ORDERS_STATUS_CHANGES
             },
-            TRADER_ORDER_STATUS_CHANGES_ERROR
+            TRADER_REQUEST_ORDER_STATUS_ERROR,
+            ERROR_LOG_LEVEL
           );
           logger.error('Orders Monitor Error', err);
         }
