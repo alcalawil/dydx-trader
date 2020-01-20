@@ -2,22 +2,19 @@ import _ from 'lodash';
 import { logger } from '@shared';
 import { StateManager } from '@services';
 import { gettersService } from '@services';
-import SNSLogger from '../../sns/SNSLogger';
-import { logLevel } from '@entities';
+import { ILogger } from '@entities';
 import {
   TRADER_REQUEST_BALANCE,
   TRADER_REQUEST_BALANCE_ERROR
 } from '../../constants/logTypes';
 
-const DEBUG_LOG_LEVEL: logLevel = 'debug';
-const ERROR_LOG_LEVEL: logLevel = 'error';
 export default class FundsMonitor {
   private _stateManager: StateManager;
-  private _snsLogger: SNSLogger;
+  private _logger: ILogger;
 
-  constructor(stateManager: StateManager, snsLogger: SNSLogger) {
+  constructor(stateManager: StateManager, Logger: ILogger) {
     this._stateManager = stateManager;
-    this._snsLogger = snsLogger;
+    this._logger = Logger;
   }
 
   public async checkForUpdates() {
@@ -28,25 +25,20 @@ export default class FundsMonitor {
       if (!_.isEqual(currentBalance, newBalance)) {
         this._stateManager.setBalances(newBalance);
         logger.debug('Balance updated');
-        this._snsLogger.LogMessage(
-          `Detectado cambio en el balance.`,
+        this._logger.LogMessage(
           {
             details: newBalance
           },
-          TRADER_REQUEST_BALANCE,
-          DEBUG_LOG_LEVEL,
-          '5'
+          TRADER_REQUEST_BALANCE
         );
         return;
       }
     } catch (err) {
-      this._snsLogger.LogMessage(
-        `Error al consultar el balance.`,
+      this._logger.LogMessage(
         {
           details: err
         },
-        TRADER_REQUEST_BALANCE_ERROR,
-        ERROR_LOG_LEVEL
+        TRADER_REQUEST_BALANCE_ERROR
       );
       logger.error('Funds Monitor Error', err);
     }

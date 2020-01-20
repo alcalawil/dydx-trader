@@ -1,28 +1,20 @@
 import { SNS } from 'aws-sdk';
 import { logger } from '@shared';
 import config from '@config';
-import { logLevel, snsDebugLogLevel, ISNSLogger } from '@entities';
+import { logLevel, snsDebugLogLevel, ILogger, ILogType } from '@entities';
 import { awsManager } from '@services';
 
 /* LOAD CONFIG */
-const DEFAULT_LOG_LEVEL: logLevel = 'debug';
-const DEFAULT_DEBUG_LOG_LEVEL: snsDebugLogLevel = '1';
-const DEBUG_LOG_LEVEL: snsDebugLogLevel = config.sqs.logLevel as snsDebugLogLevel;
-const DEFAULT_INSTANCE: string = config.sqs.senderName;
+const DEBUG_LOG_LEVEL: snsDebugLogLevel = config.sns.logLevel;
 const APP_VERSION: string = config.app.version;
-const AUTHOR: string = 'TradeOps';
+const AUTHOR: string = config.sqs.senderName;
 
-export default class SNSLogger implements ISNSLogger {
+export default class SNSLogger implements ILogger {
   constructor(private sns: SNS, private topicArn: string) {}
 
-  public async LogMessage(
-    action: string,
-    body: any,
-    logType: string,
-    logLvl: logLevel = DEFAULT_LOG_LEVEL,
-    dbgLogLvl: snsDebugLogLevel = DEFAULT_DEBUG_LOG_LEVEL
-  ) {
-    if (Number(dbgLogLvl) <= Number(DEBUG_LOG_LEVEL)) {
+  public async LogMessage(body: any, logType: ILogType) {
+    const { debugLogLevel, action, logLevel: logLvl, codeType } = logType;
+    if (Number(debugLogLevel) <= Number(DEBUG_LOG_LEVEL)) {
       const publishParams: SNS.PublishInput = {
         TopicArn: this.topicArn,
         Message: JSON.stringify(body),
@@ -37,11 +29,11 @@ export default class SNSLogger implements ISNSLogger {
           },
           traderInstanceId: {
             DataType: 'String',
-            StringValue: awsManager.getInstanceId() || DEFAULT_INSTANCE
+            StringValue: awsManager.getInstanceId
           },
           traderInstanceIp: {
             DataType: 'String',
-            StringValue: awsManager.getPublicIP() || 'localhost'
+            StringValue: awsManager.getAppIP
           },
           traderSoftwareVersion: {
             DataType: 'String',
@@ -53,7 +45,7 @@ export default class SNSLogger implements ISNSLogger {
           },
           logType: {
             DataType: 'String',
-            StringValue: logType || 'undefined'
+            StringValue: codeType || 'undefined'
           },
           author: {
             DataType: 'String',
@@ -63,13 +55,12 @@ export default class SNSLogger implements ISNSLogger {
       };
 
       try {
-        logger.debug(`SNS LOG SENT`);
+        logger.debug(`Sending SNS Log`);
         return this.sns.publish(publishParams).promise();
       } catch (err) {
         logger.error('Publish to SNS LOG Error', err);
         return null;
       }
     }
-    return;
   }
 }

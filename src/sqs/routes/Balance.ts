@@ -1,10 +1,9 @@
-import { IFundsBalances, IState, ISNSLogger, logLevel, IStrategyInfo } from '@entities';
-import { gettersService, awsManager } from '@services';
+import { IFundsBalances, IState, ILogger } from '@entities';
+import { gettersService } from '@services';
 import { logger } from '@shared';
 import { BALANCES_CHANGES } from '@topics';
 import SQSPublisher from '../SQSPublisher';
 import SQSRouter from '../SQSRouter';
-import SNSLogger from '../../sns/SNSLogger';
 import {
   STRATEGY_REQUEST_BALANCE_ATTEMPT,
   STRATEGY_REQUEST_BALANCE_COMPLETED,
@@ -12,34 +11,28 @@ import {
 } from '../../constants/logTypes';
 
 const router = new SQSRouter();
-const DEBUG_LOG_LEVEL: logLevel = 'debug';
-const ERROR_LOG_LEVEL: logLevel = 'error';
 let _sqsPublisher: SQSPublisher;
 let _state: IState;
-let _snsLogger: ISNSLogger;
+let _logger: ILogger;
 
 router.createRoute(BALANCES_CHANGES, async (body: any) => {
   const topic = BALANCES_CHANGES;
   const { requestId, currentBalance = false, strategyInfo } = body;
   try {
-    _snsLogger.LogMessage(
-      `Intento de ejecucion del topico: ${topic} completada.`,
+    _logger.LogMessage(
       {
         details: body,
         topic,
         ...strategyInfo
       },
-      STRATEGY_REQUEST_BALANCE_ATTEMPT,
-      DEBUG_LOG_LEVEL,
-      '4'
+      STRATEGY_REQUEST_BALANCE_ATTEMPT
     );
     const balanceResponse: IFundsBalances = currentBalance
       ? await gettersService.getBalances()
       : _state.balances;
 
     logger.debug(`Topic ${topic} is working`);
-    _snsLogger.LogMessage(
-      `Ejecucion del topico: ${topic} completada.`,
+    _logger.LogMessage(
       {
         details: balanceResponse,
         topic,
@@ -52,15 +45,13 @@ router.createRoute(BALANCES_CHANGES, async (body: any) => {
     return;
   } catch (err) {
     logger.error(topic, err.message);
-    _snsLogger.LogMessage(
-      `Error en la ejecucion del topico: ${topic}.`,
+    _logger.LogMessage(
       {
         details: err,
         topic,
         ...strategyInfo
       },
-      STRATEGY_REQUEST_BALANCE_ERROR,
-      ERROR_LOG_LEVEL
+      STRATEGY_REQUEST_BALANCE_ERROR
     );
     throw err;
   }
@@ -72,9 +63,9 @@ const publishResponseToSQS = (topic: string, requestId: string, response: object
   _sqsPublisher.publishToSQS(topic, body);
 };
 
-export default (sqsPublisher: SQSPublisher, snsLogger: SNSLogger, state: IState) => {
+export default (sqsPublisher: SQSPublisher, Logger: ILogger, state: IState) => {
   _sqsPublisher = sqsPublisher;
-  _snsLogger = snsLogger;
+  _logger = Logger;
   _state = state;
   return router;
 };
