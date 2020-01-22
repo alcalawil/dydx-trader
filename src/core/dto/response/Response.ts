@@ -1,27 +1,28 @@
-import { IResponseParams } from '@entities';
+import { ResponseParams, Authentication } from '@entities';
+import { Guid } from '@utils';
 
 export class Response {
-  public responseId: string;
-  public requestId: string;
-  public authentication: string;
-  public timeStamp: number;
-  public speed: number;
-  public expired: boolean;
-  public errorDescription: string;
+  private responseId?: string;
+  private requestId: string;
+  private authentication?: Authentication;
+  private unixTimestamp: number;
+  private speed: number;
+  private expired: boolean;
+  private errorDescription: string;
 
   constructor({
     responseId,
     requestId,
     authentication,
-    timeStamp,
+    unixTimestamp,
     speed,
     expired,
     errorDescription
-  }: IResponseParams) {
-    this.responseId = responseId;
+  }: ResponseParams) {
+    this.responseId = responseId || Guid.createId();
     this.requestId = requestId;
-    this.authentication = authentication;
-    this.timeStamp = timeStamp;
+    this.authentication = authentication || undefined;
+    this.unixTimestamp = unixTimestamp;
     this.speed = speed;
     this.expired = expired;
     this.errorDescription = errorDescription;

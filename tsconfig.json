@@ -21,7 +21,8 @@
       "@shared": ["src/shared"],
       "@topics": ["src/constants/Topics.ts"],
       "@services": ["src/services"],
-      "@config": ["src/config"]
+      "@config": ["src/config"],
+      "@utils": ["src/core/utils"]
     },
     "types": ["node"],
     "typeRoots": ["node_modules/@types"]
