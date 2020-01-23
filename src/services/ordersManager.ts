@@ -8,7 +8,7 @@ import {
   ApiMarketName,
   ApiOrderOnOrderbook
 } from '@dydxprotocol/solo';
-import BigNumber from "bignumber.js";
+import BigNumber from 'bignumber.js';
 import {
   IResponseOrder,
   MarketSide,
@@ -19,8 +19,7 @@ import {
   MarketSideString,
   IParsedOrderbook,
   IToken,
-  IRedisManager,
-  observerEvents
+  IRedisManager
 } from '@entities';
 import {
   createPriceRange,
@@ -36,7 +35,7 @@ import { EventEmitter } from 'events';
 import config from '@config';
 
 /* LOAD CONFIG */
-const PRIVATE_KEY: string = config.account.privateKey
+const PRIVATE_KEY: string = config.account.privateKey;
 let DEFAULT_ADDRESS: string = config.account.defaultAddress;
 const TAG_KEY: string = config.secretManager.tagKey;
 const TAG_ADDRESS: string = config.secretManager.tagAddress;
@@ -130,7 +129,7 @@ class OrdersManager {
     }
 
     if (this.observerEmitter) {
-      this.observerEmitter.emit(observerEvents.placeOrder, parsedOrder);
+      this.observerEmitter.emit('PLACE_ORDER', parsedOrder);
     }
 
     return parsedOrder;
@@ -200,7 +199,10 @@ class OrdersManager {
     return responseOrder;
   }
 
-  public async getOrderbook({ limit = DEFAULT_LIMIT }, pair: string): Promise<IOrderbook> {
+  public async getOrderbook(
+    { limit = DEFAULT_LIMIT },
+    pair: string
+  ): Promise<IOrderbook> {
     const [assetToken, baseToken] = getTokens(pair);
     const marketName: string = `${assetToken.shortName}-${baseToken.shortName}`;
 

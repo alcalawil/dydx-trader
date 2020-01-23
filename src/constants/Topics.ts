@@ -1,7 +1,7 @@
 export const ORDERS_CANCEL = 'ORDERS_CANCEL';
 export const ORDERS_CANCEL_RESPONSE = 'ORDERS_CANCEL_RESPONSE';
 
-export const ORDERS_PLACE = 'ORDERS_PLACE_ORDER'; // TODO: Definir la calve/valor con el mismo nombre
+export const ORDERS_PLACE_ORDER = 'ORDERS_PLACE_ORDER';
 export const ORDERS_PLACE_RESPONSE = 'ORDERS_PLACE_RESPONSE';
 
 export const ORDERS_BUY = 'ORDERS_BUY';

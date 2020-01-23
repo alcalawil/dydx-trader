@@ -1,7 +1,7 @@
 import { SQS } from 'aws-sdk';
 import SQSPublisher from './SQSPublisher';
-import { ORDERS_BUY } from '../../src/constants/Topics';
-import config from '../../src/config';
+import { ORDERS_BUY } from '@src/constants/Topics';
+import config from '@config';
 
 /* LOAD CONFIG */
 const REGION_SQS: string = config.aws.region.sqs;

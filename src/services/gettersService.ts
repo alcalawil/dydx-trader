@@ -1,4 +1,4 @@
-import { IResponseOrder, IOrderbook, IFundsBalances, IToken, IBalance } from '@entities';
+import { IResponseOrder, IOrderbook, IFundsBalances, IToken, IAsset } from '@entities';
 import {
   Solo,
   BigNumber,
@@ -152,20 +152,20 @@ class GettersService {
       const balances = account.balances;
 
       // TODO: obtener "usdAmount"
-      const eth: IBalance = {
+      const eth: IAsset = {
         token: 'eth',
         amount: _solo.web3.utils.fromWei(new BigNumber(balances['0'].wei).toFixed(0)),
         usdAmount: 0
       };
 
       const usdcInWei = new BigNumber(balances['2'].wei).toNumber();
-      const usdc: IBalance = {
+      const usdc: IAsset = {
         token: 'usdc',
         amount: (usdcInWei / Number(`1${TOKEN_WETH.weiUnit}`)).toString(),
         usdAmount: 0
       };
 
-      const dai: IBalance = {
+      const dai: IAsset = {
         token: 'dai',
         amount: _solo.web3.utils.fromWei(new BigNumber(balances['3'].wei).toFixed(0)),
         usdAmount: 0

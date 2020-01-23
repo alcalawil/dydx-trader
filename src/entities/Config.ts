@@ -1,8 +1,8 @@
-import { pair, logLevel, snsDebugLogLevel } from './types';
+import { pair, logLevel, snsDebugLogLevel, env } from './types';
 
 export interface IConfig {
   app: {
-    nodeEnv: string;
+    nodeEnv: env;
     logLevel: logLevel;
     apiKey: string;
     version: string;
@@ -13,8 +13,8 @@ export interface IConfig {
     httpProvider: string;
   };
   account: {
-    defaultAddress: string;
     privateKey: string;
+    defaultAddress: string;
   };
   secretManager: {
     tagKey: string;
@@ -39,12 +39,9 @@ export interface IConfig {
     port: number;
     host: string;
   };
-  observer: {
-    interval: {
-      fundMonitor: number;
-      orderMonitor: number;
-    };
-    maxQtyEth: number;
+  intervals: {
+    fundMonitor: number;
+    orderMonitor: number;
   };
   sqs: {
     senderName: string; // TODO: si esto cambia a un id, entonces mejor "senderId"
@@ -59,5 +56,3 @@ export interface IConfig {
     logLevel: snsDebugLogLevel;
   }
 }
-
-// TODO: separar los types de config en "startegies" tambien

@@ -6,8 +6,8 @@ import config from '@config';
 
 let observersInterval: observer;
 
-const FUND_MONITOR_INTERVAL = config.observer.interval.fundMonitor * 1000;
-const ORDER_MONITOR_INTERVAL = config.observer.interval.orderMonitor * 1000;
+const FUND_MONITOR_INTERVAL = config.intervals.fundMonitor;
+const ORDER_MONITOR_INTERVAL = config.intervals.orderMonitor;
 
 class ObserverSerService {
   private fundsMonitor: FundsMonitor;
