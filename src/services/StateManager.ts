@@ -38,7 +38,7 @@ export class StateManager {
 
     this._state.orders = ordersString ? JSON.parse(ordersString) : [];
     this._state.balances = balanceString ? JSON.parse(balanceString) : null;
-  };
+  }
 
   public get state() {
     return this._state;

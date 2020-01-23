@@ -1,10 +1,5 @@
-import '../env'
+import '../env';
 import './orderConvertions.spec';
 
-/*
-  In the future, the tests could be grouped into directories, for example:
-  - utils:
-      - encryption
-      - convertions
-      - etc...
-*/
+// TODO:
+// - corregir error al importar module "redis" cuando se ejecuta los test

@@ -34,8 +34,6 @@ const LOGS_TOPIC_ARN: string = config.sqs.logTopicArn;
   TODO:
     - Use try catch where needed
     - Create a loaders folder to make this script simpler
-    - Refactor Redis - Create an abstract db driver
-    - Inject db driver into stateManager
     - Add catch unhanded exception
 */
 
@@ -46,10 +44,9 @@ const LOGS_TOPIC_ARN: string = config.sqs.logTopicArn;
   Logger.add(snsLogger);
 
   // Load keys from Secret Manager
-  // const address = await awsManager.decryptSecretName(config.secretManager.tagAddress);
-  // const privateKey = await awsManager.decryptSecretName(config.secretManager.tagKey);
-  const address = config.account.defaultAddress;
-  const privateKey = config.account.privateKey;
+  const address = await awsManager.decryptSecretName(config.secretManager.tagAddress);
+  const privateKey = await awsManager.decryptSecretName(config.secretManager.tagKey);
+
   // Initialize state
   const cacheDB = RedisDriver(config.redis);
   const stateManager = new StateManager(cacheDB);

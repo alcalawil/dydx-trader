@@ -2,7 +2,7 @@ import { operationsService, StateManager } from '@services';
 import { logger } from '@shared';
 import {
   ORDERS_CANCEL,
-  ORDERS_PLACE,
+  ORDERS_PLACE_ORDER,
   ORDERS_BUY,
   ORDERS_SELL,
   ORDERS_CANCEL_ALL,
@@ -50,8 +50,8 @@ let _sqsPublisher: SQSPublisher;
 let _stateManager: StateManager;
 
 /* PLACE ORDER ROUTE */
-router.createRoute(ORDERS_PLACE, async (body: any) => {
-  const topic = ORDERS_PLACE;
+router.createRoute(ORDERS_PLACE_ORDER, async (body: any) => {
+  const topic = ORDERS_PLACE_ORDER;
   const {
     side,
     amount,
@@ -577,10 +577,7 @@ const publishResponseToSQS = (topic: string, operationId: string, response: obje
   });
 };
 
-export default (
-  sqsPublisher: SQSPublisher,
-  stateManager: StateManager
-) => {
+export default (sqsPublisher: SQSPublisher, stateManager: StateManager) => {
   _sqsPublisher = sqsPublisher;
   _stateManager = stateManager;
   return router;

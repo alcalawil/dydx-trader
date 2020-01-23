@@ -150,6 +150,7 @@ export const getTokens = (pair: string) => {
   else return [assetToken, baseToken];
 };
 
+// FIXME: refactorizar esta funcion para que "tokenId" concida con los valores de "MarketId"
 export const getTokenById = (tokenId: number) => {
   return DYDX_TOKENS.find((token) => token.id === tokenId);
 };

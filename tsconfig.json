@@ -6,15 +6,15 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "module": "commonjs",
-    "rootDir": "src",
     "outDir": "dist",
     "removeComments": true,
     "sourceMap": true,
     "strict": true,
     "target": "es6",
     "moduleResolution": "node",
+    "resolveJsonModule": true,
     "paths": {
-      "@src": ["src"],
+      "@src/*": ["src/*.ts"],
       "@server": ["src/API/server.ts"],
       "@middlewares": ["src/API/middleware"],
       "@entities": ["src/entities"],
@@ -26,6 +26,6 @@
     "types": ["node"],
     "typeRoots": ["node_modules/@types"]
   },
-  "include": ["src/**/*.ts", "spec/**/*.ts"],
+  "include": ["src/**/*.ts", "tests/**/*.ts", "scripts/**/*.ts"],
   "exclude": ["node_modules"]
 }

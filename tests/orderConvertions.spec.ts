@@ -1,21 +1,14 @@
 import 'mocha';
 import { expect } from 'chai';
 import BigNumber from 'bignumber.js';
-
-/* MODULES */
-import { MarketSide, ICexOrder, IDexOrder, IToken } from '../src/entities';
+import { MarketSide, ICexOrder, IDexOrder, IToken } from '@entities';
 import { DYDX_TOKENS } from '../src/constants/Tokens';
-import {
-  getTokens,
-  convertToDexOrder,
-  convertToCexOrder,
-  convertFromWei
-} from '../src/shared';
+import { getTokens, convertToDexOrder, convertToCexOrder, convertFromWei } from '@shared';
 
 /* CONSTANTS */
 const { PRICE, AMOUNT, TAKER_AMOUNT, MAKET_AMOUNT } = process.env as any;
 const assetToken: IToken = DYDX_TOKENS[0];
-const baseToken: IToken = DYDX_TOKENS[1];
+const baseToken: IToken = DYDX_TOKENS[2];
 const takerToken: IToken = assetToken;
 const makerToken: IToken = baseToken;
 
@@ -31,11 +24,11 @@ function dexOrder(side: number): IDexOrder {
   let takerMarket, makerMarket;
 
   if (side === MarketSide.sell) {
-    takerMarket = 1;
+    takerMarket = 2;
     makerMarket = 0;
   } else {
     takerMarket = 0;
-    makerMarket = 1;
+    makerMarket = 2;
   }
 
   return {
@@ -109,7 +102,6 @@ describe('Order Convertions Test', () => {
       const weiUnit = makerToken.weiUnit;
 
       const expectedOutput = wei.dividedBy(`1${weiUnit}`).toNumber();
-      console.log(expectedOutput);
 
       const result = convertFromWei(new BigNumber(MAKET_AMOUNT), makerToken);
       expect(result).to.eql(expectedOutput);
@@ -120,7 +112,9 @@ describe('Order Convertions Test', () => {
 
       const expectedOutput = {
         amount: convertFromWei(new BigNumber(MAKET_AMOUNT), makerToken),
-        price: parseFloat(TAKER_AMOUNT) / parseFloat(MAKET_AMOUNT),
+        price:
+          (parseFloat(TAKER_AMOUNT) / parseFloat(MAKET_AMOUNT)) *
+          Number(`1${takerToken.priceUnit}`),
         side: SIDE
       };
 
@@ -133,7 +127,9 @@ describe('Order Convertions Test', () => {
 
       const expectedOutput = {
         amount: convertFromWei(new BigNumber(TAKER_AMOUNT), takerToken),
-        price: parseFloat(MAKET_AMOUNT) / parseFloat(TAKER_AMOUNT),
+        price:
+          (parseFloat(MAKET_AMOUNT) / parseFloat(TAKER_AMOUNT)) *
+          Number(`1${makerToken.priceUnit}`),
         side: SIDE
       };
 
