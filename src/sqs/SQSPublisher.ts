@@ -1,6 +1,8 @@
 import { SQS } from 'aws-sdk';
 import { logger } from '@shared';
 import config from '@config';
+import Logger from '../loggers/Logger';
+import { SQS_MSJ_SENT } from 'src/constants/logTypes';
 
 /* LOAD CONFIG */
 const MSJ_GROUP_ID: string = config.sqs.msjGroupId;
@@ -37,9 +39,14 @@ export default class SQSPublisher {
     };
 
     try {
-      logger.debug(`SQS SENT to topic: ${topic}`)
+      logger.debug(`SQS SENT to topic: ${topic}`);
+      Logger.log({ details: body, topic }, SQS_MSJ_SENT);
       return this.sqs.sendMessage(publishParams).promise();
     } catch (err) {
+      Logger.log(
+        { details: { message: err.message, stack: err.stack }, topic },
+        SQS_MSJ_SENT
+      );
       logger.error('Publish to SQS Error', err);
       return null;
     }

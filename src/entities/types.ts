@@ -211,14 +211,11 @@ export type logLevel =
 
 export type snsDebugLogLevel = '1' | '2' | '3' | '4' | '5';
 
-export interface ISNSLogger {
-  LogMessage: (
-    action: string,
-    body: any,
-    logType: string,
-    logLvl?: logLevel,
-    dbgLogLvl?: snsDebugLogLevel
-  ) => Promise<any>;
+export interface ILogType {
+  codeType: string;
+  action: string;
+  logLevel: logLevel;
+  debugLogLevel: snsDebugLogLevel;
 }
 
 export interface IStrategyInfo {
@@ -252,4 +249,9 @@ declare module 'redis' {
 export interface ICacheDB {
   getValueFromCache: (key: string) => Promise<string>;
   setValueInCache: (key: string, value: string) => Promise<void>;
+}
+
+export interface ILogBody extends Partial<IOperation>, Partial<IStrategyInfo> {
+  details: any;
+  topic?: string;
 }

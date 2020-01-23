@@ -1,7 +1,6 @@
 import AWS, { SQS, SNS, KMS, SecretsManager, MetadataService } from 'aws-sdk';
 import { decrypt } from '@shared';
 import config from '@config';
-import { logLevel } from '@entities';
 
 /* LOAD CONFIG */
 AWS.config.update({
@@ -34,10 +33,12 @@ const STRATEGY_QUEUE_URL: string = config.sqs.strategyQueueUrl;
 
 /* CONSTANTS */
 const ENCODING: BufferEncoding = 'base64';
-let OPERATOR_INSTANCE_ID: string = config.sqs.senderName;
-let APP_IP: string = 'localhost';
+let DEFAULT_APP_IP: string = config.app.ip;
 
 class AwsManager {
+  private appIp: string = DEFAULT_APP_IP;
+  private instanceId: string = SENDER_NAME;
+
   constructor() {
     this.getInstanceIdFromMS();
     this.getPublicIPFromMS();
@@ -128,25 +129,25 @@ class AwsManager {
   private getInstanceIdFromMS() {
     ms.request('/latest/meta-data/instance-id', (err, data) => {
       if (data) {
-        OPERATOR_INSTANCE_ID = data;
+        this.instanceId = data;
       }
     });
   }
 
-  public getInstanceId() {
-    return OPERATOR_INSTANCE_ID;
+  public get getInstanceId() {
+    return this.instanceId;
   }
 
   private getPublicIPFromMS() {
     ms.request('/latest/meta-data/public-ipv4', (err, data) => {
       if (data) {
-        APP_IP = data;
+        this.appIp = data;
       }
     });
   }
 
-  public getPublicIP() {
-    return APP_IP;
+  public get getAppIP() {
+    return this.appIp;
   }
 }
 

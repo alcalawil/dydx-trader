@@ -1,11 +1,10 @@
 import { SQS } from 'aws-sdk';
 import { Consumer } from 'sqs-consumer';
 import { logger } from '@shared';
-import { ISQSConsumer, ISQSRoute, ISNSLogger, logLevel } from '@entities';
+import { ISQSConsumer, ISQSRoute } from '@entities';
 import config from '@config';
 import { SQS_MSJ_RECEIVED } from '../constants/logTypes';
-
-const DEBUG_LOG_LEVEL: logLevel = 'debug';
+import Logger from '../loggers/Logger';
 
 class SQSConsumer implements ISQSConsumer {
   public isRunning = false;
@@ -13,13 +12,11 @@ class SQSConsumer implements ISQSConsumer {
   private sqsRoutes: ISQSRoute[];
   private _sqs: SQS;
   private _queueUrl: string;
-  private _snsLogger: ISNSLogger;
 
-  constructor(sqs: SQS, queueUrl: string, sqsRoutes: ISQSRoute[], snsLogger: ISNSLogger) {
+  constructor(sqs: SQS, queueUrl: string, sqsRoutes: ISQSRoute[]) {
     this.sqsRoutes = sqsRoutes;
     this._sqs = sqs;
     this._queueUrl = queueUrl;
-    this._snsLogger = snsLogger;
     this.app = Consumer.create({
       queueUrl,
       messageAttributeNames: ['All'],
@@ -74,22 +71,13 @@ class SQSConsumer implements ISQSConsumer {
       logger.error(`TOPIC '${topicString}' NOT FOUND`, JSON.stringify(message));
       throw new Error(`TOPIC '${topicString}' NOT FOUND`);
     }
-    this._snsLogger.LogMessage(
-      `Mensaje recibido con topico: ${topicString}`,
+    Logger.log(
       {
         details: body,
-        strategyInstanceId: body.strategyInstanceId || 'undefined',
-        strategyInstanceIp: body.strategyInstanceIp || 'undefined',
-        strategySoftwareVersion: body.strategySoftwareVersion || 'undefined',
-        subStrategy: body.subStrategy || 'undefined',
         topic: topicString,
-        cycleId: body.cycleId || 'undefined',
-        walletId: body.walletId || 'undefined',
-        virtualWalletId: body.virtualWallet || 'undefined'
+        ...body.strategyInfo
       },
-      SQS_MSJ_RECEIVED,
-      DEBUG_LOG_LEVEL,
-      '2'
+      SQS_MSJ_RECEIVED
     );
     await sqsRoute.handler(body);
     // TODO: Do something with result
@@ -97,9 +85,5 @@ class SQSConsumer implements ISQSConsumer {
   };
 }
 
-export default (
-  sqs: SQS,
-  queueUrl: string,
-  sqsRoutes: ISQSRoute[],
-  snsLogger: ISNSLogger
-): ISQSConsumer => new SQSConsumer(sqs, queueUrl, sqsRoutes, snsLogger);
+export default (sqs: SQS, queueUrl: string, sqsRoutes: ISQSRoute[]): ISQSConsumer =>
+  new SQSConsumer(sqs, queueUrl, sqsRoutes);
