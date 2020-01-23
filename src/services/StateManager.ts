@@ -5,7 +5,7 @@ import { ORDER_STATUS_CANCELED, ORDER_STATUS_FILLED } from '../constants/OrderSt
 const CACHE_ORDERS_KEY = 'DYDX_ORDERS';
 const CACHE_BALANCE_KEY = 'DYDX_BALANCE';
 
-export default class StateManager {
+export class StateManager {
   private _state: IState;
   private _stateChanges: EventEmitter;
   private _cacheDB: ICacheDB;
