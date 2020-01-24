@@ -1,14 +1,14 @@
 import { ResponseParams, Authentication } from '@entities';
-import { Guid } from '@utils';
+import { Guid } from '@CORE/utils';
 
-export class Response {
+export default class Response {
   private responseId?: string;
   private requestId: string;
   private authentication?: Authentication;
   private unixTimestamp: number;
   private speed: number;
-  private expired: boolean;
-  private errorDescription: string;
+  private expired?: boolean;
+  private errorDescription?: string;
 
   constructor({
     responseId,
@@ -24,7 +24,7 @@ export class Response {
     this.authentication = authentication || undefined;
     this.unixTimestamp = unixTimestamp;
     this.speed = speed;
-    this.expired = expired;
-    this.errorDescription = errorDescription;
+    this.expired = expired || false;
+    this.errorDescription = errorDescription || '';
   }
 }

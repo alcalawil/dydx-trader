@@ -8,8 +8,8 @@ export type ResponseParams = {
   authentication?: Authentication; // TODO: Por ahora no requerido
   unixTimestamp: number;
   speed: number;
-  expired: boolean;
-  errorDescription: string;
+  expired?: boolean;
+  errorDescription?: string;
 };
 
 export type Authentication = {

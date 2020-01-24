@@ -1,7 +1,7 @@
-import { Response } from './Response';
+import Response from '../Response';
 import { ResponseParams, IFundsBalances, IBalance } from '@entities';
 
-export class BalanceResponse extends Response {
+export default class BalanceResponse extends Response {
   private virtualWalletId: string;
   private balances: IBalance[];
   private oldestBalancesTimestamp: number;
