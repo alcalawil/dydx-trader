@@ -3,3 +3,4 @@ export * from './Interfaces';
 export * from './Config';
 export * from './HTTPError';
 export * from './Env';
+export * from './Enumerations';

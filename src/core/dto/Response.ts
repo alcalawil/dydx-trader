@@ -1,10 +1,10 @@
-import { ResponseParams, Authentication } from '@entities';
-import { Guid } from '@CORE/utils';
+import { IResponseParams, IAuthentication } from '@entities';
+import { Utils } from '@CORE/utils';
 
 export default class Response {
   private responseId?: string;
   private requestId: string;
-  private authentication?: Authentication;
+  private authentication?: IAuthentication;
   private unixTimestamp: number;
   private speed: number;
   private expired?: boolean;
@@ -18,8 +18,8 @@ export default class Response {
     speed,
     expired,
     errorDescription
-  }: ResponseParams) {
-    this.responseId = responseId || Guid.createId();
+  }: IResponseParams) {
+    this.responseId = responseId || Utils.Guid.createId();
     this.requestId = requestId;
     this.authentication = authentication || undefined;
     this.unixTimestamp = unixTimestamp;

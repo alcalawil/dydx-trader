@@ -27,8 +27,7 @@
       "@CORE/dto/*": [
         "src/core/dto/*Response.ts",
         "src/core/dto/*Request.ts",
-      ],
-      "@CORE/dto/enums": ["src/core/dto/enumerations.ts"]
+      ]
     },
     "types": ["node"],
     "typeRoots": ["node_modules/@types"]

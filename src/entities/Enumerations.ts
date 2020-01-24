@@ -1,4 +1,4 @@
-export enum OpenStates {
+export enum OperStates {
   Pending,
   Placed,
   PartiallyExecuted,

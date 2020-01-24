@@ -1,13 +1,13 @@
+import { IResponseParams, IFundsBalances, IAsset } from '@entities';
 import Response from '../Response';
-import { ResponseParams, IFundsBalances, IBalance } from '@entities';
 
 export default class BalanceResponse extends Response {
   private virtualWalletId: string;
-  private balances: IBalance[];
+  private balances: IAsset[];
   private oldestBalancesTimestamp: number;
 
   constructor(
-    resParams: ResponseParams,
+    resParams: IResponseParams,
     { virtualWalletId, balances, oldestBalancesTimestamp }: IFundsBalances
   ) {
     super(resParams);

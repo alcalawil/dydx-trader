@@ -223,3 +223,43 @@ export interface ILogType {
   logLevel: logLevel;
   debugLogLevel: snsDebugLogLevel;
 }
+
+export interface IResponseParams {
+  responseId?: string;
+  requestId: string;
+  authentication?: IAuthentication; // TODO: Por ahora no requerido
+  unixTimestamp: number;
+  speed: number;
+  expired?: boolean;
+  errorDescription?: string;
+}
+
+export interface IAuthentication {
+  instance: string;
+  processId: string;
+  softwareId: string;
+  version: string;
+  requesterId: string;
+  signature: string; // TODO: debe ser de tipo Byte[]
+  sqsQueueArn: string;
+}
+
+export interface IOper {
+  quantity: number;
+  price: number;
+  fees: number;
+  asset1: financialAsset,
+  aseet2: financialAsset,
+  timestamp: number; // TODO: Sera unix ó utc
+}
+
+// TODO: Implementar mas adelante en el body de las rutas
+// export interface RequestParams {
+//   requestId: string;
+//   authentication?: Authentication;
+//   unixTimestamp: number;
+//   manual: boolean;
+//   test: boolean;
+//   expiration: number;
+//   maxRetries?: number;
+// }
