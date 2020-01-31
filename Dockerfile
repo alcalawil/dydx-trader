@@ -1,5 +1,5 @@
 # --- Installing stage
-FROM node:10 AS installer
+FROM node:12.14.1 AS installer
 
 WORKDIR /app
 
@@ -26,17 +26,15 @@ RUN npm install --production
 # ---
 
 # Running code under slim image (production part mostly)
-FROM node:10-alpine
+FROM node:12.14.1-alpine
 
-## Clean new directory  
+## Clean new directory
 WORKDIR /app
 ## We just need the build and package to execute the command
-COPY --from=builder /app/dist /app/dist
+COPY --from=builder /app/dist /app/dist/src
 COPY --from=builder /app/node_modules /app/node_modules
-COPY ./env /app/env
-
 COPY package*.json /app/
 
 USER node
 
-CMD [ "npm", "run", "start-prod" ]
+CMD [ "npm", "run", "start-docker" ]

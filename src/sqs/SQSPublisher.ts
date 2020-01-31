@@ -2,7 +2,7 @@ import { SQS } from 'aws-sdk';
 import { logger } from '@shared';
 import config from '@config';
 import Logger from '../loggers/Logger';
-import { SQS_MSJ_SENT } from 'src/constants/logTypes';
+import { SQS_MSJ_SENT } from '../constants/logTypes';
 
 /* LOAD CONFIG */
 const MSJ_GROUP_ID: string = config.sqs.msjGroupId;

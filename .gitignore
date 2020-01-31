@@ -7,3 +7,6 @@ test.env
 
 # compiled
 /dist
+
+# logs
+logs/
