@@ -10,8 +10,9 @@
     "format:check": "prettier --check \"./src/**/*.+(ts|js|json)\"",
     "format:apply": "prettier --write \"./src/**/*.+(ts|js|json)\"",
     "lint": "tslint --project \"tsconfig.json\"",
-    "start-prod": "npm run env:prod node -r ./env -r module-alias/register ./dist/start.js",
+    "start-prod": "cross-env NODE_ENV=production node -r ./env -r module-alias/register ./dist/src/start.js",
     "start": "nodemon --config \"./util/nodemon.json\"",
+    "start-docker": "node -r module-alias/register ./dist/src/start.js",
     "test": "nodemon --config \"./util/nodemon.test.json\"",
     "head-orders": "node -r dotenv/config ./scripts/headOrders/headOrders.js dotenv_config_path=./scripts/scripts.env",
     "head-orders-buy": "cross-env ORDER_SIDE=buy npm run head-orders",
@@ -24,13 +25,13 @@
     "sqs-simulator": "npm run env:dev ts-node -r ./env -r tsconfig-paths/register ./scripts/sqsSimulator/sqsSimulator.ts"
   },
   "_moduleAliases": {
-    "@server": "dist/API/server.js",
-    "@middlewares": "dist/API/middlewares",
-    "@entities": "dist/entities",
-    "@shared": "dist/shared",
-    "@topics": "dist/constants/Topics.js",
-    "@services": "dist/services",
-    "@config": "dist/config"
+    "@server": "dist/src/API/server.js",
+    "@middlewares": "dist/src/API/middlewares",
+    "@entities": "dist/src/entities",
+    "@shared": "dist/src/shared",
+    "@topics": "dist/src/constants/Topics.js",
+    "@services": "dist/src/services",
+    "@config": "dist/src/config"
   },
   "dependencies": {
     "@dydxprotocol/solo": "^0.28.0",

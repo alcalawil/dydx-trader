@@ -43,7 +43,7 @@ import {
   STRATEGY_CANCEL_ORDER_ERROR
 } from '../../constants/logTypes';
 import { getTokensFromPair } from '../../helpers/converters';
-import Logger from 'src/loggers/Logger';
+import Logger from '../../loggers/Logger';
 
 const router = new SQSRouter();
 let _sqsPublisher: SQSPublisher;
